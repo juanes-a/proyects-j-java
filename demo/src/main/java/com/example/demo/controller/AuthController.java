@@ -1,9 +1,9 @@
 package com.example.demo.controller;
 
-import com.example.demo.dto.LoginRequest;
-import com.example.demo.dto.RegisterRequest;
-import com.example.demo.dto.AuthResponse;
-import com.example.demo.model.UserEntity;
+import com.example.demo.dto.request.auth.LoginRequest;
+import com.example.demo.dto.request.auth.RegisterRequest;
+import com.example.demo.dto.response.AuthResponse;
+import com.example.demo.entity.UserEntity;
 import com.example.demo.security.JwtUtil;
 import com.example.demo.service.UserService;
 import jakarta.validation.Valid;
