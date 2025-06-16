@@ -1,26 +1,18 @@
-import './assets/main.css'
-
-import axios from 'axios';
+import './assets/main.css' // Importa tus estilos globales
 import { createApp } from 'vue'
 import { createPinia } from 'pinia'
-
 import App from './App.vue'
 import router from './router'
 
+// Crea la aplicación Vue
 const app = createApp(App)
 
-app.use(createPinia())
+// Configura Pinia para state management
+const pinia = createPinia()
+app.use(pinia)
+
+// Configura el router
 app.use(router)
 
+// Monta la aplicación
 app.mount('#app')
-
-
-axios.defaults.baseURL = 'http://localhost:8080';
-
-axios.interceptors.request.use(config => {
-  const token = localStorage.getItem('token');
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
-  }
-  return config;
-});

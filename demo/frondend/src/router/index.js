@@ -1,6 +1,8 @@
 import { createRouter, createWebHistory } from 'vue-router';
-import LoginView from '../views/LoginView.vue';
-import RegisterView from '../views/RegisterView.vue';
+import LoginView from '../views/auth/LoginView.vue';
+import RegisterView from '../views/auth/RegisterView.vue';
+import homeDepartaments from '../views/adminG/HomeView.vue';
+import departamentsView from '../views/adminG/DepartmentsView.vue';
 
 const router = createRouter({
   history: createWebHistory(),
@@ -16,6 +18,10 @@ const router = createRouter({
       path: '/:pathMatch(.*)*',
       redirect: '/',
     },
+    { path: '/homeDepartaments', component: homeDepartaments },
+    { path: '/departments', component: departamentsView },
+
+
   ],
 });
 

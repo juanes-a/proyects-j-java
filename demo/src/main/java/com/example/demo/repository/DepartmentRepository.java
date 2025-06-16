@@ -82,4 +82,18 @@ public interface DepartmentRepository extends JpaRepository<Department, Long> {
             @Param("minBudget") BigDecimal minBudget,
             @Param("maxBudget") BigDecimal maxBudget
     );
+
+    @Query("SELECT COALESCE(COUNT(d), 0) FROM Department d")
+    Long countTotalDepartments();
+    
+    @Query("SELECT COALESCE(COUNT(d), 0) FROM Department d WHERE d.isActive = true")
+    Long countActiveDepartments();
+    
+    @Query("SELECT COALESCE(SUM(d.budget), 0) FROM Department d")
+    BigDecimal sumAllBudgets();
+    
+    @Query("SELECT SUM(d.budget) FROM Department d WHERE d.budget IS NOT NULL")
+    BigDecimal sumBudget();
+
+    long countByIsActive(boolean isActive);
 }

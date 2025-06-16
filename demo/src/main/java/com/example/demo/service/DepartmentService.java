@@ -244,5 +244,20 @@ public class DepartmentService {
         public long getTotalDepartments() { return totalDepartments; }
         public long getActiveDepartments() { return activeDepartments; }
         public BigDecimal getTotalBudget() { return totalBudget; }
+
+        public void setActiveDepartments(long l) {
+            // TODO Auto-generated method stub
+            throw new UnsupportedOperationException("Unimplemented method 'setActiveDepartments'");
+        }
+
+        public void setTotalBudget(Object object) {
+            // TODO Auto-generated method stub
+            throw new UnsupportedOperationException("Unimplemented method 'setTotalBudget'");
+        }
+
+        public void setTotalDepartments(long l) {
+            // TODO Auto-generated method stub
+            throw new UnsupportedOperationException("Unimplemented method 'setTotalDepartments'");
+        }
     }
 }

@@ -86,7 +86,7 @@
 </template>
 
 <script setup>
-import '../assets/auth.css';
+import '../../assets/auth.css';// Importar estilos específicos de autenticación
 import { ref, computed } from 'vue';
 import { useRouter } from 'vue-router';
 

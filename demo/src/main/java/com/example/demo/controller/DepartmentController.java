@@ -4,8 +4,11 @@ import com.example.demo.dto.request.department.DepartmentRequestDTO;
 import com.example.demo.dto.request.department.DepartmentUpdateDTO;
 import com.example.demo.dto.response.DepartmentResponseDTO;
 import com.example.demo.repository.DepartmentRepository;
+import com.example.demo.repository.TeamMemberRepository;
 import com.example.demo.entity.Department;
 import com.example.demo.service.DepartmentService;
+import com.example.demo.service.DepartmentService.DepartmentStats;
+
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -15,14 +18,21 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 @RestController
 @RequestMapping("/api/departments")
-@CrossOrigin(origins = "*")
+@CrossOrigin(origins = "http://localhost:5173")
 public class DepartmentController {
+
+    private static final Logger log = LoggerFactory.getLogger(DepartmentController.class);
 
     private final DepartmentService departmentService;
 
@@ -213,11 +223,33 @@ public class DepartmentController {
      * OBTENER ESTADÍSTICAS
      * GET /api/departments/stats
      */
+
+        @Autowired
+    private TeamMemberRepository teamMemberRepository;
+    
     @GetMapping("/stats")
-    public ResponseEntity<DepartmentService.DepartmentStats> getDepartmentStats() {
-        DepartmentService.DepartmentStats stats = departmentService.getDepartmentStatistics();
-        return ResponseEntity.ok(stats);
-    }
+public ResponseEntity<Map<String, Object>> getDepartmentStats() {
+    Map<String, Object> stats = new HashMap<>();
+    
+    // Usar Optional para manejar valores nulos
+    Long totalDepts = departmentRepository.count();
+    Long activeDepts = departmentRepository.countByIsActive(true);
+    BigDecimal totalBudget = Optional.ofNullable(departmentRepository.sumBudget())
+                                   .orElse(BigDecimal.ZERO);
+    
+    stats.put("totalDepartments", totalDepts != null ? totalDepts : 0);
+    stats.put("activeDepartments", activeDepts != null ? activeDepts : 0);
+    stats.put("totalBudget", totalBudget);
+    
+    return ResponseEntity.ok(stats);
+}
+
+
+
+
+
+
+
 
     /**
      * VERIFICAR SI DEPARTAMENTO TIENE PRESUPUESTO SUFICIENTE
