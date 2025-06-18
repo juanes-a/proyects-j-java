@@ -14,5 +14,5 @@ public class ActivityDTO {
      private Long id;
     private String description;
     private String type;
-    private LocalDateTime createdAt;
+    private String createdAt;
 }

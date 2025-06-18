@@ -7,6 +7,7 @@ import com.example.demo.repository.DepartmentRepository;
 import com.example.demo.repository.TeamMemberRepository;
 import com.example.demo.entity.Department;
 import com.example.demo.service.DepartmentService;
+import com.example.demo.service.ActivityService; // NUEVO: Importar ActivityService
 import com.example.demo.service.DepartmentService.DepartmentStats;
 
 import jakarta.persistence.EntityNotFoundException;
@@ -35,9 +36,16 @@ public class DepartmentController {
     private static final Logger log = LoggerFactory.getLogger(DepartmentController.class);
 
     private final DepartmentService departmentService;
+    
+    // NUEVO: Inyección de ActivityService
+    @Autowired
+    private ActivityService activityService;
 
     @Autowired
-    private DepartmentRepository departmentRepository; // CORRIGIDO: Ahora está inyectado
+    private DepartmentRepository departmentRepository;
+
+    @Autowired
+    private TeamMemberRepository teamMemberRepository;
 
     @Autowired
     public DepartmentController(DepartmentService departmentService) {
@@ -50,10 +58,19 @@ public class DepartmentController {
      */
     @PostMapping
     public ResponseEntity<DepartmentResponseDTO> createDepartment(@Valid @RequestBody DepartmentRequestDTO requestDTO) {
-        Department department = convertToEntity(requestDTO);
-        Department createdDepartment = departmentService.createDepartment(department);
-        DepartmentResponseDTO responseDTO = convertToResponseDTO(createdDepartment);
-        return ResponseEntity.status(HttpStatus.CREATED).body(responseDTO);
+        try {
+            Department department = convertToEntity(requestDTO);
+            Department createdDepartment = departmentService.createDepartment(department);
+            
+            // NUEVO: Registrar actividad de creación
+            activityService.logDepartmentCreated(createdDepartment.getName());
+            
+            DepartmentResponseDTO responseDTO = convertToResponseDTO(createdDepartment);
+            return ResponseEntity.status(HttpStatus.CREATED).body(responseDTO);
+        } catch (Exception e) {
+            log.error("Error creating department: {}", e.getMessage(), e);
+            return ResponseEntity.badRequest().build();
+        }
     }
 
     /**
@@ -145,11 +162,19 @@ public class DepartmentController {
     public ResponseEntity<DepartmentResponseDTO> updateDepartment(
             @PathVariable Long id,
             @Valid @RequestBody DepartmentUpdateDTO updateDTO) {
-
-        Department department = convertToEntityForUpdate(updateDTO);
-        Department updatedDepartment = departmentService.updateDepartment(id, department);
-        DepartmentResponseDTO responseDTO = convertToResponseDTO(updatedDepartment);
-        return ResponseEntity.ok(responseDTO);
+        try {
+            Department department = convertToEntityForUpdate(updateDTO);
+            Department updatedDepartment = departmentService.updateDepartment(id, department);
+            
+            // NUEVO: Registrar actividad de actualización
+            activityService.logDepartmentUpdated(updatedDepartment.getName());
+            
+            DepartmentResponseDTO responseDTO = convertToResponseDTO(updatedDepartment);
+            return ResponseEntity.ok(responseDTO);
+        } catch (Exception e) {
+            log.error("Error updating department with ID {}: {}", id, e.getMessage(), e);
+            return ResponseEntity.badRequest().build();
+        }
     }
 
     /**
@@ -158,9 +183,18 @@ public class DepartmentController {
      */
     @PatchMapping("/{id}/activate")
     public ResponseEntity<DepartmentResponseDTO> activateDepartment(@PathVariable Long id) {
-        Department activatedDepartment = departmentService.activateDepartment(id);
-        DepartmentResponseDTO responseDTO = convertToResponseDTO(activatedDepartment);
-        return ResponseEntity.ok(responseDTO);
+        try {
+            Department activatedDepartment = departmentService.activateDepartment(id);
+            
+            // NUEVO: Registrar actividad de activación
+            activityService.logDepartmentUpdated(activatedDepartment.getName() + " (Activated)");
+            
+            DepartmentResponseDTO responseDTO = convertToResponseDTO(activatedDepartment);
+            return ResponseEntity.ok(responseDTO);
+        } catch (Exception e) {
+            log.error("Error activating department with ID {}: {}", id, e.getMessage(), e);
+            return ResponseEntity.badRequest().build();
+        }
     }
 
     /**
@@ -169,9 +203,18 @@ public class DepartmentController {
      */
     @PatchMapping("/{id}/deactivate")
     public ResponseEntity<DepartmentResponseDTO> deactivateDepartment(@PathVariable Long id) {
-        Department deactivatedDepartment = departmentService.deactivateDepartment(id);
-        DepartmentResponseDTO responseDTO = convertToResponseDTO(deactivatedDepartment);
-        return ResponseEntity.ok(responseDTO);
+        try {
+            Department deactivatedDepartment = departmentService.deactivateDepartment(id);
+            
+            // NUEVO: Registrar actividad de desactivación
+            activityService.logDepartmentUpdated(deactivatedDepartment.getName() + " (Deactivated)");
+            
+            DepartmentResponseDTO responseDTO = convertToResponseDTO(deactivatedDepartment);
+            return ResponseEntity.ok(responseDTO);
+        } catch (Exception e) {
+            log.error("Error deactivating department with ID {}: {}", id, e.getMessage(), e);
+            return ResponseEntity.badRequest().build();
+        }
     }
 
     /**
@@ -180,8 +223,21 @@ public class DepartmentController {
      */
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteDepartment(@PathVariable Long id) {
-        departmentService.deleteDepartmentPermanently(id);
-        return ResponseEntity.noContent().build();
+        try {
+            // NUEVO: Obtener el nombre antes de eliminar para el log
+            Department department = departmentService.getDepartmentById(id);
+            String departmentName = department.getName();
+            
+            departmentService.deleteDepartmentPermanently(id);
+            
+            // NUEVO: Registrar actividad de eliminación
+            activityService.logDepartmentDeleted(departmentName);
+            
+            return ResponseEntity.noContent().build();
+        } catch (Exception e) {
+            log.error("Error deleting department with ID {}: {}", id, e.getMessage(), e);
+            return ResponseEntity.badRequest().build();
+        }
     }
 
     /**
@@ -223,33 +279,22 @@ public class DepartmentController {
      * OBTENER ESTADÍSTICAS
      * GET /api/departments/stats
      */
-
-        @Autowired
-    private TeamMemberRepository teamMemberRepository;
-    
     @GetMapping("/stats")
-public ResponseEntity<Map<String, Object>> getDepartmentStats() {
-    Map<String, Object> stats = new HashMap<>();
-    
-    // Usar Optional para manejar valores nulos
-    Long totalDepts = departmentRepository.count();
-    Long activeDepts = departmentRepository.countByIsActive(true);
-    BigDecimal totalBudget = Optional.ofNullable(departmentRepository.sumBudget())
-                                   .orElse(BigDecimal.ZERO);
-    
-    stats.put("totalDepartments", totalDepts != null ? totalDepts : 0);
-    stats.put("activeDepartments", activeDepts != null ? activeDepts : 0);
-    stats.put("totalBudget", totalBudget);
-    
-    return ResponseEntity.ok(stats);
-}
-
-
-
-
-
-
-
+    public ResponseEntity<Map<String, Object>> getDepartmentStats() {
+        Map<String, Object> stats = new HashMap<>();
+        
+        // Usar Optional para manejar valores nulos
+        Long totalDepts = departmentRepository.count();
+        Long activeDepts = departmentRepository.countByIsActive(true);
+        BigDecimal totalBudget = Optional.ofNullable(departmentRepository.sumBudget())
+                                       .orElse(BigDecimal.ZERO);
+        
+        stats.put("totalDepartments", totalDepts != null ? totalDepts : 0);
+        stats.put("activeDepartments", activeDepts != null ? activeDepts : 0);
+        stats.put("totalBudget", totalBudget);
+        
+        return ResponseEntity.ok(stats);
+    }
 
     /**
      * VERIFICAR SI DEPARTAMENTO TIENE PRESUPUESTO SUFICIENTE

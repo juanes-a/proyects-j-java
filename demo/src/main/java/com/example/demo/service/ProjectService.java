@@ -1,5 +1,11 @@
 package com.example.demo.service;
 
+import com.example.demo.controller.ProjectController.DepartmentDTO;
+import com.example.demo.controller.ProjectController.ProjectRequest;
+import com.example.demo.controller.ProjectController.ProjectResponse;
+import com.example.demo.dto.*;
+import com.example.demo.dto.request.project.ProjectCreateDTO;
+import com.example.demo.dto.request.project.ProjectUpdateDTO;
 import com.example.demo.entity.Project;
 import com.example.demo.entity.Department;
 import com.example.demo.enums.ProjectStatus;
@@ -12,37 +18,17 @@ import com.example.demo.exception.BusinessException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
-import java.util.Optional;
+import java.util.stream.Collectors;
 
-/**
- * SERVICE PARA GESTIÓN DE PROYECTOS
- *
- * Esta clase contiene TODA la lógica de negocio relacionada con proyectos.
- * Es el punto central donde se ejecutan las reglas del dominio,
- * validaciones complejas y operaciones transaccionales.
- *
- * RESPONSABILIDADES:
- * 1. Operaciones CRUD con validaciones de negocio
- * 2. Gestión del ciclo de vida del proyecto (estados)
- * 3. Validaciones que requieren acceso a BD
- * 4. Coordinación con otras entidades (Department)
- * 5. Lógica de agregación y reportes
- *
- * PATRÓN: Cada método público es una "operación de negocio"
- */
 @Service
-@Transactional(readOnly = true) // Por defecto SOLO LECTURA
+@Transactional(readOnly = true)
 public class ProjectService {
 
-    // ========================================
-    // DEPENDENCIAS INYECTADAS
-    // ========================================
+
 
     @Autowired
     private ProjectRepository projectRepository;
@@ -50,362 +36,218 @@ public class ProjectService {
     @Autowired
     private DepartmentRepository departmentRepository;
 
-    // ========================================
-    // OPERACIONES CRUD CON LÓGICA DE NEGOCIO
-    // ========================================
+    // ============== Operaciones CRUD ==============
 
-    /**
-     * CREAR PROYECTO - Con validaciones de negocio
-     *
-     * REGLAS DE NEGOCIO:
-     * 1. El departamento debe existir y estar activo
-     * 2. No puede haber otro proyecto con el mismo nombre en el mismo departamento
-     * 3. La fecha de inicio no puede ser posterior a la fecha de fin
-     * 4. La fecha de inicio no puede ser anterior a hoy (para proyectos nuevos)
-     */
-    @Transactional // ESCRITURA - requiere transacción
-    public Project createProject(String name, String description, String objectives,
-                                 Long departmentId, LocalDate startDate, LocalDate endDate,
-                                 BigDecimal budget, ProjectPriority priority,ProjectStatus status) {
-
-        // VALIDACIÓN 1: Departamento existe y está activo
-
-        Department department = departmentRepository.findById(departmentId)
-                .orElseThrow(() -> new BusinessException("El departamento especificado no existe"));
-
-        if (!department.getIsActive()) {
-            throw new BusinessException("No se puede crear un proyecto en un departamento inactivo");
-        }
-
-        // VALIDACIÓN 2: Nombre único en el departamento
-        if (projectRepository.existsByNameIgnoreCaseAndDepartmentId(name, departmentId)) {
-            throw new BusinessException("Ya existe un proyecto con ese nombre en el departamento");
-        }
-
-        // VALIDACIÓN 3: Fechas lógicas
-        validateProjectDates(startDate, endDate);
-
-        // VALIDACIÓN 4: Fecha de inicio no en el pasado (para proyectos nuevos)
-        if (startDate.isBefore(LocalDate.now())) {
-            throw new BusinessException("La fecha de inicio no puede ser anterior a hoy");
-        }
-
-        // CREACIÓN: Usar constructor de la entidad
-        Project project = new Project(name, description, objectives, department,
-                startDate, endDate, budget,priority, status);
-
-        // Asignar prioridad (si no se especifica, usa MEDIUM por defecto)
-        if (priority != null) {
-            project.setPriority(priority);
-        }
-
-        return projectRepository.save(project);
-    }
-
-    /**
-     * OBTENER PROYECTO POR ID - Con validación de existencia
-     */
-    public Project getProjectById(Long id) {
-        return projectRepository.findById(id)
-                .orElseThrow(() -> new ProjectNotFoundException("Proyecto no encontrado con ID: " + id));
-    }
-
-    /**
-     * OBTENER TODOS LOS PROYECTOS ACTIVOS
-     * Usa el método del repository que filtra por status != CANCELLED
-     */
-    public List<Project> getAllActiveProjects() {
-        return projectRepository.findActiveProjects();
-    }
-
-    /**
-     * OBTENER PROYECTOS POR DEPARTAMENTO
-     */
-    public List<Project> getProjectsByDepartment(Long departmentId) {
-        // Validar que el departamento existe
-        if (!departmentRepository.existsById(departmentId)) {
-            throw new BusinessException("El departamento especificado no existe");
-        }
-        return projectRepository.findByDepartmentId(departmentId);
-    }
-
-    /**
-     * ACTUALIZAR PROYECTO - Con validaciones específicas
-     */
     @Transactional
-    public Project updateProject(Long id, String name, String description, String objectives,
-                                 LocalDate startDate, LocalDate endDate, BigDecimal budget,
-                                 ProjectPriority priority) {
+    public ProjectResponse createProject(ProjectCreateDTO dto) {
+        // 1. Validar departamento
+        Department department = departmentRepository.findById(dto.getDepartmentId())
+            .orElseThrow(() -> new BusinessException("Departamento no encontrado"));
+        
+        // 2. Validar fechas
+        if (dto.getStartDate().isAfter(dto.getEndDate())) {
+            throw new BusinessException("La fecha de fin debe ser posterior a la fecha de inicio");
+        }
+        
+        // 3. Crear entidad
+        Project project = new Project();
+        project.setName(dto.getName());
+        project.setDescription(dto.getDescription());
+        project.setDepartment(department); // Asegurar que department no sea null
+        project.setStartDate(dto.getStartDate());
+        project.setEndDate(dto.getEndDate());
+        project.setBudget(dto.getBudget() != null ? BigDecimal.valueOf(dto.getBudget()) : null);
+        project.setPriority(dto.getPriority());
+        project.setStatus(dto.getStatus());
+        
+        // 4. Guardar
+        Project savedProject = projectRepository.save(project);
+        return mapToResponse(savedProject);
+    }
 
-        Project project = getProjectById(id);
+    @Transactional
+    public ProjectResponse updateProject(Long id, ProjectUpdateDTO dto) {
+        Project project = projectRepository.findById(id)
+            .orElseThrow(() -> new ProjectNotFoundException("Project not found with id: " + id));
 
-        // REGLA: No se puede modificar un proyecto completado
         if (project.isCompleted()) {
-            throw new BusinessException("No se puede modificar un proyecto completado");
+            throw new BusinessException("Cannot modify a completed project");
         }
 
-        // VALIDACIÓN: Si cambia el nombre, verificar unicidad en el departamento
-        if (!project.getName().equalsIgnoreCase(name)) {
-            if (projectRepository.existsByNameIgnoreCaseAndDepartmentId(name, project.getDepartment().getId())) {
-                throw new BusinessException("Ya existe un proyecto con ese nombre en el departamento");
-            }
+        if (!project.getName().equals(dto.getName())) {
+            validateProjectName(dto.getName(), project.getDepartment().getId());
         }
 
-        // VALIDACIÓN: Fechas lógicas
-        validateProjectDates(startDate, endDate);
+        validateProjectDates(dto.getStartDate(), dto.getEndDate());
 
-        // REGLA: Si el proyecto está en progreso, no se puede cambiar fecha de inicio
-        if (project.isInProgress() && !project.getStartDate().equals(startDate)) {
-            throw new BusinessException("No se puede cambiar la fecha de inicio de un proyecto en progreso");
+        if (project.isInProgress() && !project.getStartDate().equals(dto.getStartDate())) {
+            throw new BusinessException("Cannot change start date of a project in progress");
         }
 
-        // ACTUALIZAR CAMPOS
-        project.setName(name);
-        project.setDescription(description);
-        project.setObjectives(objectives);
-        project.setStartDate(startDate);
-        project.setEndDate(endDate);
-        project.setBudget(budget);
-        project.setPriority(priority);
+        project.setName(dto.getName());
+        project.setDescription(dto.getDescription());
+        project.setStartDate(dto.getStartDate());
+        project.setEndDate(dto.getEndDate());
+        project.setBudget(dto.getBudget());
+        project.setPriority(dto.getPriority());
+        
+        // No actualizamos el status aquí, tiene sus propios endpoints
+        // No actualizamos departmentId en updates (requeriría lógica adicional)
 
-        return projectRepository.save(project);
+        return mapToResponse(projectRepository.save(project));
     }
 
-    // ========================================
-    // GESTIÓN DEL CICLO DE VIDA DEL PROYECTO
-    // ========================================
 
-    /**
-     * INICIAR PROYECTO - Cambiar estado a IN_PROGRESS
-     *
-     * REGLAS DE NEGOCIO:
-     * 1. Solo proyectos en estado PLANNED
-     * 2. La fecha de inicio debe ser hoy o anterior
-     * 3. El departamento debe estar activo
-     */
+    // ============== Gestión de estado ==============
+
     @Transactional
-    public Project startProject(Long id) {
-        Project project = getProjectById(id);
+    public ProjectResponse startProject(Long id) {
+        Project project = projectRepository.findById(id)
+            .orElseThrow(() -> new ProjectNotFoundException("Project not found with id: " + id));
 
-        // VALIDACIÓN: Estado correcto
         if (!project.isPlanned()) {
-            throw new BusinessException("Solo se pueden iniciar proyectos en estado PLANNED");
+            throw new BusinessException("Only planned projects can be started");
         }
 
-        // VALIDACIÓN: Fecha de inicio válida
         if (project.getStartDate().isAfter(LocalDate.now())) {
-            throw new BusinessException("No se puede iniciar un proyecto antes de su fecha de inicio");
+            throw new BusinessException("Cannot start project before its start date");
         }
 
-        // VALIDACIÓN: Departamento activo
         if (!project.getDepartment().getIsActive()) {
-            throw new BusinessException("No se puede iniciar un proyecto de un departamento inactivo");
+            throw new BusinessException("Cannot start project in an inactive department");
         }
 
-        // USAR MÉTODO DE LA ENTIDAD (lógica de dominio)
         project.start();
-
-        return projectRepository.save(project);
+        return mapToResponse(projectRepository.save(project));
     }
 
-    /**
-     * COMPLETAR PROYECTO - Cambiar estado a COMPLETED
-     */
     @Transactional
-    public Project completeProject(Long id) {
-        Project project = getProjectById(id);
+    public ProjectResponse completeProject(Long id) {
+        Project project = projectRepository.findById(id)
+            .orElseThrow(() -> new ProjectNotFoundException("Project not found with id: " + id));
 
-        // USAR MÉTODO DE LA ENTIDAD
-        project.complete(); // Ya tiene las validaciones internas
-
-        return projectRepository.save(project);
+        project.complete();
+        return mapToResponse(projectRepository.save(project));
     }
 
-    /**
-     * CANCELAR PROYECTO - Cambiar estado a CANCELLED
-     */
     @Transactional
-    public Project cancelProject(Long id, String reason) {
-        Project project = getProjectById(id);
+    public ProjectResponse cancelProject(Long id, String reason) {
+        Project project = projectRepository.findById(id)
+            .orElseThrow(() -> new ProjectNotFoundException("Project not found with id: " + id));
 
-        // USAR MÉTODO DE LA ENTIDAD
-        project.cancel(); // Ya tiene las validaciones internas
-
-
-
-        return projectRepository.save(project);
+        project.cancel();
+        return mapToResponse(projectRepository.save(project));
     }
 
-    // ========================================
-    // CONSULTAS ESPECIALIZADAS
-    // ========================================
-
-    /**
-     * OBTENER PROYECTOS VENCIDOS
-     * Proyectos en progreso que han pasado su fecha de fin
-     */
+    // ============== Consultas especiales ==============
     public List<Project> getOverdueProjects() {
-        return projectRepository.findOverdueProjects(LocalDate.now());
-    }
-
-    /**
-     * OBTENER PROYECTOS URGENTES ACTIVOS
-     * Proyectos con prioridad HIGH o CRITICAL que están activos
-     */
-    public List<Project> getUrgentActiveProjects() {
-        return projectRepository.findUrgentActiveProjects();
-    }
-
-    /**
-     * OBTENER PROYECTOS QUE TERMINAN ESTA SEMANA
-     */
-    public List<Project> getProjectsEndingThisWeek() {
-        LocalDate today = LocalDate.now();
-        LocalDate endOfWeek = today.plusDays(7);
-        return projectRepository.findProjectsEndingThisWeek(today, endOfWeek);
-    }
-
-    /**
-     * BUSCAR PROYECTOS CON FILTROS MÚLTIPLES
-     * Método que usa la query personalizada del repository
-     */
-    public List<Project> searchProjects(String name, Long departmentId, ProjectStatus status,
-                                        ProjectPriority priority, LocalDate startDate, LocalDate endDate,
-                                        BigDecimal minBudget, BigDecimal maxBudget) {
-
-        return projectRepository.findProjectsByFilters(
-                name, departmentId, status, priority, startDate, endDate, minBudget, maxBudget
+        return projectRepository.findByEndDateBeforeAndStatusNot(
+            LocalDate.now(),
+            ProjectStatus.COMPLETED
         );
     }
 
-    // ========================================
-    // VALIDACIONES Y REGLAS DE NEGOCIO
-    // ========================================
-
-    /**
-     * VALIDAR SI SE PUEDE ELIMINAR UN PROYECTO
-     *
-     * REGLAS:
-     * 1. Solo proyectos en estado PLANNED o CANCELLED
-     * 2. El usuario debe tener permisos (esto se validará en Controller/Security)
-     */
-    public boolean canDeleteProject(Long id) {
-        Project project = getProjectById(id);
-        return project.isPlanned() || project.getStatus() == ProjectStatus.CANCELLED;
+    public List<ProjectResponse> getUrgentProjects() {
+        try {
+            List<ProjectPriority> urgentPriorities = List.of(
+                ProjectPriority.HIGH, 
+                ProjectPriority.CRITICAL
+            );
+            
+            return projectRepository.findByPriorityInAndStatusNot(
+                urgentPriorities, 
+                ProjectStatus.CANCELLED
+            ).stream()
+            .map(this::mapToResponse)
+            .collect(Collectors.toList());
+        } catch (Exception e) {
+            throw new BusinessException("Error fetching urgent projects: " + e.getMessage());
+        }
     }
 
-    /**
-     * ELIMINAR PROYECTO - Con validaciones
-     */
-    @Transactional
-    public void deleteProject(Long id) {
-        if (!canDeleteProject(id)) {
-            throw new BusinessException("Solo se pueden eliminar proyectos en estado PLANNED o CANCELLED");
+    public List<ProjectResponse> getProjectsEndingThisWeek() {
+        LocalDate today = LocalDate.now();
+        LocalDate endOfWeek = today.plusDays(7);
+        return projectRepository.findByEndDateBetween(today, endOfWeek)
+            .stream()
+            .map(this::mapToResponse)
+            .collect(Collectors.toList());
+    }
+
+    // ============== Métodos de apoyo ==============
+
+    private Department validateDepartment(Long departmentId) {
+        Department department = departmentRepository.findById(departmentId)
+            .orElseThrow(() -> new BusinessException("Department not found with id: " + departmentId));
+
+        if (!department.getIsActive()) {
+            throw new BusinessException("Cannot create project in inactive department");
         }
 
-        projectRepository.deleteById(id);
+        return department;
     }
 
-    /**
-     * VALIDAR FECHAS DEL PROYECTO (método privado de apoyo)
-     */
+    private void validateProjectName(String name, Long departmentId) {
+        if (projectRepository.existsByNameIgnoreCaseAndDepartmentId(name, departmentId)) {
+            throw new BusinessException("Project name already exists in this department");
+        }
+    }
+
     private void validateProjectDates(LocalDate startDate, LocalDate endDate) {
         if (startDate == null || endDate == null) {
-            throw new BusinessException("Las fechas de inicio y fin son obligatorias");
+            throw new BusinessException("Start and end dates are required");
         }
 
         if (startDate.isAfter(endDate)) {
-            throw new BusinessException("La fecha de inicio no puede ser posterior a la fecha de fin");
+            throw new BusinessException("Start date cannot be after end date");
         }
 
-        // REGLA: Un proyecto debe durar al menos 1 día
         if (startDate.equals(endDate)) {
-            throw new BusinessException("Un proyecto debe tener una duración mínima de 1 día");
+            throw new BusinessException("Project must last at least 1 day");
         }
     }
 
-    // ========================================
-    // ESTADÍSTICAS Y REPORTES
-    // ========================================
-
-    /**
-     * OBTENER ESTADÍSTICAS DE PROYECTOS POR DEPARTAMENTO
-     */
-    public ProjectStatistics getProjectStatisticsByDepartment(Long departmentId) {
-        long totalProjects = projectRepository.countByDepartmentId(departmentId);
-        long activeProjects = projectRepository.countActiveProjectsByDepartment(departmentId);
-        long urgentProjects = projectRepository.countUrgentActiveProjectsByDepartment(departmentId);
-        BigDecimal totalBudget = projectRepository.getTotalBudgetByDepartment(departmentId);
-
-        return new ProjectStatistics(totalProjects, activeProjects, urgentProjects, totalBudget);
+    private void validateStartDateNotInPast(LocalDate startDate) {
+        if (startDate.isBefore(LocalDate.now())) {
+            throw new BusinessException("Start date cannot be in the past");
+        }
     }
 
-    /**
-     * OBTENER RESUMEN GENERAL DE PROYECTOS
-     */
-    public ProjectSummary getProjectSummary() {
-        long totalActive = projectRepository.countActiveProjects();
-        long plannedCount = projectRepository.countByStatus(ProjectStatus.PLANNED);
-        long inProgressCount = projectRepository.countByStatus(ProjectStatus.IN_PROGRESS);
-        long completedCount = projectRepository.countByStatus(ProjectStatus.COMPLETED);
-        BigDecimal totalBudget = projectRepository.getTotalActiveBudget();
-
-        return new ProjectSummary(totalActive, plannedCount, inProgressCount,
-                completedCount, totalBudget);
-    }
-}
-
-// ========================================
-// CLASES DE APOYO PARA ESTADÍSTICAS
-// ========================================
-
-/**
- * DTO para estadísticas de proyectos por departamento
- */
-class ProjectStatistics {
-    private long totalProjects;
-    private long activeProjects;
-    private long urgentProjects;
-    private BigDecimal totalBudget;
-
-    public ProjectStatistics(long totalProjects, long activeProjects,
-                             long urgentProjects, BigDecimal totalBudget) {
-        this.totalProjects = totalProjects;
-        this.activeProjects = activeProjects;
-        this.urgentProjects = urgentProjects;
-        this.totalBudget = totalBudget;
+    private ProjectResponse mapToResponse(Project project) {
+        return new ProjectResponse(
+            project.getId(),
+            project.getName(),
+            project.getDescription(),
+            new DepartmentDTO(project.getDepartment().getId(), project.getDepartment().getName()),
+            project.getStatus().name(),
+            project.getPriority().name(),
+            project.getStartDate(),
+            project.getEndDate(),
+            project.getBudget() != null ? project.getBudget().doubleValue() : null
+        );
     }
 
-    // Getters...
-    public long getTotalProjects() { return totalProjects; }
-    public long getActiveProjects() { return activeProjects; }
-    public long getUrgentProjects() { return urgentProjects; }
-    public BigDecimal getTotalBudget() { return totalBudget; }
-}
+     @Transactional
+    public void deleteProject(Long id) {
+        Project project = projectRepository.findById(id)
+            .orElseThrow(() -> new ProjectNotFoundException("Project not found with id: " + id));
 
-/**
- * DTO para resumen general de proyectos
- */
-class ProjectSummary {
-    private long totalActive;
-    private long plannedCount;
-    private long inProgressCount;
-    private long completedCount;
-    private BigDecimal totalBudget;
+        if (!project.isPlanned() && !project.isCancelled()) {
+            throw new BusinessException("Only planned or cancelled projects can be deleted");
+        }
 
-    public ProjectSummary(long totalActive, long plannedCount, long inProgressCount,
-                          long completedCount, BigDecimal totalBudget) {
-        this.totalActive = totalActive;
-        this.plannedCount = plannedCount;
-        this.inProgressCount = inProgressCount;
-        this.completedCount = completedCount;
-        this.totalBudget = totalBudget;
+        projectRepository.delete(project);
     }
 
-    // Getters...
-    public long getTotalActive() { return totalActive; }
-    public long getPlannedCount() { return plannedCount; }
-    public long getInProgressCount() { return inProgressCount; }
-    public long getCompletedCount() { return completedCount; }
-    public BigDecimal getTotalBudget() { return totalBudget; }
+    public List<ProjectResponse> getAllProjects() {
+        return projectRepository.findAll().stream()
+            .map(this::mapToResponse)
+            .collect(Collectors.toList());
+    }
+
+    public ProjectResponse getProjectById(Long id) {
+        Project project = projectRepository.findById(id)
+            .orElseThrow(() -> new ProjectNotFoundException("Project not found with id: " + id));
+        return mapToResponse(project);
+    }
 }

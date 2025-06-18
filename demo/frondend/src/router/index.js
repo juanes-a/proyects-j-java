@@ -3,6 +3,8 @@ import LoginView from '../views/auth/LoginView.vue';
 import RegisterView from '../views/auth/RegisterView.vue';
 import homeDepartaments from '../views/adminG/HomeView.vue';
 import departamentsView from '../views/adminG/DepartmentsView.vue';
+import ProjectsView from '../views/ProjectsView.vue';
+
 
 const router = createRouter({
   history: createWebHistory(),
@@ -20,6 +22,8 @@ const router = createRouter({
     },
     { path: '/homeDepartaments', component: homeDepartaments },
     { path: '/departments', component: departamentsView },
+
+    { path: '/projects', component: ProjectsView },
 
 
   ],

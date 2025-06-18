@@ -1,4 +1,3 @@
-
 <template>
   <div class="space-y-6">
     <!-- Welcome Banner -->
@@ -10,7 +9,7 @@
         </div>
         <div class="hidden md:block">
           <div class="w-24 h-24 bg-white/10 rounded-full flex items-center justify-center">
-            <component :is="icons.TrendingUp" class="w-12 h-12 text-white/80" />
+            <TrendingUp class="w-12 h-12 text-white/80" />
           </div>
         </div>
       </div>
@@ -122,76 +121,66 @@ import { useToastStore } from '../../stores/toast'
 const router = useRouter()
 const toastStore = useToastStore()
 
-// Configuración de iconos
-const icons = {
-  TrendingUp: markRaw(TrendingUp),
-  Building2: markRaw(Building2),
-  FolderOpen: markRaw(FolderOpen),
-  Users: markRaw(Users),
-  Plus: markRaw(Plus),
-  Edit: markRaw(Edit),
-  Eye: markRaw(Eye)
-}
-
 // Estados reactivos
 const loading = ref(true)
 const chartType = ref('bar')
 const budgetChart = ref(null)
 let chartInstance = null
 
-// Datos iniciales
+// Datos iniciales - usar markRaw para componentes que se pasan a component :is
 const stats = ref([
   { 
     title: 'Total Departments', 
     value: '0', 
     change: 'Loading...', 
-    icon: icons.Building2, 
+    icon: markRaw(Building2),
     color: 'blue' 
   },
   { 
     title: 'Active Projects', 
     value: '0', 
     change: 'Loading...', 
-    icon: icons.FolderOpen, 
+    icon: markRaw(FolderOpen),
     color: 'green' 
   },
   { 
     title: 'Total Budget', 
     value: '$0', 
     change: 'Loading...', 
-    icon: icons.TrendingUp, 
+    icon: markRaw(TrendingUp),
     color: 'purple' 
   },
   { 
     title: 'Team Members', 
     value: '0', 
     change: 'Loading...', 
-    icon: icons.Users, 
+    icon: markRaw(Users),
     color: 'orange' 
   }
 ])
 
 const recentActivities = ref([])
 
+// Para quickActions, usa markRaw si los vas a usar en component :is
 const quickActions = [
   {
     title: 'Add Department',
     description: 'Create a new department',
-    icon: icons.Building2,
+    icon: markRaw(Building2),
     iconBg: 'bg-blue-500',
     action: () => router.push('/departments?action=create')
   },
   {
     title: 'New Project',
     description: 'Start a new project',
-    icon: icons.FolderOpen,
+    icon: markRaw(FolderOpen),
     iconBg: 'bg-green-500',
     action: () => router.push('/projects?action=create')
   },
   {
     title: 'Add Team Member',
     description: 'Invite new team member',
-    icon: icons.Users,
+    icon: markRaw(Users),
     iconBg: 'bg-purple-500',
     action: () => router.push('/team?action=invite')
   }
@@ -251,15 +240,29 @@ const fetchDashboardData = async () => {
     chartData.value.labels = departments.map(dept => dept.name)
     chartData.value.datasets[0].data = departments.map(dept => dept.budget || 0)
     
-    // 3. Cargar actividades recientes
-    const activitiesResponse = await api.get('/activities/recent')
-    recentActivities.value = activitiesResponse.data.map(act => ({
-      id: act.id,
-      title: act.description,
-      time: formatTimeAgo(act.createdAt),
-      icon: getActivityIcon(act.type),
-      iconBg: getActivityBg(act.type)
-    }))
+    // 3. Cargar actividades recientes con manejo de errores
+    try {
+      const activitiesResponse = await api.get('/activities/recent')
+      recentActivities.value = (activitiesResponse.data || []).map(act => ({
+        id: act.id,
+        title: act.description || 'Activity',
+        time: formatTimeAgo(act.createdAt || new Date().toISOString()),
+        icon: getActivityIcon(act.type),
+        iconBg: getActivityBg(act.type)
+      }))
+    } catch (error) {
+      console.error('Error loading activities:', error)
+      // Mostrar actividades de ejemplo si hay error
+      recentActivities.value = [
+        {
+          id: 1,
+          title: 'Sample activity',
+          time: 'Just now',
+          icon: markRaw(Eye),
+          iconBg: 'bg-gray-500'
+        }
+      ]
+    }
     
     await nextTick()
     createChart()
@@ -314,12 +317,12 @@ const changeChartType = (type) => {
 // Helpers
 const getActivityIcon = (type) => {
   const iconMap = {
-    'DEPARTMENT_CREATED': icons.Building2,
-    'PROJECT_UPDATED': icons.Edit,
-    'TEAM_MEMBER_ADDED': icons.Users,
-    'REPORT_GENERATED': icons.Eye
+    'DEPARTMENT_CREATED': markRaw(Building2),
+    'PROJECT_UPDATED': markRaw(Edit),
+    'TEAM_MEMBER_ADDED': markRaw(Users),
+    'REPORT_GENERATED': markRaw(Eye)
   }
-  return iconMap[type] || icons.Eye
+  return iconMap[type] || markRaw(Eye)
 }
 
 const getActivityBg = (type) => {

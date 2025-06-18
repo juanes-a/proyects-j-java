@@ -29,7 +29,7 @@ const props = defineProps({
   title: String,
   value: String,
   change: String,
-  icon: Object,
+  icon: [Object, Function], // Acepta tanto Object como Function
   color: String,
   loading: Boolean
 })

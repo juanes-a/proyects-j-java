@@ -42,6 +42,7 @@ public class SecurityConfig {
                     "/h2-console/**",
                     "/v3/api-docs/**",
                     "/api/departments/**",
+                    "/api/activities/**",
                     "/api/projects/**",
                     "/swagger-ui/**",
                     "/swagger-ui.html"
@@ -73,12 +74,12 @@ public class SecurityConfig {
         return config.getAuthenticationManager();
     }
 
-    public class WebConfig implements WebMvcConfigurer {
-        @Override
-        public void addCorsMappings(CorsRegistry registry) {
+    public void addCorsMappings(CorsRegistry registry) {
             registry.addMapping("/**")
-                    .allowedOrigins("http://localhost:5173")
-                    .allowedMethods("GET", "POST", "PUT", "DELETE");
+                    .allowedOrigins("http://localhost:5173", "http://127.0.0.1:5173")
+                    .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
+                    .allowedHeaders("*")
+                    .allowCredentials(true)
+                    .maxAge(3600);
         }
-    }
 }

@@ -65,4 +65,14 @@ public class ProjectResponseDTO {
 
         return dto;
     }
+
+
+    public ProjectResponseDTO(Long id2, String name2, String description2, LocalDate type, Object object) {
+        //TODO Auto-generated constructor stub
+    }
+
+
+    public ProjectResponseDTO(Long id2, String name2, String description2, Object object) {
+        //TODO Auto-generated constructor stub
+    }
 }
