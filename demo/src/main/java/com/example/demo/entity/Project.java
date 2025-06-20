@@ -3,6 +3,8 @@ package com.example.demo.entity;
 import com.example.demo.enums.ProjectPriority;
 import com.example.demo.enums.ProjectStatus;
 import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
+
 import jakarta.persistence.*;
 import jakarta.validation.constraints.*;
 import lombok.*;
@@ -12,6 +14,7 @@ import org.hibernate.annotations.UpdateTimestamp;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Entity
 @Data
@@ -65,6 +68,12 @@ public class Project {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "department_id", nullable = false)
     private Department department;
+    
+@OneToMany(mappedBy = "project", cascade = CascadeType.ALL, orphanRemoval = true)
+@JsonManagedReference("project-tasks")
+private List<TaskEntity> tasks;
+
+    
 
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
