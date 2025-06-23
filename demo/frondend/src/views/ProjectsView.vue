@@ -268,11 +268,16 @@
                   <button
                     v-if="project.status === 'PLANNED'"
                     @click="startProject(project)"
-                    class="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300"
-                    title="Start Project"
+                    :disabled="!canStartProject(project)"
+                    :class="{
+                      'text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300': canStartProject(project),
+                      'text-gray-400 cursor-not-allowed': !canStartProject(project)
+                    }"
+                    :title="canStartProject(project) ? 'Start Project' : `Cannot start until ${formatDate(project.startDate)}`"
                   >
                     <Play class="w-4 h-4" />
                   </button>
+
                   <button
                     v-if="project.status === 'IN_PROGRESS'"
                     @click="completeProject(project)"
@@ -281,6 +286,7 @@
                   >
                     <CheckCircle class="w-4 h-4" />
                   </button>
+
                   <button
                     v-if="['PLANNED', 'IN_PROGRESS'].includes(project.status)"
                     @click="cancelProject(project)"
@@ -289,14 +295,22 @@
                   >
                     <XCircle class="w-4 h-4" />
                   </button>
-                  
-                  <button
-                    @click="deleteProject(project)"
-                    class="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300"
-                    title="Delete Project"
-                  >
-                    <Trash2 class="w-4 h-4" />
-                  </button>
+
+                  <!-- También puedes agregar advertencias visuales en la columna de fechas: -->
+                  <td class="px-6 py-4 whitespace-nowrap">
+                    <div class="text-sm text-gray-900 dark:text-white">
+                      {{ formatDate(project.startDate) }}
+                    </div>
+                    <div class="text-sm text-gray-500 dark:text-gray-400">
+                      {{ formatDate(project.endDate) }}
+                    </div>
+                    
+                    <!-- Mostrar advertencias -->
+                    <div v-for="warning in getProjectWarnings(project)" :key="warning.type" :class="warning.class" class="text-xs mt-1">
+                      {{ warning.message }}
+                    </div>
+                  </td>
+
                 </div>
               </td>
             </tr>
@@ -320,6 +334,16 @@
     </div>
 
     <!-- Modals -->
+    <transition name="fade">
+      <ProjectViewModal
+        v-if="showViewModal"
+        :project="selectedProject"
+        @close="closeViewModal"
+        @edit="handleEditFromView"
+      />
+    </transition>
+
+    <transition name="fade">
     <ProjectModal
       v-if="showModal"
       :project="selectedProject"
@@ -328,13 +352,7 @@
       @close="closeModal"
       @save="handleSave"
     />
-
-    <ProjectViewModal
-      v-if="showViewModal"
-      :project="selectedProject"
-      @close="closeViewModal"
-      @edit="editProject"
-    />
+    </transition>
 
     <CancelProjectModal
       v-if="showCancelModal"
@@ -353,7 +371,8 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, computed, onMounted, watch, nextTick  } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import {
   FolderOpen, Users, DollarSign, TrendingUp, CheckCircle, Search, Plus, Eye, Edit, 
   Play, XCircle, Trash2, AlertTriangle, Zap, Calendar, Circle, AlertCircle
@@ -365,6 +384,8 @@ import CancelProjectModal from '../components/projects/CancelProjectModal.vue'
 import ProjectListModal from '../components/projects/ProjectListModal.vue'
 import { useToastStore } from '../stores/toast'
 
+const route = useRoute()
+const router = useRouter()
 const toastStore = useToastStore()
 
 // Data
@@ -378,6 +399,7 @@ const loading = ref(true)
 // Modals
 const showModal = ref(false)
 const showViewModal = ref(false)
+const showEditModal = ref(false)
 const showCancelModal = ref(false)
 const showListModal = ref(false)
 const selectedProject = ref(null)
@@ -392,7 +414,7 @@ const projectPriorities = ref(['LOW', 'MEDIUM', 'HIGH', 'CRITICAL'])
 // Filters
 const filters = ref({
   name: '',
-  departmentId: '',
+  departmentId: route.query.department || '',
   status: '',
   priority: '',
   startDate: '',
@@ -480,12 +502,18 @@ const filteredProjects = computed(() => {
 const fetchProjects = async () => {
   try {
     loading.value = true
-    const response = await axios.get('/api/projects')
+    let url = '/api/projects'
+    
+    // Aplicar filtro de departamento desde la URL
+    if (route.query.department) {
+      url += `?departmentId=${route.query.department}`
+    }
+    
+    const response = await axios.get(url)
     projects.value = response.data
     updateStats()
   } catch (error) {
-    console.error('Error fetching projects:', error)
-    toastStore.showToast('Error loading projects', 'error')
+    handleError(error, 'Error loading projects')
   } finally {
     loading.value = false
   }
@@ -496,7 +524,7 @@ const fetchDepartments = async () => {
     const response = await axios.get('/api/departments')
     departments.value = response.data
   } catch (error) {
-    console.error('Error fetching departments:', error)
+    handleError(error, 'Error loading departments')
   }
 }
 
@@ -512,13 +540,7 @@ const fetchSpecialProjects = async () => {
     urgentProjects.value = urgentRes.data;
     endingThisWeekProjects.value = endingRes.data;
   } catch (error) {
-    console.error('Error fetching special projects:', error);
-    toastStore.showToast('Error loading project data', 'error');
-    
-    // Opcional: Mostrar más detalles del error
-    if (error.response) {
-      console.error('Error details:', error.response.data);
-    }
+    handleError(error, 'Error loading project data')
   }
 };
 
@@ -536,7 +558,50 @@ const updateStats = () => {
   headerStats.value[4].value = formatCurrency(avgBudget)
 }
 
-// Format functions
+// Función handleError mejorada para mostrar más detalles
+const handleError = (error, message) => {
+  console.error(message, error)
+  
+  let errorMessage = message
+  
+  if (error.response) {
+    console.error('Error details:', error.response.data)
+    
+    // Extraer mensaje específico del servidor si existe
+    if (error.response.data?.message) {
+      errorMessage = error.response.data.message
+    } else if (typeof error.response.data === 'string') {
+      errorMessage = error.response.data
+    }
+  }
+  
+  toastStore.showToast(errorMessage, 'error')
+}
+
+// Función para mostrar advertencias visuales en la tabla
+const getProjectWarnings = (project) => {
+  const warnings = []
+  
+  if (!canStartProject(project) && project.status === 'PLANNED') {
+    warnings.push({
+      type: 'start-date',
+      message: `Cannot start until ${formatDate(project.startDate)}`,
+      class: 'text-orange-600 dark:text-orange-400'
+    })
+  }
+  
+  // Verificar si el proyecto está atrasado
+  if (project.endDate && new Date() > new Date(project.endDate) && project.status !== 'COMPLETED') {
+    warnings.push({
+      type: 'overdue',
+      message: 'Overdue',
+      class: 'text-red-600 dark:text-red-400'
+    })
+  }
+  
+  return warnings
+}
+
 const formatStatus = (status) => {
   const statusMap = {
     'PLANNED': 'Planned',
@@ -618,6 +683,13 @@ const viewProject = (project) => {
   showViewModal.value = true
 }
 
+const handleEditFromView = (project) => {
+  showViewModal.value = false
+  nextTick(() => {
+    editProject(project)
+  })
+}
+
 const closeModal = () => {
   showModal.value = false
   selectedProject.value = null
@@ -639,23 +711,66 @@ const closeListModal = () => {
   modalTitle.value = ''
 }
 
+const closeEditModal = () => {
+  showEditModal.value = false
+  selectedProject.value = null
+}
+
 // CRUD operations
 const handleSave = async (projectData) => {
   try {
+    // Limpiar y preparar los datos antes de enviarlos
+    const cleanedData = {
+      ...projectData,
+      // Convertir null a string vacío o eliminar campos null
+      description: projectData.description || '',
+      objectives: projectData.objectives || '',
+      // Asegurar que los campos numéricos sean correctos
+      departmentId: projectData.departmentId ? parseInt(projectData.departmentId) : null,
+      budget: projectData.budget ? parseFloat(projectData.budget) : 0,
+      // Asegurar formato correcto de fechas
+      startDate: projectData.startDate || null,
+      endDate: projectData.endDate || null
+    }
+
+    // Eliminar campos undefined o null que no sean necesarios
+    Object.keys(cleanedData).forEach(key => {
+      if (cleanedData[key] === null || cleanedData[key] === undefined) {
+        if (!['description', 'objectives', 'startDate', 'endDate'].includes(key)) {
+          delete cleanedData[key]
+        }
+      }
+    })
+
+    console.log('Sending cleaned project data:', cleanedData)
+
     if (isEditing.value) {
-      await axios.put(`/api/projects/${selectedProject.value.id}`, projectData)
+      await axios.put(`/api/projects/${selectedProject.value.id}`, cleanedData)
       toastStore.showToast('Project updated successfully', 'success')
     } else {
-      await axios.post('/api/projects', projectData)
+      await axios.post('/api/projects', cleanedData)
       toastStore.showToast('Project created successfully', 'success')
     }
     
     await fetchProjects()
-    await fetchSpecialProjects()
+    await fetchSpecialProjects() // Refrescar también los proyectos especiales
     closeModal()
   } catch (error) {
     console.error('Error saving project:', error)
-    toastStore.showToast('Error saving project', 'error')
+    
+    // Mostrar más detalles del error
+    if (error.response) {
+      console.error('Error response:', error.response.data)
+      console.error('Error status:', error.response.status)
+      
+      // Mostrar mensaje más específico basado en el error del servidor
+      const errorMessage = error.response.data?.message || 
+                          error.response.data?.error || 
+                          'Error saving project'
+      toastStore.showToast(errorMessage, 'error')
+    } else {
+      toastStore.showToast('Error saving project', 'error')
+    }
   }
 }
 
@@ -669,37 +784,89 @@ const deleteProject = async (project) => {
     await fetchSpecialProjects()
     toastStore.showToast('Project deleted successfully', 'success')
   } catch (error) {
-    console.error('Error deleting project:', error)
-    toastStore.showToast('Error deleting project', 'error')
+    handleError(error, 'Error deleting project')
   }
 }
 
-// Status change operations
+// Función auxiliar para validar fechas
+const canStartProject = (project) => {
+  if (!project.startDate) return true // Si no hay fecha de inicio definida, permitir inicio
+  
+  const today = new Date()
+  const startDate = new Date(project.startDate)
+  
+  // Resetear las horas para comparar solo fechas
+  today.setHours(0, 0, 0, 0)
+  startDate.setHours(0, 0, 0, 0)
+  
+  return today >= startDate
+}
+
+const canCompleteProject = (project) => {
+  // Verificar si el proyecto puede completarse (opcional: antes de la fecha de fin)
+  return project.status === 'IN_PROGRESS'
+}
+
+// Función startProject mejorada
 const startProject = async (project) => {
+  // Validación previa
+  if (!canStartProject(project)) {
+    const startDate = new Date(project.startDate).toLocaleDateString()
+    toastStore.showToast(
+      `Cannot start project before its start date (${startDate})`, 
+      'warning'
+    )
+    return
+  }
+
+  // Confirmación opcional para proyectos importantes
+  if (project.priority === 'CRITICAL') {
+    const confirm = window.confirm(
+      `Are you sure you want to start the critical project "${project.name}"?`
+    )
+    if (!confirm) return
+  }
+
   try {
     await axios.post(`/api/projects/${project.id}/start`)
-    project.status = 'IN_PROGRESS'
+    
+    // Actualizar el proyecto localmente
+    const projectIndex = projects.value.findIndex(p => p.id === project.id)
+    if (projectIndex !== -1) {
+      projects.value[projectIndex].status = 'IN_PROGRESS'
+    }
+    
     updateStats()
     await fetchSpecialProjects()
     toastStore.showToast('Project started successfully', 'success')
   } catch (error) {
-    console.error('Error starting project:', error)
-    toastStore.showToast('Error starting project', 'error')
+    handleError(error, 'Error starting project')
   }
 }
 
+// Función completeProject mejorada
 const completeProject = async (project) => {
+  if (!canCompleteProject(project)) {
+    toastStore.showToast('Project must be in progress to be completed', 'warning')
+    return
+  }
+
   if (!confirm(`Are you sure you want to mark "${project.name}" as completed?`)) return
   
   try {
     await axios.post(`/api/projects/${project.id}/complete`)
-    project.status = 'COMPLETED'
+    
+    // Actualizar el proyecto localmente
+    const projectIndex = projects.value.findIndex(p => p.id === project.id)
+    if (projectIndex !== -1) {
+      projects.value[projectIndex].status = 'COMPLETED'
+    }
+    
     updateStats()
     await fetchSpecialProjects()
     toastStore.showToast('Project completed successfully', 'success')
   } catch (error) {
-    console.error('Error completing project:', error)
-    toastStore.showToast('Error completing project', 'error')
+    handleError(error, 'Error completing project')
   }
 }
 
@@ -717,8 +884,7 @@ const handleCancelProject = async (reason) => {
     closeCancelModal()
     toastStore.showToast('Project cancelled successfully', 'success')
   } catch (error) {
-    console.error('Error cancelling project:', error)
-    toastStore.showToast('Error cancelling project', 'error')
+    handleError(error, 'Error cancelling project')
   }
 }
 
@@ -752,12 +918,24 @@ const clearFilters = () => {
     minBudget: null,
     maxBudget: null
   }
+  
+  // Limpiar también el query de la URL
+  router.replace({ query: null })
 }
 
-// Watch for filter changes to trigger search
-watch(filters, async () => {
-  // You could implement debounced search here if needed
-}, { deep: true })
+// Watch for route changes to update department filter
+watch(() => route.query.department, (newDepartmentId) => {
+  filters.value.departmentId = newDepartmentId || ''
+}, { immediate: true })
+
+// Watch for filter changes to update URL
+watch(() => filters.value.departmentId, (newDepartmentId) => {
+  if (newDepartmentId) {
+    router.replace({ query: { department: newDepartmentId } })
+  } else {
+    router.replace({ query: null })
+  }
+})
 
 onMounted(() => {
   fetchProjects()
@@ -765,3 +943,15 @@ onMounted(() => {
   fetchSpecialProjects()
 })
 </script>
+
+<style scoped>
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.2s ease;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+}
+</style>

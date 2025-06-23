@@ -2,6 +2,8 @@ package com.example.demo.entity;
 
 import java.util.Set;
 
+import com.example.demo.enums.Role;
+
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
 import lombok.*;
@@ -29,8 +31,8 @@ public class UserEntity {
 
     private String password;
 
-    @ElementCollection(fetch = FetchType.EAGER)
-    private Set<String> roles; // ["USER", "ADMIN"]
+    @Enumerated(EnumType.STRING)
+    private Role role;
 
     // Campo para activar/desactivar usuarios
     @Builder.Default

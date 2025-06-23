@@ -72,8 +72,7 @@ public interface ProjectRepository extends JpaRepository<Project, Long> {
     List<Project> findActiveProjectsByDepartment(@Param("departmentId") Long departmentId);
     
     List<Project> findByDepartmentIdAndStatus(Long departmentId, ProjectStatus status);
-    
-    long countByDepartmentId(Long departmentId);
+
     
     @Query("SELECT COUNT(p) FROM Project p WHERE p.department.id = :departmentId AND p.status != 'CANCELLED'")
     long countActiveProjectsByDepartment(@Param("departmentId") Long departmentId);
@@ -152,4 +151,12 @@ public interface ProjectRepository extends JpaRepository<Project, Long> {
             @Param("minBudget") BigDecimal minBudget,
             @Param("maxBudget") BigDecimal maxBudget
     );
+
+    
+    long countByDepartmentId(Long departmentId);
+    
+    // Alternativa si el anterior no funciona
+    @Query("SELECT COUNT(p) FROM Project p WHERE p.department.id = :departmentId")
+    long countByDepartment(@Param("departmentId") Long departmentId);
+ 
 }

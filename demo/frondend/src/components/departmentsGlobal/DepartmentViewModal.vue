@@ -63,17 +63,18 @@
         <div>
           <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Projects</label>
           <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
-            <div class="flex items-center justify-between">
-              <div class="flex items-center space-x-2">
-                <FolderOpen class="w-5 h-5 text-gray-500 dark:text-gray-400" />
-                <span class="text-gray-900 dark:text-white">{{ department?.projectCount || 0 }} active projects</span>
-              </div>
-              <button class="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 text-sm font-medium">
-                View All
-              </button>
+            <div class="flex items-center space-x-2">
+              <FolderOpen class="w-5 h-5 text-gray-500 dark:text-gray-400" />
+                <router-link 
+                  :to="{ path: '/projects', query: { department: department?.id } }"
+                  class="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 text-sm font-medium"
+                >
+                  {{ activeProjectsCount }} active projects
+                </router-link>
             </div>
           </div>
         </div>
+
 
         <!-- Statistics -->
         <div class="grid grid-cols-2 gap-4">
@@ -97,16 +98,18 @@
           </div>
         </div>
       </div>
-
       <!-- Footer -->
       <div class="flex justify-end space-x-3 p-6 border-t border-gray-200 dark:border-gray-700">
         <button
-          @click="$emit('close')"
+          @click="closeModal"
           class="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors duration-200"
         >
           Close
         </button>
-        <button class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors duration-200">
+        <button 
+          @click="handleEdit"
+          class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors duration-200"
+        >
           Edit Department
         </button>
       </div>
@@ -116,10 +119,41 @@
 
 <script setup>
 import { Building2, X, FolderOpen, TrendingUp, Users } from 'lucide-vue-next'
+import { onMounted, ref } from 'vue'
+import { useRouter } from 'vue-router'
+import axios from 'axios'
 
-defineProps({
+const props = defineProps({
   department: Object
 })
 
-defineEmits(['close'])
+const emit = defineEmits(['close', 'edit'])
+
+const router = useRouter()
+const activeProjectsCount = ref(0)
+
+const closeModal = () => {
+  emit('close')
+}
+
+const handleEdit = () => {
+  emit('edit', props.department)  // Pasamos el departamento a editar
+  closeModal()
+}
+// Cargar conteo de proyectos
+async function fetchProjectCount(departmentId) {
+  try {
+    const response = await axios.get(`/api/departments/${departmentId}/projects/count`);
+    activeProjectsCount.value = response.data.count;
+  } catch (error) {
+    console.error('Error fetching project count:', error);
+    activeProjectsCount.value = 0;
+  }
+}
+
+onMounted(() => {
+  if (props.department?.id) {
+    fetchProjectCount(props.department.id)
+  }
+})
 </script>

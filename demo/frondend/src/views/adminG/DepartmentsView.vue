@@ -169,20 +169,24 @@
     </div>
 
     <!-- Create/Edit Modal -->
-    <DepartmentModal
-      v-if="showModal"
-      :department="selectedDepartment"
-      :is-editing="isEditing"
-      @close="closeModal"
-      @save="handleSave"
-    />
+    <transition name="fade">
+      <DepartmentViewModal
+        v-if="showViewModal"
+        :department="selectedDepartment"
+        @close="closeViewModal"
+        @edit="handleEditFromView"
+      />
+    </transition>
 
-    <!-- View Modal -->
-    <DepartmentViewModal
-      v-if="showViewModal"
-      :department="selectedDepartment"
-      @close="closeViewModal"
-    />
+    <transition name="fade">
+      <DepartmentModal
+        v-if="showModal"
+        :department="selectedDepartment"
+        :is-editing="isEditing"
+        @close="closeModal"
+        @save="handleSave"
+      />
+    </transition>
   </div>
 </template>
 
@@ -190,8 +194,8 @@
 import { ref, computed, onMounted } from 'vue'
 import { Building2, DollarSign, TrendingUp, Search, Plus, Eye, Edit, Power, Trash2 } from 'lucide-vue-next'
 import api from '../../api'
-import DepartmentModal from '../../components/DepartmentModal.vue'
-import DepartmentViewModal from '../../components/DepartmentViewModal.vue'
+import DepartmentModal from '../../components/departmentsGlobal/DepartmentModal.vue'
+import DepartmentViewModal from '../../components/departmentsGlobal/DepartmentViewModal.vue'
 import { useToastStore } from '../../stores/toast'
 
 const toastStore = useToastStore()
@@ -205,6 +209,36 @@ const showModal = ref(false)
 const showViewModal = ref(false)
 const selectedDepartment = ref(null)
 const isEditing = ref(false)
+
+
+// Métodos para manejar modales
+const viewDepartment = (department) => {
+  selectedDepartment.value = department
+  showViewModal.value = true
+}
+
+const editDepartment = (department) => {
+  selectedDepartment.value = department
+  isEditing.value = true
+  showModal.value = true
+}
+
+const handleEditFromView = (department) => {
+  showViewModal.value = false  // Cierra el modal de vista
+  editDepartment(department)   // Abre el modal de edición
+}
+
+const closeModal = () => {
+  showModal.value = false
+  selectedDepartment.value = null
+}
+
+const closeViewModal = () => {
+  showViewModal.value = false
+  selectedDepartment.value = null
+}
+
+
 
 // Estadísticas del encabezado (eliminada la de empleados)
 const headerStats = ref([
@@ -336,27 +370,6 @@ const openCreateModal = () => {
   showModal.value = true
 }
 
-const editDepartment = (department) => {
-  selectedDepartment.value = { ...department }
-  isEditing.value = true
-  showModal.value = true
-}
-
-const viewDepartment = (department) => {
-  selectedDepartment.value = department
-  showViewModal.value = true
-}
-
-const closeModal = () => {
-  showModal.value = false
-  selectedDepartment.value = null
-}
-
-const closeViewModal = () => {
-  showViewModal.value = false
-  selectedDepartment.value = null
-}
-
 // Métodos CRUD
 const handleSave = async (departmentData) => {
   try {
@@ -425,3 +438,15 @@ onMounted(() => {
   fetchStats()
 })
 </script>
+
+<style scoped>
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.2s ease;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+}
+</style>

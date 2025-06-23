@@ -46,9 +46,19 @@ import { useRoute } from 'vue-router'
 import { Sun, Moon, Bell, User } from 'lucide-vue-next'
 import { useThemeStore } from '../stores/theme'
 
-const route = useRoute()
 const themeStore = useThemeStore()
 
+// Cambiar a un tema específico
+themeStore.setTheme('dark') // o 'light', 'system'
+
+// Alternar entre claro/oscuro (manteniendo la lógica de sistema)
+themeStore.toggleTheme()
+
+// Acceder al estado actual
+console.log(themeStore.isDark) // true/false
+console.log(themeStore.theme)
+
+const route = useRoute()
 const isDark = computed(() => themeStore.isDark)
 
 const pageTitle = computed(() => {

@@ -4,12 +4,12 @@
       <!-- Header -->
       <div class="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
         <div class="flex items-center space-x-3">
-          <div class="w-12 h-12 bg-gradient-to-r from-green-500 to-blue-600 rounded-lg flex items-center justify-center">
+          <div class="w-12 h-12 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-lg flex items-center justify-center">
             <FolderOpen class="w-6 h-6 text-white" />
           </div>
           <div>
             <h3 class="text-xl font-semibold text-gray-900 dark:text-white">{{ project?.name }}</h3>
-            <p class="text-sm text-gray-500 dark:text-gray-400">Project Details</p>
+            <p class="text-sm text-gray-500 dark:text-gray-400">Department Project Details</p>
           </div>
         </div>
         <button
@@ -42,10 +42,6 @@
         <!-- Basic Info Grid -->
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Department</label>
-            <p class="text-gray-900 dark:text-white">{{ project?.department?.name || 'Not assigned' }}</p>
-          </div>
-          <div>
             <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Start Date</label>
             <p class="text-gray-900 dark:text-white">{{ formatDate(project?.startDate) }}</p>
           </div>
@@ -56,6 +52,10 @@
           <div>
             <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Budget</label>
             <p class="text-gray-900 dark:text-white font-semibold">{{ formatCurrency(project?.budget) }}</p>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Team Members</label>
+            <p class="text-gray-900 dark:text-white">{{ project?.teamMembers || 0 }} members</p>
           </div>
           <div>
             <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Created</label>
@@ -70,7 +70,7 @@
         <!-- Description -->
         <div v-if="project?.description">
           <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Description</label>
-          <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
+          <div class="bg-indigo-50 dark:bg-indigo-900/20 rounded-lg p-4 border border-indigo-200 dark:border-indigo-800">
             <p class="text-gray-900 dark:text-white">{{ project.description }}</p>
           </div>
         </div>
@@ -78,7 +78,7 @@
         <!-- Objectives -->
         <div v-if="project?.objectives">
           <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Objectives</label>
-          <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
+          <div class="bg-purple-50 dark:bg-purple-900/20 rounded-lg p-4 border border-purple-200 dark:border-purple-800">
             <p class="text-gray-900 dark:text-white whitespace-pre-wrap">{{ project.objectives }}</p>
           </div>
         </div>
@@ -91,9 +91,9 @@
               <span class="text-sm text-gray-600 dark:text-gray-400">Progress</span>
               <span class="text-sm font-medium text-gray-900 dark:text-white">{{ getProgressPercentage() }}%</span>
             </div>
-            <div class="w-full bg-gray-200 dark:bg-gray-600 rounded-full h-2">
+            <div class="w-full bg-gray-200 dark:bg-gray-600 rounded-full h-3">
               <div 
-                class="h-2 rounded-full transition-all duration-300"
+                class="h-3 rounded-full transition-all duration-300"
                 :class="getProgressBarClass()"
                 :style="{ width: `${getProgressPercentage()}%` }"
               ></div>
@@ -105,18 +105,18 @@
           </div>
         </div>
 
-        <!-- Project Statistics -->
+        <!-- Department Project Statistics -->
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div class="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4">
+          <div class="bg-indigo-50 dark:bg-indigo-900/20 rounded-lg p-4 border border-indigo-200 dark:border-indigo-800">
             <div class="flex items-center space-x-2">
-              <Calendar class="w-5 h-5 text-blue-600 dark:text-blue-400" />
+              <Calendar class="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
               <div>
-                <p class="text-sm text-blue-600 dark:text-blue-400">Duration</p>
-                <p class="text-lg font-semibold text-blue-800 dark:text-blue-300">{{ getDuration() }} days</p>
+                <p class="text-sm text-indigo-600 dark:text-indigo-400">Duration</p>
+                <p class="text-lg font-semibold text-indigo-800 dark:text-indigo-300">{{ getDuration() }} days</p>
               </div>
             </div>
           </div>
-          <div class="bg-green-50 dark:bg-green-900/20 rounded-lg p-4">
+          <div class="bg-green-50 dark:bg-green-900/20 rounded-lg p-4 border border-green-200 dark:border-green-800">
             <div class="flex items-center space-x-2">
               <TrendingUp class="w-5 h-5 text-green-600 dark:text-green-400" />
               <div>
@@ -125,19 +125,19 @@
               </div>
             </div>
           </div>
-          <div class="bg-purple-50 dark:bg-purple-900/20 rounded-lg p-4">
+          <div class="bg-purple-50 dark:bg-purple-900/20 rounded-lg p-4 border border-purple-200 dark:border-purple-800">
             <div class="flex items-center space-x-2">
-              <DollarSign class="w-5 h-5 text-purple-600 dark:text-purple-400" />
+              <Users class="w-5 h-5 text-purple-600 dark:text-purple-400" />
               <div>
-                <p class="text-sm text-purple-600 dark:text-purple-400">Budget Status</p>
-                <p class="text-lg font-semibold text-purple-800 dark:text-purple-300">On Track</p>
+                <p class="text-sm text-purple-600 dark:text-purple-400">Team Size</p>
+                <p class="text-lg font-semibold text-purple-800 dark:text-purple-300">{{ project?.teamMembers || 0 }} members</p>
               </div>
             </div>
           </div>
         </div>
       </div>
 
-    <!-- Footer -->
+      <!-- Footer -->
       <div class="flex justify-end space-x-3 p-6 border-t border-gray-200 dark:border-gray-700">
         <button
           @click="$emit('close')"
@@ -146,8 +146,8 @@
           Close
         </button>
         <button
-          @click="handleEdit"
-          class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors duration-200"
+          @click="$emit('edit', project)"
+          class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition-colors duration-200"
         >
           Edit Project
         </button>
@@ -157,21 +157,13 @@
 </template>
 
 <script setup>
-import { FolderOpen, X, Calendar, TrendingUp, DollarSign, Circle, AlertCircle, AlertTriangle, Zap } from 'lucide-vue-next'
+import { FolderOpen, X, Calendar, TrendingUp, Users, Circle, AlertCircle, AlertTriangle, Zap } from 'lucide-vue-next'
 
 const props = defineProps({
   project: Object
 })
 
-// Emitimos dos eventos: close y edit
-const emit = defineEmits(['close', 'edit'])
-
-// Función para manejar la edición
-const handleEdit = () => {
-  emit('edit', props.project) // Emitimos el proyecto a editar
-  emit('close') // Cerramos este modal
-}
-
+defineEmits(['close', 'edit'])
 
 const formatStatus = (status) => {
   const statusMap = {
@@ -278,9 +270,9 @@ const getProgressPercentage = () => {
 const getProgressBarClass = () => {
   const percentage = getProgressPercentage()
   if (percentage === 100) return 'bg-green-500'
-  if (percentage >= 75) return 'bg-blue-500'
-  if (percentage >= 50) return 'bg-yellow-500'
-  if (percentage >= 25) return 'bg-orange-500'
+  if (percentage >= 75) return 'bg-indigo-500'
+  if (percentage >= 50) return 'bg-blue-500'
+  if (percentage >= 25) return 'bg-yellow-500'
   return 'bg-red-500'
 }
 </script>

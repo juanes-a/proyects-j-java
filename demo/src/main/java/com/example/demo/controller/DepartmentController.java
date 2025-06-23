@@ -9,6 +9,7 @@ import com.example.demo.entity.Department;
 import com.example.demo.service.DepartmentService;
 import com.example.demo.service.ActivityService; // NUEVO: Importar ActivityService
 import com.example.demo.service.DepartmentService.DepartmentStats;
+import com.example.demo.service.ProjectService;
 
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.validation.Valid;
@@ -19,6 +20,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -36,20 +38,36 @@ public class DepartmentController {
     private static final Logger log = LoggerFactory.getLogger(DepartmentController.class);
 
     private final DepartmentService departmentService;
-    
-    // NUEVO: Inyección de ActivityService
-    @Autowired
-    private ActivityService activityService;
+    private final ProjectService projectService;
+    private final ActivityService activityService;
+    private final DepartmentRepository departmentRepository;
+    private final TeamMemberRepository teamMemberRepository;
 
+    // Un solo constructor para todas las dependencias
     @Autowired
-    private DepartmentRepository departmentRepository;
-
-    @Autowired
-    private TeamMemberRepository teamMemberRepository;
-
-    @Autowired
-    public DepartmentController(DepartmentService departmentService) {
+    public DepartmentController(
+            DepartmentService departmentService,
+            ProjectService projectService,
+            ActivityService activityService,
+            DepartmentRepository departmentRepository,
+            TeamMemberRepository teamMemberRepository) {
         this.departmentService = departmentService;
+        this.projectService = projectService;
+        this.activityService = activityService;
+        this.departmentRepository = departmentRepository;
+        this.teamMemberRepository = teamMemberRepository;
+    }
+
+    @GetMapping("/{departmentId}/projects/count")
+    public ResponseEntity<Map<String, Long>> countProjectsByDepartment(
+            @PathVariable Long departmentId) {
+        try {
+            long count = projectService.countProjectsByDepartment(departmentId);
+            return ResponseEntity.ok(Collections.singletonMap("count", count));
+        } catch (Exception e) {
+            log.error("Error counting projects for department {}: {}", departmentId, e.getMessage());
+            return ResponseEntity.internalServerError().build();
+        }
     }
 
     /**

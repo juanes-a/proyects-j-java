@@ -39,13 +39,9 @@ public class CustomUserDetailsService implements UserDetailsService {
     }
 
     private Collection<? extends GrantedAuthority> getAuthorities(UserEntity user) {
-        if (user.getRoles() == null || user.getRoles().isEmpty()) {
-            // Rol por defecto si no tiene roles asignados
-            return Collections.singletonList(new SimpleGrantedAuthority("ROLE_USER"));
-        }
-        
-        return user.getRoles().stream()
-            .map(role -> new SimpleGrantedAuthority("ROLE_" + role.toUpperCase()))
-            .collect(Collectors.toList());
+        return Collections.singletonList(
+            new SimpleGrantedAuthority("ROLE_" + user.getRole().name())
+        );
     }
+
 }

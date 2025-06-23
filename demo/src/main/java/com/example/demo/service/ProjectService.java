@@ -16,25 +16,35 @@ import com.example.demo.exception.ProjectNotFoundException;
 import com.example.demo.exception.BusinessException;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 @Service
 @Transactional(readOnly = true)
 public class ProjectService {
 
-
+    private static final Logger logger = LoggerFactory.getLogger(ProjectService.class);
 
     @Autowired
     private ProjectRepository projectRepository;
 
     @Autowired
     private DepartmentRepository departmentRepository;
+
+
+    public ProjectService(ProjectRepository projectRepository) {
+        this.projectRepository = projectRepository;
+    }
 
     // ============== Operaciones CRUD ==============
 
@@ -65,37 +75,29 @@ public class ProjectService {
         return mapToResponse(savedProject);
     }
 
-    @Transactional
-    public ProjectResponse updateProject(Long id, ProjectUpdateDTO dto) {
-        Project project = projectRepository.findById(id)
-            .orElseThrow(() -> new ProjectNotFoundException("Project not found with id: " + id));
-
-        if (project.isCompleted()) {
-            throw new BusinessException("Cannot modify a completed project");
-        }
-
-        if (!project.getName().equals(dto.getName())) {
-            validateProjectName(dto.getName(), project.getDepartment().getId());
-        }
-
-        validateProjectDates(dto.getStartDate(), dto.getEndDate());
-
-        if (project.isInProgress() && !project.getStartDate().equals(dto.getStartDate())) {
-            throw new BusinessException("Cannot change start date of a project in progress");
-        }
-
-        project.setName(dto.getName());
-        project.setDescription(dto.getDescription());
-        project.setStartDate(dto.getStartDate());
-        project.setEndDate(dto.getEndDate());
-        project.setBudget(dto.getBudget());
-        project.setPriority(dto.getPriority());
+    public Project updateProject(Long id, ProjectUpdateDTO updateDTO) {
+        Project existingProject = projectRepository.findById(id)
+            .orElseThrow(() -> new ProjectNotFoundException("Proyecto no encontrado"));
         
-        // No actualizamos el status aquí, tiene sus propios endpoints
-        // No actualizamos departmentId en updates (requeriría lógica adicional)
+        // Actualiza solo los campos permitidos
+        existingProject.setName(updateDTO.getName());
+        existingProject.setDescription(updateDTO.getDescription());
+        existingProject.setObjectives(updateDTO.getObjectives());
+        existingProject.setStartDate(updateDTO.getStartDate());
+        existingProject.setEndDate(updateDTO.getEndDate());
+        existingProject.setBudget(updateDTO.getBudget());
+        existingProject.setPriority(updateDTO.getPriority());
+        existingProject.setStatus(updateDTO.getStatus());
 
-        return mapToResponse(projectRepository.save(project));
+        
+        // Validación de fechas adicional
+        if (updateDTO.getStartDate().isAfter(updateDTO.getEndDate())) {
+            throw new BusinessException("La fecha de inicio no puede ser posterior a la fecha de fin");
+        }
+        
+        return projectRepository.save(existingProject);
     }
+ 
 
 
     // ============== Gestión de estado ==============
@@ -250,4 +252,25 @@ public class ProjectService {
             .orElseThrow(() -> new ProjectNotFoundException("Project not found with id: " + id));
         return mapToResponse(project);
     }
+
+    // En Contro de proyectos
+    public long countProjectsByDepartment(Long departmentId) {
+        try {
+            // Verifica que el departmentId no sea nulo
+            if (departmentId == null) {
+                throw new IllegalArgumentException("Department ID cannot be null");
+            }
+            return projectRepository.countByDepartmentId(departmentId);
+        } catch (Exception e) {
+            // Log del error para diagnóstico
+            logger.error("Error counting projects for department {}: {}", departmentId, e.getMessage(), e);
+            throw new ResponseStatusException(
+                HttpStatus.INTERNAL_SERVER_ERROR, 
+                "Error counting projects", 
+                e
+            );
+        }
+    }
+
+
 }

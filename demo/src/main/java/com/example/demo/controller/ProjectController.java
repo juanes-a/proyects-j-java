@@ -3,6 +3,7 @@ package com.example.demo.controller;
 import com.example.demo.dto.*;
 import com.example.demo.dto.request.project.ProjectCreateDTO;
 import com.example.demo.dto.request.project.ProjectUpdateDTO;
+import com.example.demo.dto.response.ProjectResponseDTO;
 import com.example.demo.entity.Project;
 import com.example.demo.enums.ProjectStatus;
 import com.example.demo.enums.ProjectPriority;
@@ -27,6 +28,7 @@ import lombok.NoArgsConstructor;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -121,15 +123,17 @@ public class ProjectController {
         }
         
         try {
-            ProjectResponse response = projectService.updateProject(id, projectUpdateDTO);
-
-                // Registrar la actividad
+            Project updatedProject = projectService.updateProject(id, projectUpdateDTO);
+            ProjectResponseDTO response = ProjectResponseDTO.fromEntity(updatedProject);
+            
             activityService.logProjectUpdated(response.getName());
             return ResponseEntity.ok(response);
         } catch (ProjectNotFoundException e) {
             return ResponseEntity.notFound().build();
         } catch (BusinessException e) {
             return buildErrorResponse(e.getMessage());
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body("Error al actualizar el proyecto");
         }
     }
 
@@ -148,6 +152,8 @@ public class ProjectController {
         List<ProjectResponse> projects = projectService.getAllProjects();
         return ResponseEntity.ok(projects);
     }
+
+    
 
     @DeleteMapping("/{id}")
     public ResponseEntity<?> deleteProject(@PathVariable Long id) {
@@ -205,9 +211,12 @@ public class ProjectController {
     // ============== Consultas Especiales ==============
 
     @GetMapping("/overdue")
-    public ResponseEntity<List<Project>> getOverdueProjects() {
+    public ResponseEntity<List<ProjectResponseDTO>> getOverdueProjects() {
         List<Project> projects = projectService.getOverdueProjects();
-        return ResponseEntity.ok(projects);
+        List<ProjectResponseDTO> dtos = projects.stream()
+                                            .map(ProjectResponseDTO::fromEntity)
+                                            .toList();
+        return ResponseEntity.ok(dtos);
     }
 
     @GetMapping("/urgent")

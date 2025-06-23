@@ -1,14 +1,16 @@
 package com.example.demo.dto.request.project;
 
 import com.example.demo.enums.ProjectPriority;
+import com.example.demo.enums.ProjectStatus;
+
 import jakarta.validation.constraints.*;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import lombok.Data;
+
+
 @Data
-
 public class ProjectUpdateDTO {
-
     @NotBlank(message = "El nombre del proyecto es obligatorio")
     @Size(min = 3, max = 100, message = "El nombre debe tener entre 3 y 100 caracteres")
     private String name;
@@ -20,9 +22,11 @@ public class ProjectUpdateDTO {
     private String objectives;
 
     @NotNull(message = "La fecha de inicio es obligatoria")
+    @FutureOrPresent(message = "La fecha de inicio debe ser hoy o en el futuro")
     private LocalDate startDate;
 
     @NotNull(message = "La fecha de fin es obligatoria")
+    @Future(message = "La fecha de fin debe ser en el futuro")
     private LocalDate endDate;
 
     @DecimalMin(value = "0.0", inclusive = false, message = "El presupuesto debe ser mayor a 0")
@@ -31,4 +35,7 @@ public class ProjectUpdateDTO {
 
     @NotNull(message = "La prioridad es obligatoria")
     private ProjectPriority priority;
+
+    @NotNull(message = "El estado del proyecto es obligatorio")
+    private ProjectStatus status;
 }

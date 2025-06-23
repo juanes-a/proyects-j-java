@@ -59,12 +59,12 @@ const loginForm = ref({
   password: ''
 });
 
+// 👉 Esta línea faltaba en tu nueva versión
 const loading = ref(false);
 
-// Login handler
 const handleLogin = async () => {
   loading.value = true;
-  
+
   try {
     const response = await fetch('http://localhost:8081/api/auth/login', {
       method: 'POST',
@@ -72,26 +72,51 @@ const handleLogin = async () => {
       body: JSON.stringify(loginForm.value)
     });
 
-    
-
     const data = await response.json();
 
     if (!response.ok) {
       throw new Error(data.error || 'Error al iniciar sesión');
     }
 
-    // 👉 Guardar el token en localStorage
-    localStorage.setItem('authToken', data.token);
+    // 👉 Guardar el token
+    const token = data.token;
+    localStorage.setItem('authToken', token);
 
-    // (Opcional) guardar info del usuario
-    localStorage.setItem('user', JSON.stringify({
-      name: data.name,
-      username: data.username,
-      email: data.email
-    }));
+    // 👉 Obtener info del usuario logueado (incluye el rol)
+    const meResponse = await fetch('http://localhost:8081/api/auth/me', {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      }
+    });
+
+    const me = await meResponse.json();
+
+    if (!meResponse.ok) {
+      throw new Error('No se pudo obtener el rol del usuario');
+    }
+
+    // 👉 Guardar información del usuario (opcional)
+    localStorage.setItem('user', JSON.stringify(me));
+    
     alert('✅ Login successful');
-    // Redirigir
-    router.push('/dashboard');
+
+    // 👉 Redirigir según rol
+    switch (me.role) {
+      case 'ADMIN_GLOBAL':
+        router.push('/homeDepartaments');
+        break;
+      case 'ADMIN_DEPT':
+        router.push('/departmentHome');
+        break;
+      case 'COLLAB':
+        router.push('/collab/home');
+        break;
+      default:
+        router.push('/access-denied');
+        break;
+    }
 
   } catch (error) {
     console.error('Error en el login:', error.message);
@@ -103,8 +128,6 @@ const handleLogin = async () => {
 </script>
 
 <style scoped>
-
-
 /* Responsive adjustments */
 @media (max-width: 480px) {
   .auth-card {
