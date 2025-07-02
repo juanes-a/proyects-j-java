@@ -1,6 +1,9 @@
 package com.example.demo.entity;
 
+import java.util.List;
 import java.util.Set;
+
+import com.example.demo.enums.Role;
 
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
@@ -29,8 +32,11 @@ public class UserEntity {
 
     private String password;
 
-    @ElementCollection(fetch = FetchType.EAGER)
-    private Set<String> roles; // ["USER", "ADMIN"]
+    @Enumerated(EnumType.STRING)
+    private Role role;
+
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL)
+    private List<UsersAsignation> asignaciones;
 
     // Campo para activar/desactivar usuarios
     @Builder.Default
@@ -43,4 +49,5 @@ public class UserEntity {
     public void setEnabled(boolean enabled) {
         this.enabled = enabled;
     }
+
 }

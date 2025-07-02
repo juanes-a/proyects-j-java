@@ -63,6 +63,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             try {
                 // Cargar los detalles del usuario usando el método estándar de UserDetailsService
                 UserDetails userDetails = userDetailsService.loadUserByUsername(usernameOrEmail);
+                logger.warn("🔑 Username extraído del token: {}", usernameOrEmail);
+                logger.warn("🔍 UserDetails username: {}", userDetails.getUsername());
                 
                 // Validar el token - ahora ambos usan el mismo identifier
                 if (jwtUtil.validateToken(jwt, userDetails.getUsername())) {
@@ -80,6 +82,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                     SecurityContextHolder.getContext().setAuthentication(authToken);
                     
                     logger.debug("Usuario autenticado: {}", userDetails.getUsername());
+                }else {
+                    logger.warn("Token inválido o expirado");
                 }
             } catch (UsernameNotFoundException e) {
                 logger.warn("Usuario no encontrado: {}", usernameOrEmail);
@@ -94,11 +98,9 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) throws ServletException {
-        // Opcional: excluir ciertas rutas del filtro JWT
         String path = request.getRequestURI();
-        return path.startsWith("/api/auth/") || 
-               path.startsWith("/api/public/") ||
-               path.equals("/api/login") ||
-               path.equals("/api/register");
+        return path.equals("/api/auth/login") ||
+            path.equals("/api/auth/register") ||
+            path.startsWith("/api/public/");
     }
 }

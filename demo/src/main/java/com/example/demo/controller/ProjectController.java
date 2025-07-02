@@ -1,14 +1,21 @@
 package com.example.demo.controller;
 
+import com.example.demo.controller.ProjectController.ProjectResponse;
 import com.example.demo.dto.*;
 import com.example.demo.dto.request.project.ProjectCreateDTO;
 import com.example.demo.dto.request.project.ProjectUpdateDTO;
+import com.example.demo.dto.response.ProjectResponseDTO;
+import com.example.demo.entity.Department;
 import com.example.demo.entity.Project;
+import com.example.demo.entity.UsersAsignation;
 import com.example.demo.enums.ProjectStatus;
 import com.example.demo.enums.ProjectPriority;
 import com.example.demo.service.ActivityService;
+import com.example.demo.service.DepartmentService;
 import com.example.demo.service.ProjectService;
 import com.example.demo.exception.ProjectNotFoundException;
+import com.example.demo.exception.ResourceNotFoundException;
+import com.example.demo.repository.ProjectRepository;
 import com.example.demo.exception.BusinessException;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,6 +27,7 @@ import org.springframework.validation.FieldError;
 import org.springframework.validation.annotation.Validated;
 
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotBlank;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -27,9 +35,11 @@ import lombok.NoArgsConstructor;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @RestController
@@ -38,8 +48,17 @@ import java.util.stream.Collectors;
 @Validated
 public class ProjectController {
 
+    private static final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(ProjectController.class);
+
     @Autowired
     private ProjectService projectService;
+    
+        @Autowired
+    private ProjectRepository projectRepository;
+    
+
+    @Autowired
+    private DepartmentService departmentService;
 
     @Autowired
     private ActivityService activityService; 
@@ -121,15 +140,17 @@ public class ProjectController {
         }
         
         try {
-            ProjectResponse response = projectService.updateProject(id, projectUpdateDTO);
-
-                // Registrar la actividad
+            Project updatedProject = projectService.updateProject(id, projectUpdateDTO);
+            ProjectResponseDTO response = ProjectResponseDTO.fromEntity(updatedProject);
+            
             activityService.logProjectUpdated(response.getName());
             return ResponseEntity.ok(response);
         } catch (ProjectNotFoundException e) {
             return ResponseEntity.notFound().build();
         } catch (BusinessException e) {
             return buildErrorResponse(e.getMessage());
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body("Error al actualizar el proyecto");
         }
     }
 
@@ -149,17 +170,31 @@ public class ProjectController {
         return ResponseEntity.ok(projects);
     }
 
+    
+
     @DeleteMapping("/{id}")
-    public ResponseEntity<?> deleteProject(@PathVariable Long id) {
-            try {
-                projectService.deleteProject(id);
-                return ResponseEntity.noContent().build();
-            } catch (ProjectNotFoundException e) {
-                return ResponseEntity.notFound().build();
-            } catch (BusinessException e) {
-                return ResponseEntity.badRequest().body(new ErrorResponse(e.getMessage()));
+    public ResponseEntity<?> deleteProject(
+            @PathVariable Long id,
+            @RequestBody Map<String, String> request) {
+
+        String providedName = request.get("name");
+
+        try {
+            Project project = projectService.getProjectEntityById(id);
+
+            if (!project.getName().equals(providedName)) {
+                return ResponseEntity.badRequest().body(new ErrorResponse("Project name does not match. Deletion not allowed."));
             }
+
+            projectService.deleteProject(id);
+            return ResponseEntity.noContent().build();
+        } catch (ProjectNotFoundException e) {
+            return ResponseEntity.notFound().build();
+        } catch (BusinessException e) {
+            return ResponseEntity.badRequest().body(new ErrorResponse(e.getMessage()));
         }
+    }
+
 
     // ============== Gestión de Estado ==============
 
@@ -205,9 +240,12 @@ public class ProjectController {
     // ============== Consultas Especiales ==============
 
     @GetMapping("/overdue")
-    public ResponseEntity<List<Project>> getOverdueProjects() {
+    public ResponseEntity<List<ProjectResponseDTO>> getOverdueProjects() {
         List<Project> projects = projectService.getOverdueProjects();
-        return ResponseEntity.ok(projects);
+        List<ProjectResponseDTO> dtos = projects.stream()
+                                            .map(ProjectResponseDTO::fromEntity)
+                                            .toList();
+        return ResponseEntity.ok(dtos);
     }
 
     @GetMapping("/urgent")
@@ -255,5 +293,50 @@ public class ProjectController {
         return ResponseEntity.badRequest().body(response);
     }
 
-    
+    /*  Obtener lo projectos por email */
+@GetMapping("user/{usernameOrEmail}")
+public ResponseEntity<?> getProjectsByUserDepartment(@PathVariable @NotBlank String usernameOrEmail) {
+    try {
+        // Validación básica
+        if (usernameOrEmail.isBlank()) {
+            return ResponseEntity.badRequest()
+                .body(Map.of("message", "El username/email no puede estar vacío"));
+        }
+
+        String normalizedInput = usernameOrEmail.trim().toLowerCase();
+        
+        // Obtener asignación del usuario
+        UsersAsignation assignment = departmentService.getUserDepartmentAssignment(normalizedInput)
+            .orElseThrow(() -> new ResourceNotFoundException("Usuario no encontrado o sin departamento asignado"));
+
+        Department department = Optional.ofNullable(assignment.getDepartment())
+            .orElseThrow(() -> new ResourceNotFoundException("Departamento no encontrado para el usuario"));
+
+        // Obtener las entidades Project directamente del repositorio
+        List<Project> projectEntities = projectRepository.findByDepartmentId(department.getId());
+        
+        // Convertir a DTOs
+        List<ProjectResponseDTO> projects = projectEntities.stream()
+            .map(ProjectResponseDTO::fromEntity)
+            .toList();
+
+        // Construir respuesta
+        Map<String, Object> response = new HashMap<>();
+        response.put("departmentId", department.getId());
+        response.put("departmentName", department.getName());
+        response.put("projects", projects);
+
+        return ResponseEntity.ok(response);
+
+    } catch (ResourceNotFoundException e) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND)
+            .body(Map.of("message", e.getMessage()));
+    } catch (Exception e) {
+        logger.error("Error en getProjectsByUserDepartment: ", e);
+        return ResponseEntity.internalServerError()
+            .body(Map.of("message", "Error interno del servidor"));
+    }
 }
+}
+
+    

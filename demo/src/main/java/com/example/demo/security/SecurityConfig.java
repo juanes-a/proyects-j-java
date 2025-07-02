@@ -1,6 +1,8 @@
 package com.example.demo.security;
 
 import com.example.demo.service.CustomUserDetailsService;
+
+import org.modelmapper.ModelMapper;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -77,11 +79,18 @@ public class SecurityConfig {
     }
 
     public void addCorsMappings(CorsRegistry registry) {
-            registry.addMapping("/**")
-                    .allowedOrigins("http://localhost:5173", "http://127.0.0.1:5173")
+            registry.addMapping("api/**")
+                    .allowedOrigins("http://localhost:5173")
                     .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
                     .allowedHeaders("*")
                     .allowCredentials(true)
                     .maxAge(3600);
-        }
+    }
+
+
+        @Bean
+    public ModelMapper modelMapper() {
+        return new ModelMapper();
+    }
+    
 }

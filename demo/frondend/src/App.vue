@@ -1,28 +1,36 @@
 <template>
-  <div id="app">
+  <div id="app" class="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-300">
     <div v-if="isAuthRoute">
       <router-view />
     </div>
 
-    <div v-else class="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-300">
-      <div class="flex">
-        <!-- Sidebar -->
-        <Sidebar />
+    <div v-else class="flex min-h-screen">
+      <!-- Sidebar -->
+      <Sidebar 
+        @sidebar-state-change="handleSidebarChange" 
+        class="fixed md:relative z-30"
+      />
+      
+      <!-- Main Content -->
+      <div 
+        class="flex-1 min-h-screen transition-all duration-300"
+        :class="{
+          'md:ml-64': sidebarState.isOpen && !sidebarState.isMobile,
+          'md:ml-16': !sidebarState.isOpen && !sidebarState.isMobile,
+          'ml-0': sidebarState.isMobile
+        }"
+      >
+        <!-- Top Navigation -->
+        <TopNavigation :sidebar-open="sidebarState.isOpen" />
         
-        <!-- Main Content -->
-        <div class="flex-1 ml-64 transition-all duration-300">
-          <!-- Top Navigation -->
-          <TopNavigation />
-          
-          <!-- Page Content -->
-          <main class="p-6">
-            <router-view v-slot="{ Component }">
-              <transition name="page" mode="out-in">
-                <component :is="Component" />
-              </transition>
-            </router-view>
-          </main>
-        </div>
+        <!-- Page Content -->
+        <main class="p-4 sm:p-6">
+          <router-view v-slot="{ Component }">
+            <transition name="page" mode="out-in">
+              <component :is="Component" />
+            </transition>
+          </router-view>
+        </main>
       </div>
       
       <!-- Toast Notifications -->
@@ -32,7 +40,7 @@
 </template>
 
 <script setup>
-import { onMounted, computed } from 'vue'
+import { ref, computed } from 'vue'
 import { useRoute } from 'vue-router'
 import Sidebar from './components/Sidebar.vue'
 import TopNavigation from './components/TopNavigation.vue'
@@ -41,13 +49,24 @@ import { useThemeStore } from './stores/theme'
 
 const themeStore = useThemeStore()
 const route = useRoute()
-const isAuthRoute = computed(() => {
-  return ['/', '/login', '/register'].includes(route.path)
+
+// Estado del sidebar
+const sidebarState = ref({
+  isOpen: true,
+  isMobile: false
 })
 
+const isAuthRoute = computed(() => {
+  return ['/', '/login', '/register', '/unauthorized'].includes(route.path)
+})
+
+const handleSidebarChange = (state) => {
+  sidebarState.value = state
+}
+
+// Inicializar tema
 themeStore.initTheme()
 </script>
-
 
 <style>
 /* Page transitions */
@@ -84,6 +103,18 @@ themeStore.initTheme()
   background: #a8a8a8;
 }
 
+.dark ::-webkit-scrollbar-track {
+  background: #2d3748;
+}
+
+.dark ::-webkit-scrollbar-thumb {
+  background: #4a5568;
+}
+
+.dark ::-webkit-scrollbar-thumb:hover {
+  background: #718096;
+}
+
 /* Loading animation */
 @keyframes pulse {
   0%, 100% {
@@ -106,5 +137,11 @@ themeStore.initTheme()
 .card-hover:hover {
   transform: translateY(-2px);
   box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+}
+
+/* Asegurar que las transiciones sean suaves */
+.transition-all {
+  transition-property: all;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
 }
 </style>

@@ -4,14 +4,21 @@ import com.example.demo.dto.request.auth.LoginRequest;
 import com.example.demo.dto.request.auth.RegisterRequest;
 import com.example.demo.dto.response.AuthResponse;
 import com.example.demo.entity.UserEntity;
+import com.example.demo.enums.Role;
+import com.example.demo.repository.UserRepository;
+import com.example.demo.repository.UserRepository.UserInfoDTO;
 import com.example.demo.security.JwtUtil;
 import com.example.demo.service.UserService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
@@ -27,6 +34,10 @@ public class AuthController {
     
     @Autowired
     private JwtUtil jwtUtil;
+
+    @Autowired
+    private UserRepository userRepository;
+
     
     @Autowired
     private AuthenticationManager authenticationManager;
@@ -55,7 +66,7 @@ public class AuthController {
             user.setUsername(request.getUsername()); // ¡IMPORTANTE! Estaba faltando
             user.setPassword(request.getPassword());
             user.setName(request.getName());
-            user.setRoles(Set.of("USER")); // Rol por defecto
+            user.setRole(Role.COLLAB); // Rol por defecto
             
             UserEntity savedUser = userService.registerUser(user);
             
@@ -74,24 +85,62 @@ public class AuthController {
     @PostMapping("/login")
     public ResponseEntity<?> loginUser(@Valid @RequestBody LoginRequest loginRequest) {
         try {
-            Authentication authentication = authenticationManager.authenticate(
+            System.out.println("👉 Intento de login para: " + loginRequest.getUsernameOrEmail());
+            
+            // Primero buscar el usuario
+            UserEntity user = userService.findByUsernameOrEmail(loginRequest.getUsernameOrEmail());
+            if (user == null) {
+                System.out.println("❌ Usuario no encontrado: " + loginRequest.getUsernameOrEmail());
+                return ResponseEntity.status(404).body(Map.of("error", "Usuario no encontrado"));
+            }
+            
+            System.out.println("✅ Usuario encontrado: " + user.getUsername());
+            
+            // Luego autenticar
+            Authentication auth = authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(
                     loginRequest.getUsernameOrEmail(),
                     loginRequest.getPassword()
                 )
             );
-
-            UserEntity user = userService.findByUsernameOrEmail(loginRequest.getUsernameOrEmail());
             
-            // Generar token usando el mismo identificador que se usó para el login
-            // Esto es CRÍTICO para que funcione correctamente
-            String token = jwtUtil.generateToken(loginRequest.getUsernameOrEmail());
+            System.out.println("✅ Autenticación exitosa");
+            
+            // Generar token usando un identificador consistente (recomiendo usar email)
+            String token = jwtUtil.generateToken(user.getEmail());
+            
+            System.out.println("✅ Token generado exitosamente");
+            
+            return ResponseEntity.ok(new AuthResponse(
+                token, user.getName(), user.getUsername(), user.getEmail()
+            ));
 
-            return ResponseEntity.ok(new AuthResponse(token, user.getName(), user.getUsername(), user.getEmail()));
-
-        } catch (Exception e) {
+        } catch (org.springframework.security.authentication.BadCredentialsException e) {
+            System.out.println("❌ Credenciales incorrectas para: " + loginRequest.getUsernameOrEmail());
             return ResponseEntity.status(401)
                 .body(Map.of("error", "Credenciales incorrectas"));
+        } catch (Exception e) {
+            System.out.println("❌ Error inesperado en login:");
+            e.printStackTrace(); // 👈 Esto mostrará el stack trace completo
+            return ResponseEntity.status(500)
+                .body(Map.of("error", "Error interno del servidor: " + e.getMessage()));
         }
     }
+
+    @GetMapping("/me")
+    public ResponseEntity<UserInfoDTO> getUserInfo(@AuthenticationPrincipal UserDetails userDetails) {
+        if (userDetails == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+
+        // 👉 USAR EL MISMO MÉTODO que usa tu CustomUserDetailsService
+        UserEntity user = userRepository.findByUsernameOrEmail(userDetails.getUsername(), userDetails.getUsername())
+            .orElseThrow(() -> new UsernameNotFoundException("User not found"));
+
+        // Retornar solo lo necesario
+        return ResponseEntity.ok(
+            new UserInfoDTO(user.getId(), user.getEmail(), user.getRole().name())
+        );
+    }
+
 }

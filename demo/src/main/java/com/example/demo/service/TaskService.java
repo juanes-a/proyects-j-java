@@ -44,9 +44,6 @@ public class TaskService {
         validateProjectExists(task.getProject().getId());
         
         // Validar usuario asignado si existe
-        if (task.getAssignedUser() != null) {
-            validateUserExists(task.getAssignedUser().getId());
-        }
         
         // Establecer valores por defecto si no vienen
         if (task.getStatus() == null) {
@@ -132,12 +129,6 @@ public class TaskService {
         }
         
 
-        // Validar y actualizar usuario asignado
-        if (taskUpdate.getAssignedUser() != null) {
-            validateUserExists(taskUpdate.getAssignedUser().getId());
-            existingTask.setAssignedUser(taskUpdate.getAssignedUser());
-        }
-
         TaskEntity savedTask = taskRepository.save(existingTask);
         log.info("Tarea actualizada exitosamente: {}", savedTask.getId());
         return savedTask;
@@ -170,22 +161,10 @@ public class TaskService {
         return taskRepository.findByProjectId(projectId);
     }
 
-    /**
-     * Obtener tareas asignadas a un usuario
-     * @param userId - ID del usuario
-     * @return List<TaskEntity> - Lista de tareas asignadas
-     */
-    @Transactional(readOnly = true)
-    public List<TaskEntity> getTasksByUser(Long userId) {
-        log.debug("Obteniendo tareas del usuario: {}", userId);
-        validateUserExists(userId);
-        return taskRepository.findByAssignedUserId(userId);
-    }
-
+   
     /**
      * Búsqueda avanzada con filtros múltiples
      * @param projectId - ID del proyecto (opcional)
-     * @param assignedUserId - ID del usuario asignado (opcional)
      * @param status - Estado de la tarea (opcional)
      * @param priority - Prioridad de la tarea (opcional)
      * @param startDate - Fecha inicio mínima (opcional)
@@ -193,18 +172,7 @@ public class TaskService {
      * @param keyword - Palabra clave en nombre o descripción (opcional)
      * @return List<TaskEntity> - Lista de tareas filtradas
      */
-    @Transactional(readOnly = true)
-    public List<TaskEntity> searchTasks(Long projectId, Long assignedUserId, 
-                                      TaskStatus status, TaskPriority priority,
-                                      LocalDateTime startDate, LocalDateTime endDate, 
-                                      String keyword) {
-        log.debug("Búsqueda de tareas con filtros - Proyecto: {}, Usuario: {}, Estado: {}", 
-                 projectId, assignedUserId, status);
-        
-        return taskRepository.findByFilters(projectId, assignedUserId, status, priority, 
-                                          startDate, endDate, keyword);
-    }
-
+    
     // ========== OPERACIONES DE ASIGNACIÓN ==========
 
     /**
@@ -213,46 +181,14 @@ public class TaskService {
      * @param userId - ID del usuario a asignar
      * @return TaskEntity - Tarea con usuario asignado
      */
-    public TaskEntity assignTask(Long taskId, Long userId) {
-        log.info("Asignando tarea {} al usuario {}", taskId, userId);
-        
-        TaskEntity task = getTaskByIdOrThrow(taskId);
-        UserEntity user = userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("Usuario no encontrado con ID: " + userId));
-        
-        task.setAssignedUser(user);
-        
-        // Si la tarea estaba pendiente, cambiarla a en progreso
-        if (task.getStatus() == TaskStatus.PENDING) {
-            task.setStatus(TaskStatus.IN_PROGRESS);
-        }
-        
-        TaskEntity savedTask = taskRepository.save(task);
-        log.info("Tarea asignada exitosamente");
-        return savedTask;
-    }
+    
 
     /**
      * Desasignar tarea (quitar usuario asignado)
      * @param taskId - ID de la tarea
      * @return TaskEntity - Tarea sin usuario asignado
      */
-    public TaskEntity unassignTask(Long taskId) {
-        log.info("Desasignando tarea: {}", taskId);
-        
-        TaskEntity task = getTaskByIdOrThrow(taskId);
-        task.setAssignedUser(null);
-        
-        // Cambiar estado a pendiente si estaba en progreso
-        if (task.getStatus() == TaskStatus.IN_PROGRESS) {
-            task.setStatus(TaskStatus.PENDING);
-        }
-        
-        TaskEntity savedTask = taskRepository.save(task);
-        log.info("Tarea desasignada exitosamente");
-        return savedTask;
-    }
-
+   
     // ========== OPERACIONES DE ESTADO ==========
 
     /**
@@ -321,14 +257,5 @@ public class TaskService {
         }
     }
 
-    /**
-     * Validar que existe un usuario con el ID dado
-     * @param userId - ID del usuario a validar
-     * @throws RuntimeException si no existe
-     */
-    private void validateUserExists(Long userId) {
-        if (!userRepository.existsById(userId)) {
-            throw new RuntimeException("Usuario no encontrado con ID: " + userId);
-        }
-    }
+
 }

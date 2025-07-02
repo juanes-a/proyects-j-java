@@ -69,9 +69,8 @@ public class Project {
     @JoinColumn(name = "department_id", nullable = false)
     private Department department;
     
-@OneToMany(mappedBy = "project", cascade = CascadeType.ALL, orphanRemoval = true)
-@JsonManagedReference("project-tasks")
-private List<TaskEntity> tasks;
+    @OneToMany(mappedBy = "project", cascade = CascadeType.ALL)
+    private List<UsersAsignation> asignaciones;
 
     
 
@@ -86,7 +85,7 @@ private List<TaskEntity> tasks;
     // ========== Métodos de negocio ==========
 
     public boolean isActive() {
-        return this.status != ProjectStatus.CANCELLED;
+        return !isCancelled();
     }
 
     public boolean isInProgress() {
@@ -146,23 +145,25 @@ private List<TaskEntity> tasks;
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
-        if (!(o instanceof Project)) return false;
+        if (o == null || getClass() != o.getClass()) return false;
         Project project = (Project) o;
         return id != null && id.equals(project.id);
     }
 
     @Override
     public int hashCode() {
-        return getClass().hashCode();
+        return 31;
     }
 
-    public Project(String name2, String description2, Object object, Department department2, LocalDate startDate2,
-            LocalDate endDate2, Object object2, Object object3, ProjectStatus planned) {
+    @Builder
+    public Project(String name, String description, String objectives, 
+              ProjectPriority priority, ProjectStatus status,
+              LocalDate startDate, LocalDate endDate, 
+              BigDecimal budget, Department department)  {
         //TODO Auto-generated constructor stub
     }
 
     public boolean isCancelled() {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'isCancelled'");
+        return this.status == ProjectStatus.CANCELLED;
     }
 }

@@ -66,14 +66,14 @@ public interface ProjectRepository extends JpaRepository<Project, Long> {
     long countByPriority(@Param("priority") ProjectPriority priority);
 
     // ============== Consultas por departamento ==============
-    List<Project> findByDepartmentId(Long departmentId);
+    @Query("SELECT p FROM Project p WHERE p.department.id = :departmentId")
+    List<Project> findByDepartmentId(@Param("departmentId") Long departmentId);
     
     @Query("SELECT p FROM Project p WHERE p.department.id = :departmentId AND p.status != 'CANCELLED'")
     List<Project> findActiveProjectsByDepartment(@Param("departmentId") Long departmentId);
     
     List<Project> findByDepartmentIdAndStatus(Long departmentId, ProjectStatus status);
-    
-    long countByDepartmentId(Long departmentId);
+
     
     @Query("SELECT COUNT(p) FROM Project p WHERE p.department.id = :departmentId AND p.status != 'CANCELLED'")
     long countActiveProjectsByDepartment(@Param("departmentId") Long departmentId);
@@ -152,4 +152,25 @@ public interface ProjectRepository extends JpaRepository<Project, Long> {
             @Param("minBudget") BigDecimal minBudget,
             @Param("maxBudget") BigDecimal maxBudget
     );
+
+    
+    long countByDepartmentId(Long departmentId);
+    
+    // Alternativa si el anterior no funciona
+    @Query("SELECT COUNT(p) FROM Project p WHERE p.department.id = :departmentId")
+    long countByDepartment(@Param("departmentId") Long departmentId);
+    
+
+     @Query("SELECT COUNT(p) FROM Project p WHERE p.department.id = :departmentId AND p.status = :status")
+    int countByDepartmentIdAndStatus(@Param("departmentId") Long departmentId, 
+                                   @Param("status") ProjectStatus status);
+
+        // Contar proyectos completados por departamento
+    @Query("SELECT COUNT(p) FROM Project p WHERE p.department.id = :departmentId AND p.status = 'COMPLETED'")
+    long countCompletedProjectsByDepartmentId(@Param("departmentId") Long departmentId);
+
+    @Query("SELECT COALESCE(SUM(p.budget), 0) FROM Project p WHERE p.department.id = :departmentId")
+    Double sumBudgetByDepartmentId(@Param("departmentId") Long departmentId);
+
+
 }

@@ -20,9 +20,6 @@ public interface TaskRepository extends JpaRepository<TaskEntity, Long> {
     // Buscar todas las tareas de un proyecto específico
     List<TaskEntity> findByProjectId(Long projectId);
     
-    // Buscar todas las tareas asignadas a un usuario específico
-    List<TaskEntity> findByAssignedUserId(Long userId);
-    
     // Buscar tareas por estado
     List<TaskEntity> findByStatus(TaskStatus status);
     
@@ -34,14 +31,12 @@ public interface TaskRepository extends JpaRepository<TaskEntity, Long> {
     // Buscar tareas de un proyecto con estado específico
     List<TaskEntity> findByProjectIdAndStatus(Long projectId, TaskStatus status);
     
-    // Buscar tareas asignadas a un usuario con estado específico
-    List<TaskEntity> findByAssignedUserIdAndStatus(Long userId, TaskStatus status);
+
     
     // Buscar tareas de un proyecto con prioridad específica
     List<TaskEntity> findByProjectIdAndPriority(Long projectId, TaskPriority priority);
     
-    // Buscar tareas asignadas a un usuario con prioridad específica
-    List<TaskEntity> findByAssignedUserIdAndPriority(Long userId, TaskPriority priority);
+
 
     // ========== BÚSQUEDAS POR FECHAS ==========
     
@@ -58,8 +53,6 @@ public interface TaskRepository extends JpaRepository<TaskEntity, Long> {
 
     // ========== BÚSQUEDAS AVANZADAS ==========
     
-    // Buscar tareas sin asignar de un proyecto
-    List<TaskEntity> findByProjectIdAndAssignedUserIsNull(Long projectId);
     
     // Buscar tareas de un departamento (a través del proyecto)
     @Query("SELECT t FROM TaskEntity t WHERE t.project.department.id = :departmentId")
@@ -69,16 +62,12 @@ public interface TaskRepository extends JpaRepository<TaskEntity, Long> {
     @Query("SELECT COUNT(t) FROM TaskEntity t WHERE t.project.id = :projectId AND t.status = :status")
     Long countByProjectIdAndStatus(@Param("projectId") Long projectId, @Param("status") TaskStatus status);
     
-    // Contar tareas asignadas a un usuario por estado
-    @Query("SELECT COUNT(t) FROM TaskEntity t WHERE t.assignedUser.id = :userId AND t.status = :status")
-    Long countByAssignedUserIdAndStatus(@Param("userId") Long userId, @Param("status") TaskStatus status);
 
     // ========== BÚSQUEDA POR FILTROS MÚLTIPLES ==========
     
     // Método principal de búsqueda con filtros múltiples
     @Query("SELECT t FROM TaskEntity t WHERE " +
            "(:projectId IS NULL OR t.project.id = :projectId) AND " +
-           "(:assignedUserId IS NULL OR t.assignedUser.id = :assignedUserId) AND " +
            "(:status IS NULL OR t.status = :status) AND " +
            "(:priority IS NULL OR t.priority = :priority) AND " +
            "(:startDate IS NULL OR t.startDate >= :startDate) AND " +
@@ -86,7 +75,6 @@ public interface TaskRepository extends JpaRepository<TaskEntity, Long> {
            "(:keyword IS NULL OR LOWER(t.name) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
            " LOWER(t.description) LIKE LOWER(CONCAT('%', :keyword, '%')))")
     List<TaskEntity> findByFilters(@Param("projectId") Long projectId,
-                                 @Param("assignedUserId") Long assignedUserId,
                                  @Param("status") TaskStatus status,
                                  @Param("priority") TaskPriority priority,
                                  @Param("startDate") LocalDateTime startDate,

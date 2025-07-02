@@ -1,49 +1,71 @@
 import axios from 'axios'
 import router from '../router'
-import { useAuthStore } from '../stores/auth'
 
-// Crea una instancia de axios configurada
+// Variable para almacenar el store
+let authStore = null
+
+// Configuración base de Axios
 const api = axios.create({
-  baseURL: 'http://localhost:8081/api', // Asegúrate que coincide con tu backend
-  timeout: 10000, // 10 segundos de timeout
+  baseURL: 'http://localhost:8081/api',
+  timeout: 10000,
   headers: {
     'Content-Type': 'application/json',
     'Accept': 'application/json'
   }
 })
 
-// Interceptor para añadir el token a cada request
-api.interceptors.request.use(config => {
-  const authStore = useAuthStore()
-  const token = authStore.token || localStorage.getItem('token')
-  
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`
-  }
-  
-  return config
-}, error => {
-  return Promise.reject(error)
-})
+// Función para inicializar el store
+export const initApi = (store) => {
+  authStore = store
+}
 
-// Interceptor para manejar respuestas de error
-api.interceptors.response.use(response => {
-  return response
-}, error => {
-  if (error.response?.status === 401) {
-    // Si el error es 401 (no autorizado)
-    const authStore = useAuthStore()
-    authStore.logout() // Limpia el store de autenticación
-    localStorage.removeItem('token') // Limpia el localStorage
-    router.push('/login') // Redirige al login
+// Interceptor de solicitudes
+api.interceptors.request.use(
+  (config) => {
+    // 👈 Cambia 'token' por 'authToken' para ser consistente con el router
+    const token = localStorage.getItem('authToken')
+    
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`
+    }
+    
+    return config
+  },
+  (error) => {
+    return Promise.reject(error)
   }
-  
-  // Puedes manejar otros códigos de error aquí
-  if (error.response?.status >= 500) {
-    console.error('Server error:', error)
+)
+
+// Interceptor de respuestas
+api.interceptors.response.use(
+  (response) => {
+    return response
+  },
+  (error) => {
+    if (error.response) {
+      switch (error.response.status) {
+        case 401: // No autorizado
+        case 403: // Prohibido
+          if (authStore) {
+            authStore.logout()
+          }
+          break
+          
+        case 500: // Error del servidor
+          console.error('Error del servidor:', error)
+          break
+          
+        default:
+          console.error('Error HTTP:', error.response.status)
+      }
+    } else if (error.request) {
+      console.error('No se recibió respuesta del servidor')
+    } else {
+      console.error('Error al configurar la solicitud:', error.message)
+    }
+    
+    return Promise.reject(error)
   }
-  
-  return Promise.reject(error)
-})
+)
 
 export default api

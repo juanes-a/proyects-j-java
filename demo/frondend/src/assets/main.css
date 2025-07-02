@@ -4,9 +4,15 @@
 
 /* Custom styles */
 @layer base {
-  html {
+  html,
+  body {
+    height: 100%; /* 👈 asegúrate de que esto esté */
+    margin: 0;
+    padding: 0;
     scroll-behavior: smooth;
   }
+  
+
 
   body {
     @apply transition-colors duration-300;

@@ -20,5 +20,8 @@ public interface UserRepository extends JpaRepository<UserEntity, Long> {
     // Método personalizado más explícito (opcional)
     @Query("SELECT u FROM UserEntity u WHERE u.username = :identifier OR u.email = :identifier")
     Optional<UserEntity> findByUsernameOrEmailCustom(@Param("identifier") String identifier);
+
+    public record UserInfoDTO(Long id, String email, String role) {}
+
     
 }

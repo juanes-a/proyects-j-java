@@ -87,6 +87,20 @@
           </select>
         </div>
 
+        <!-- User Assignment (Solo en creación) -->
+        <div v-if="!isEditing">
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            Assign Department Admin (Username or Email)
+          </label>
+          <input
+            v-model="form.assignedUser"
+            type="text"
+            placeholder="Enter admin's username or email"
+            class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          />
+          <p v-if="userAssignmentError" class="text-red-500 text-sm mt-1">{{ userAssignmentError }}</p>
+        </div>
+
         <!-- Actions -->
         <div class="flex space-x-3 pt-4">
           <button
@@ -123,14 +137,15 @@ const emit = defineEmits(['close', 'save'])
 
 const loading = ref(false)
 const errors = ref({})
+const userAssignmentError = ref(null)
 
-// Formulario simplificado según tu API
 const form = reactive({
   name: '',
   description: '',
   location: '',
   budget: 0,
-  status: 'active'
+  status: 'active',
+  assignedUser: '' // Solo campo para username/email
 })
 
 // Watch for department changes
@@ -148,6 +163,7 @@ watch(() => props.department, (newDepartment) => {
 
 const validateForm = () => {
   errors.value = {}
+  userAssignmentError.value = null
   
   if (!form.name.trim()) {
     errors.value.name = 'Department name is required'
@@ -166,10 +182,15 @@ const handleSubmit = async () => {
   loading.value = true
   
   try {
-    // Convertimos el status a isActive para la API
     const payload = {
-      ...form,
-      isActive: form.status === 'active'
+      name: form.name,
+      description: form.description,
+      budget: form.budget,
+      location: form.location,
+      // No enviar isActive aquí si no es parte del DTO de creación
+      userAssignment: !props.isEditing && form.assignedUser ? {
+        usernameOrEmail: form.assignedUser
+      } : null
     }
     
     await emit('save', payload)

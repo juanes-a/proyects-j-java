@@ -58,6 +58,10 @@ public class Department {
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
+    @OneToMany(mappedBy = "department", cascade = CascadeType.ALL)
+    private List<UsersAsignation> asignaciones;
+
+
     // Constructor vacío OBLIGATORIO para JPA
     public Department() {}
 

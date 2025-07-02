@@ -169,20 +169,24 @@
     </div>
 
     <!-- Create/Edit Modal -->
-    <DepartmentModal
-      v-if="showModal"
-      :department="selectedDepartment"
-      :is-editing="isEditing"
-      @close="closeModal"
-      @save="handleSave"
-    />
+    <transition name="fade">
+      <DepartmentViewModal
+        v-if="showViewModal"
+        :department="selectedDepartment"
+        @close="closeViewModal"
+        @edit="handleEditFromView"
+      />
+    </transition>
 
-    <!-- View Modal -->
-    <DepartmentViewModal
-      v-if="showViewModal"
-      :department="selectedDepartment"
-      @close="closeViewModal"
-    />
+    <transition name="fade">
+      <DepartmentModal
+        v-if="showModal"
+        :department="selectedDepartment"
+        :is-editing="isEditing"
+        @close="closeModal"
+        @save="handleSave"
+      />
+    </transition>
   </div>
 </template>
 
@@ -190,8 +194,8 @@
 import { ref, computed, onMounted } from 'vue'
 import { Building2, DollarSign, TrendingUp, Search, Plus, Eye, Edit, Power, Trash2 } from 'lucide-vue-next'
 import api from '../../api'
-import DepartmentModal from '../../components/DepartmentModal.vue'
-import DepartmentViewModal from '../../components/DepartmentViewModal.vue'
+import DepartmentModal from '../../components/departmentsGlobal/DepartmentModal.vue'
+import DepartmentViewModal from '../../components/departmentsGlobal/DepartmentViewModal.vue'
 import { useToastStore } from '../../stores/toast'
 
 const toastStore = useToastStore()
@@ -206,7 +210,34 @@ const showViewModal = ref(false)
 const selectedDepartment = ref(null)
 const isEditing = ref(false)
 
-// Estadísticas del encabezado (eliminada la de empleados)
+// Métodos para manejar modales
+const viewDepartment = (department) => {
+  selectedDepartment.value = department
+  showViewModal.value = true
+}
+
+const editDepartment = (department) => {
+  selectedDepartment.value = department
+  isEditing.value = true
+  showModal.value = true
+}
+
+const handleEditFromView = (department) => {
+  showViewModal.value = false
+  editDepartment(department)
+}
+
+const closeModal = () => {
+  showModal.value = false
+  selectedDepartment.value = null
+}
+
+const closeViewModal = () => {
+  showViewModal.value = false
+  selectedDepartment.value = null
+}
+
+// Estadísticas del encabezado
 const headerStats = ref([
   { title: 'Total Departments', value: '0', icon: Building2, iconBg: 'bg-blue-500' },
   { title: 'Active Departments', value: '0', icon: TrendingUp, iconBg: 'bg-green-500' },
@@ -257,10 +288,9 @@ const fetchDepartments = async () => {
 
 const fetchStats = async () => {
   try {
-    const response = await api.get('/departments/stats');
-    const stats = response.data;
+    const response = await api.get('/departments/stats')
+    const stats = response.data
     
-    // Asegurar valores por defecto en frontend también
     headerStats.value = [
       { 
         title: 'Total Departments', 
@@ -280,37 +310,12 @@ const fetchStats = async () => {
         icon: DollarSign, 
         iconBg: 'bg-purple-500' 
       }
-    ];
-    
+    ]
   } catch (error) {
-    console.error('Error fetching stats:', error);
-    
-    // Mostrar valores por defecto en caso de error
-    headerStats.value = [
-      { 
-        title: 'Total Departments', 
-        value: '0',
-        icon: Building2, 
-        iconBg: 'bg-blue-500' 
-      },
-      { 
-        title: 'Active Departments', 
-        value: '0',
-        icon: TrendingUp, 
-        iconBg: 'bg-green-500' 
-      },
-      { 
-        title: 'Total Budget', 
-        value: '$0',
-        icon: DollarSign, 
-        iconBg: 'bg-purple-500' 
-      }
-    ];
-    
-    // Opcional: Mostrar notificación al usuario
-    toastStore.showToast('Error loading department stats. Using default values.', 'warning');
+    console.error('Error fetching stats:', error)
+    toastStore.showToast('Error loading department stats. Using default values.', 'warning')
   }
-};
+}
 
 const updateStats = () => {
   const total = departments.value.length
@@ -336,46 +341,44 @@ const openCreateModal = () => {
   showModal.value = true
 }
 
-const editDepartment = (department) => {
-  selectedDepartment.value = { ...department }
-  isEditing.value = true
-  showModal.value = true
-}
-
-const viewDepartment = (department) => {
-  selectedDepartment.value = department
-  showViewModal.value = true
-}
-
-const closeModal = () => {
-  showModal.value = false
-  selectedDepartment.value = null
-}
-
-const closeViewModal = () => {
-  showViewModal.value = false
-  selectedDepartment.value = null
-}
-
-// Métodos CRUD
-const handleSave = async (departmentData) => {
+// Método de guardado corregido
+const handleSave = async (payload) => {
   try {
-    const payload = {
-      name: departmentData.name,
-      description: departmentData.description,
-      budget: departmentData.budget,
-      location: departmentData.location,
-      isActive: departmentData.status === 'active'
+    // 1. Preparar datos del departamento
+    const departmentData = {
+      name: payload.name,
+      description: payload.description,
+      budget: payload.budget,
+      location: payload.location,
+      isActive: payload.status === 'active'
     }
 
+    // 2. Crear o actualizar departamento
     if (isEditing.value) {
-      await api.put(`/departments/${selectedDepartment.value.id}`, payload)
+      await api.put(`/departments/${selectedDepartment.value.id}`, departmentData)
       toastStore.showToast('Department updated successfully', 'success')
     } else {
-      await api.post('/departments', payload)
+      // Creación de nuevo departamento
+      const createResponse = await api.post('/departments', departmentData)
       toastStore.showToast('Department created successfully', 'success')
+
+      // 3. Asignar usuario si existe (solo en creación)
+      if (payload.userAssignment) {
+        try {
+          await api.post('/departments/assign', {
+            usernameOrEmail: payload.userAssignment.usernameOrEmail,
+            departmentId: createResponse.data.id,
+            role: 'ADMIN_DEPT'
+          })
+          toastStore.showToast('Admin assigned successfully', 'success')
+        } catch (assignError) {
+          console.error('Error assigning admin:', assignError)
+          toastStore.showToast('Department created but failed to assign admin', 'warning')
+        }
+      }
     }
-    
+
+    // 4. Actualizar datos
     await fetchDepartments()
     closeModal()
   } catch (error) {
@@ -425,3 +428,15 @@ onMounted(() => {
   fetchStats()
 })
 </script>
+
+<style scoped>
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.2s ease;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+}
+</style>

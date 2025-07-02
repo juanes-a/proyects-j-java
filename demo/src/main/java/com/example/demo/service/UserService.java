@@ -24,7 +24,8 @@ public class UserService {
     public UserEntity registerUser(UserEntity userEntity) {
         // Verificar si el usuario ya existe
         if (existsByUsernameOrEmail(userEntity.getUsername(), userEntity.getEmail())) {
-            throw new RuntimeException("El usuario o email ya existe");
+            throw new IllegalArgumentException("El usuario o email ya existe");
+
         }
         
         // Encriptar contraseña

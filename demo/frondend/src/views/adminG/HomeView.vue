@@ -1,101 +1,107 @@
 <template>
-  <div class="space-y-6">
-    <!-- Welcome Banner -->
-    <div class="bg-gradient-to-r from-blue-600 to-purple-700 rounded-xl p-6 text-white">
-      <div class="flex items-center justify-between">
-        <div>
-          <h2 class="text-3xl font-bold mb-2">Welcome back! 👋</h2>
-          <p class="text-blue-100">Here's what's happening with your departments today.</p>
-        </div>
-        <div class="hidden md:block">
-          <div class="w-24 h-24 bg-white/10 rounded-full flex items-center justify-center">
-            <TrendingUp class="w-12 h-12 text-white/80" />
+  <!-- Container principal optimizado para sidebar -->
+  <div class="w-full min-h-screen">
+    <div class="max-w-none space-y-4 sm:space-y-6">
+      <!-- Welcome Banner -->
+      <div class="bg-gradient-to-r from-blue-600 to-purple-700 rounded-xl p-4 sm:p-6 text-white">
+        <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div class="flex-1 min-w-0">
+            <h2 class="text-2xl sm:text-3xl font-bold mb-2">Welcome back! 👋</h2>
+            <p class="text-blue-100 text-sm sm:text-base">Here's what's happening with your departments today.</p>
+          </div>
+          <div class="hidden md:block flex-shrink-0">
+            <div class="w-20 h-20 lg:w-24 lg:h-24 bg-white/10 rounded-full flex items-center justify-center">
+              <TrendingUp class="w-10 h-10 lg:w-12 lg:h-12 text-white/80" />
+            </div>
           </div>
         </div>
       </div>
-    </div>
 
-    <!-- Stats Cards -->
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-      <StatsCard
-        v-for="stat in stats"
-        :key="stat.title"
-        :title="stat.title"
-        :value="stat.value"
-        :change="stat.change"
-        :icon="stat.icon"
-        :color="stat.color"
-        :loading="loading"
-      />
-    </div>
+      <!-- Stats Cards -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 lg:gap-6">
+        <StatsCard
+          v-for="stat in stats"
+          :key="stat.title"
+          :title="stat.title"
+          :value="stat.value"
+          :change="stat.change"
+          :icon="stat.icon"
+          :color="stat.color"
+          :loading="loading"
+          class="min-w-0"
+        />
+      </div>
 
-    <!-- Charts Section -->
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-      <!-- Budget Chart -->
-      <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 card-hover">
-        <div class="flex items-center justify-between mb-6">
-          <h3 class="text-lg font-semibold text-gray-800 dark:text-white">Budget by Department</h3>
-          <div class="flex space-x-2">
-            <button
-              @click="changeChartType('bar')"
-              :class="chartType === 'bar' ? 'bg-blue-500 text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400'"
-              class="px-3 py-1 rounded-md text-sm transition-colors duration-200"
-            >
-              Bar
-            </button>
-            <button
-              @click="changeChartType('pie')"
-              :class="chartType === 'pie' ? 'bg-blue-500 text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400'"
-              class="px-3 py-1 rounded-md text-sm transition-colors duration-200"
-            >
-              Pie
-            </button>
+      <!-- Charts Section -->
+      <div class="grid grid-cols-1 xl:grid-cols-2 gap-6">
+        <!-- Budget Chart -->
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4 sm:p-6 card-hover min-w-0">
+          <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 gap-4">
+            <h3 class="text-lg font-semibold text-gray-800 dark:text-white flex-shrink-0">
+              Budget by Department
+            </h3>
+            <div class="flex space-x-2 flex-shrink-0">
+              <button
+                @click="changeChartType('bar')"
+                :class="chartType === 'bar' ? 'bg-blue-500 text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400'"
+                class="px-3 py-1 rounded-md text-sm transition-colors duration-200 whitespace-nowrap"
+              >
+                Bar
+              </button>
+              <button
+                @click="changeChartType('pie')"
+                :class="chartType === 'pie' ? 'bg-blue-500 text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400'"
+                class="px-3 py-1 rounded-md text-sm transition-colors duration-200 whitespace-nowrap"
+              >
+                Pie
+              </button>
+            </div>
+          </div>
+          <div class="h-64 sm:h-80 w-full">
+            <canvas ref="budgetChart" class="max-w-full max-h-full"></canvas>
           </div>
         </div>
-        <div class="h-80">
-          <canvas ref="budgetChart"></canvas>
+
+        <!-- Recent Activity -->
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4 sm:p-6 card-hover min-w-0">
+          <h3 class="text-lg font-semibold text-gray-800 dark:text-white mb-6">Recent Activity</h3>
+          <div class="space-y-4 overflow-hidden">
+            <div
+              v-for="activity in recentActivities"
+              :key="activity.id"
+              class="flex items-start space-x-3 p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors duration-200 min-w-0"
+            >
+              <div :class="activity.iconBg" class="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0">
+                <component :is="activity.icon" class="w-4 h-4 text-white" />
+              </div>
+              <div class="flex-1 min-w-0">
+                <p class="text-sm font-medium text-gray-800 dark:text-white truncate">{{ activity.title }}</p>
+                <p class="text-xs text-gray-500 dark:text-gray-400">{{ activity.time }}</p>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
-      <!-- Recent Activity -->
-      <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 card-hover">
-        <h3 class="text-lg font-semibold text-gray-800 dark:text-white mb-6">Recent Activity</h3>
-        <div class="space-y-4">
-          <div
-            v-for="activity in recentActivities"
-            :key="activity.id"
-            class="flex items-start space-x-3 p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors duration-200"
+      <!-- Quick Actions -->
+      <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4 sm:p-6 card-hover">
+        <h3 class="text-lg font-semibold text-gray-800 dark:text-white mb-6">Quick Actions</h3>
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+          <button
+            v-for="action in quickActions"
+            :key="action.title"
+            @click="action.action"
+            class="flex items-center space-x-3 p-4 rounded-lg border-2 border-dashed border-gray-200 dark:border-gray-600 hover:border-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-all duration-200 group min-w-0"
           >
-            <div :class="activity.iconBg" class="w-8 h-8 rounded-full flex items-center justify-center">
-              <component :is="activity.icon" class="w-4 h-4 text-white" />
+            <div :class="action.iconBg" class="w-10 h-10 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform duration-200 flex-shrink-0">
+              <component :is="action.icon" class="w-5 h-5 text-white" />
             </div>
-            <div class="flex-1">
-              <p class="text-sm font-medium text-gray-800 dark:text-white">{{ activity.title }}</p>
-              <p class="text-xs text-gray-500 dark:text-gray-400">{{ activity.time }}</p>
+            <div class="text-left min-w-0 flex-1">
+              <p class="font-medium text-gray-800 dark:text-white truncate">{{ action.title }}</p>
+              <p class="text-sm text-gray-500 dark:text-gray-400 truncate">{{ action.description }}</p>
             </div>
-          </div>
+          </button>
         </div>
-      </div>
-    </div>
-
-    <!-- Quick Actions -->
-    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 card-hover">
-      <h3 class="text-lg font-semibold text-gray-800 dark:text-white mb-6">Quick Actions</h3>
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <button
-          v-for="action in quickActions"
-          :key="action.title"
-          @click="action.action"
-          class="flex items-center space-x-3 p-4 rounded-lg border-2 border-dashed border-gray-200 dark:border-gray-600 hover:border-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-all duration-200 group"
-        >
-          <div :class="action.iconBg" class="w-10 h-10 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform duration-200">
-            <component :is="action.icon" class="w-5 h-5 text-white" />
-          </div>
-          <div class="text-left">
-            <p class="font-medium text-gray-800 dark:text-white">{{ action.title }}</p>
-            <p class="text-sm text-gray-500 dark:text-gray-400">{{ action.description }}</p>
-          </div>
-        </button>
       </div>
     </div>
   </div>
@@ -118,6 +124,7 @@ import api from '../../api'
 import StatsCard from '../../components/StatsCard.vue'
 import { useToastStore } from '../../stores/toast'
 
+
 const router = useRouter()
 const toastStore = useToastStore()
 
@@ -126,6 +133,18 @@ const loading = ref(true)
 const chartType = ref('bar')
 const budgetChart = ref(null)
 let chartInstance = null
+
+
+const props = defineProps({
+  sidebarOpen: {
+    type: Boolean,
+    default: true
+  },
+  sidebarMobile: {
+    type: Boolean,
+    default: false
+  }
+})
 
 // Datos iniciales - usar markRaw para componentes que se pasan a component :is
 const stats = ref([
@@ -352,3 +371,19 @@ onMounted(() => {
   fetchDashboardData()
 })
 </script>
+
+<style scoped>
+.card-hover {
+  transition-property: all;
+  transition-duration: 200ms;
+}
+.card-hover:hover {
+  box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -2px rgba(0,0,0,0.1);
+}
+
+/* Asegurar que el canvas se adapte correctamente */
+canvas {
+  max-width: 100% !important;
+  height: auto !important;
+}
+</style>

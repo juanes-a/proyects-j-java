@@ -14,6 +14,7 @@ import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Entity
 @Table(name = "tasks")
@@ -71,10 +72,8 @@ public class TaskEntity {
     private Project project;
     
     // Usuario asignado a la tarea
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "assigned_user_id")
-    @JsonManagedReference("user-tasks")
-    private UserEntity assignedUser;
+    @OneToMany(mappedBy = "task", cascade = CascadeType.ALL)
+    private List<UsersAsignation> asignaciones;
     
     // Usuario que creó la tarea
    

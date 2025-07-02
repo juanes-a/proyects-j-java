@@ -4,6 +4,7 @@ import com.example.demo.entity.Project;
 import com.example.demo.enums.ProjectPriority;
 import com.example.demo.enums.ProjectStatus;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
@@ -11,17 +12,15 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
-/**
- * DTO para respuestas de Project usando Lombok
- */
 @Data
+@Builder
 @NoArgsConstructor
 @AllArgsConstructor
 public class ProjectResponseDTO {
-
     private Long id;
     private String name;
     private String description;
+    private String objectives; // Agregado basado en tu entidad
     private LocalDate startDate;
     private LocalDate endDate;
     private ProjectStatus status;
@@ -33,46 +32,40 @@ public class ProjectResponseDTO {
     private String departmentName;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
+    private boolean overdue; // Campo calculado útil para el frontend
 
-
-    /**
-     * Método estático para convertir desde Entity
-     */
     public static ProjectResponseDTO fromEntity(Project project) {
-        if (project == null) {
-            return null;
-        }
+        if (project == null) return null;
 
-        ProjectResponseDTO dto = new ProjectResponseDTO();
-        dto.setId(project.getId());
-        dto.setName(project.getName());
-        dto.setDescription(project.getDescription());
-        dto.setStartDate(project.getStartDate());
-        dto.setEndDate(project.getEndDate());
-        dto.setStatus(project.getStatus());
-        dto.setPriority(project.getPriority());
-        dto.setBudget(project.getBudget());
-
-        dto.setCreatedAt(project.getCreatedAt());
-        dto.setUpdatedAt(project.getUpdatedAt());
-
-
-        // Si tienes relación con Department
-        if (project.getDepartment() != null) {
-            dto.setDepartmentId(project.getDepartment().getId());
-            dto.setDepartmentName(project.getDepartment().getName());
-        }
-
-        return dto;
+        return ProjectResponseDTO.builder()
+            .id(project.getId())
+            .name(project.getName())
+            .description(project.getDescription())
+            .objectives(project.getObjectives())
+            .startDate(project.getStartDate())
+            .endDate(project.getEndDate())
+            .status(project.getStatus())
+            .priority(project.getPriority())
+            .budget(project.getBudget())
+            .actualCost(calculateActualCost(project)) // Método a implementar
+            .progress(calculateProgress(project)) // Método a implementar
+            .departmentId(project.getDepartment() != null ? project.getDepartment().getId() : null)
+            .departmentName(project.getDepartment() != null ? project.getDepartment().getName() : null)
+            .createdAt(project.getCreatedAt())
+            .updatedAt(project.getUpdatedAt())
+            .overdue(project.isOverdue()) // Usando el método de tu entidad
+            .build();
     }
 
+    // Elimina los constructores redundantes que no hacen nada
 
-    public ProjectResponseDTO(Long id2, String name2, String description2, LocalDate type, Object object) {
-        //TODO Auto-generated constructor stub
+    private static BigDecimal calculateActualCost(Project project) {
+        // Implementa lógica para calcular costos reales
+        return BigDecimal.ZERO; // Ejemplo
     }
 
-
-    public ProjectResponseDTO(Long id2, String name2, String description2, Object object) {
-        //TODO Auto-generated constructor stub
+    private static Integer calculateProgress(Project project) {
+        // Implementa lógica para calcular progreso
+        return 0; // Ejemplo
     }
 }

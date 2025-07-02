@@ -1,7 +1,17 @@
 package com.example.demo.service;
 
 import com.example.demo.entity.Department;
+import com.example.demo.entity.UserEntity;
+import com.example.demo.entity.UsersAsignation;
+import com.example.demo.enums.ProjectStatus;
+import com.example.demo.enums.Role;
 import com.example.demo.repository.DepartmentRepository;
+import com.example.demo.repository.ProjectRepository;
+import com.example.demo.repository.UserRepository;
+import com.example.demo.repository.UsersAsignationRepository;
+
+import jakarta.persistence.EntityNotFoundException;
+
 import com.example.demo.exception.BusinessException;
 import com.example.demo.exception.ResourceNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -9,6 +19,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -16,7 +27,19 @@ import java.util.Optional;
 @Transactional
 public class DepartmentService {
 
-    private final DepartmentRepository departmentRepository;
+    @Autowired
+    private UsersAsignationRepository usersAsignationRepository;
+    
+    @Autowired
+    private UserRepository userRepository;
+
+    @Autowired
+    private ProjectRepository projectRepository;
+    
+    
+    @Autowired
+    private DepartmentRepository departmentRepository;
+
 
     @Autowired
     public DepartmentService(DepartmentRepository departmentRepository) {
@@ -260,4 +283,171 @@ public class DepartmentService {
             throw new UnsupportedOperationException("Unimplemented method 'setTotalDepartments'");
         }
     }
+
+
+
+     /**
+     * Asigna un usuario a un departamento con un rol específico
+     */
+    public UsersAsignation assignUserToDepartment(String usernameOrEmail, Long departmentId, Role role) {
+        // Validar que el usuario existe usando username o email
+        UserEntity user = userRepository.findByUsernameOrEmail(usernameOrEmail, usernameOrEmail)
+            .orElseThrow(() -> new BusinessException("Usuario no encontrado: " + usernameOrEmail));
+        
+        // Validar que el departamento existe
+        Department department = departmentRepository.findById(departmentId)
+            .orElseThrow(() -> new BusinessException("Departamento no encontrado con ID: " + departmentId));
+        
+        // Validar que el rol es válido para departamento
+        user.setRole(role); // <-- Esta es la línea clave
+        userRepository.save(user);
+
+        // Verificar si ya existe una asignación de departamento para este usuario
+        Optional<UsersAsignation> existingAssignment = usersAsignationRepository
+            .findByUserAndDepartmentIsNotNull(user);
+        
+        if (existingAssignment.isPresent()) {
+            throw new BusinessException("El usuario " + usernameOrEmail + " ya tiene un departamento asignado. " +
+                "Solo se permite una asignación de departamento por usuario.");
+        }
+        
+        // Crear nueva asignación
+        UsersAsignation assignment = new UsersAsignation();
+        assignment.setUser(user);
+        assignment.setDepartment(department);
+        assignment.setRolAsignado(role);
+        assignment.setDateAsignDateTime(LocalDateTime.now());
+        
+        return usersAsignationRepository.save(assignment);
+    }
+
+    
+
+    /**
+     * Actualiza el rol de un usuario en su departamento asignado
+     */
+    public UsersAsignation updateUserDepartmentRole(String usernameOrEmail, Role newRole) {
+        UserEntity user = userRepository.findByUsernameOrEmail(usernameOrEmail, usernameOrEmail)
+            .orElseThrow(() -> new BusinessException("Usuario no encontrado: " + usernameOrEmail));
+        
+        UsersAsignation assignment = usersAsignationRepository
+            .findByUserAndDepartmentIsNotNull(user)
+            .orElseThrow(() -> new BusinessException("El usuario " + usernameOrEmail + " no tiene un departamento asignado"));
+        
+        if (!isValidDepartmentRole(newRole)) {
+            throw new BusinessException("El rol " + newRole + " no es válido para asignación de departamento");
+        }
+        
+        assignment.setRolAsignado(newRole);
+        assignment.setDateAsignDateTime(LocalDateTime.now());
+        
+        return usersAsignationRepository.save(assignment);
+    }
+
+    /**
+     * Remueve la asignación de departamento de un usuario
+     */
+    public void removeUserFromDepartment(String usernameOrEmail) {
+        UserEntity user = userRepository.findByUsernameOrEmail(usernameOrEmail, usernameOrEmail)
+            .orElseThrow(() -> new BusinessException("Usuario no encontrado: " + usernameOrEmail));
+        
+        UsersAsignation assignment = usersAsignationRepository
+            .findByUserAndDepartmentIsNotNull(user)
+            .orElseThrow(() -> new BusinessException("El usuario " + usernameOrEmail + " no tiene un departamento asignado"));
+        
+        usersAsignationRepository.delete(assignment);
+    }
+
+    /**
+     * Obtiene la asignación de departamento de un usuario
+     */
+    public Optional<UsersAsignation> getUserDepartmentAssignment(String usernameOrEmail) {
+        // 1. Validación básica del input
+        if (usernameOrEmail == null || usernameOrEmail.isBlank()) {
+            throw new IllegalArgumentException("Username/email no puede estar vacío");
+        }
+
+        // 2. Normalización del input
+        String normalizedInput = usernameOrEmail.trim().toLowerCase();
+
+        // 3. Buscar usuario (con mejor manejo de errores)
+        UserEntity user = userRepository.findByUsernameOrEmail(normalizedInput, normalizedInput)
+            .orElseThrow(() -> new EntityNotFoundException(
+                "Usuario '" + normalizedInput + "' no encontrado"));
+
+        // 4. Obtener asignación activa más reciente
+        return usersAsignationRepository.findTopByUserAndDepartmentIsNotNullOrderByDateAsignDateTimeDesc(user);
+    }
+
+    /**
+     * Obtiene todos los usuarios asignados a un departamento
+     */
+    public List<UsersAsignation> getUsersByDepartment(Long departmentId) {
+        Department department = departmentRepository.findById(departmentId)
+            .orElseThrow(() -> new BusinessException("Departamento no encontrado con ID: " + departmentId));
+        
+        return usersAsignationRepository.findByDepartment(department);
+    }
+
+        /**
+     * Verifica si un usuario tiene acceso a un departamento específico
+     */
+    public boolean hasAccessToDepartment(String usernameOrEmail, Long departmentId) {
+        Optional<UsersAsignation> assignment = getUserDepartmentAssignment(usernameOrEmail);
+        return assignment.isPresent() && 
+               assignment.get().getDepartment().getId().equals(departmentId);
+    }
+
+    /**
+     * Obtiene todos los usuarios con rol ADMIN_DEPT en un departamento específico
+     */
+    public List<UsersAsignation> getDepartmentAdmins(Long departmentId) {
+        Department department = departmentRepository.findById(departmentId)
+            .orElseThrow(() -> new BusinessException("Departamento no encontrado con ID: " + departmentId));
+        
+        return usersAsignationRepository.findByDepartmentAndRolAsignado(department, Role.ADMIN_DEPT);
+    }
+
+
+
+    /**
+     * Verifica si un rol es válido para asignación de departamento
+     */
+    private boolean isValidDepartmentRole(Role role) {
+        return role == Role.ADMIN_DEPT || role == Role.ADMIN_COLLAB || role == Role.COLLAB;
+    }
+
+    /**
+     * Cambia un usuario de departamento (remueve del actual y asigna al nuevo)
+     */
+    public UsersAsignation transferUserToDepartment(String usernameOrEmail, Long newDepartmentId, Role role) {
+        // Remover asignación actual si existe
+        try {
+            removeUserFromDepartment(usernameOrEmail);
+        } catch (BusinessException e) {
+            // Si no tiene departamento asignado, continúa con la asignación
+        }
+        
+        // Asignar al nuevo departamento
+        return assignUserToDepartment(usernameOrEmail, newDepartmentId, role);
+    }
+
+
+        public String calculateProductivity(Long departmentId) {
+        // Implementa tu lógica de productividad aquí
+        int completedProjects = projectRepository.countByDepartmentIdAndStatus(departmentId, ProjectStatus.COMPLETED);
+        
+        long totalProjects = projectRepository.countByDepartmentId(departmentId);
+        
+        if (totalProjects == 0) return "N/A";
+        
+        double percentage = (completedProjects * 100.0) / totalProjects;
+        
+        if (percentage > 80) return "High";
+        if (percentage > 50) return "Medium";
+        return "Low";
+    }
+
+
+
 }

@@ -1,24 +1,37 @@
 package com.example.demo.controller;
 
+import com.example.demo.controller.ProjectController.ProjectResponse;
+import com.example.demo.dto.request.department.AssignUserToDepartmentRequest;
 import com.example.demo.dto.request.department.DepartmentRequestDTO;
 import com.example.demo.dto.request.department.DepartmentUpdateDTO;
+import com.example.demo.dto.request.department.UpdateUserRoleRequest;
 import com.example.demo.dto.response.DepartmentResponseDTO;
 import com.example.demo.repository.DepartmentRepository;
+import com.example.demo.repository.ProjectRepository;
 import com.example.demo.repository.TeamMemberRepository;
 import com.example.demo.entity.Department;
+import com.example.demo.entity.Project;
+import com.example.demo.entity.UsersAsignation;
+import com.example.demo.enums.ProjectStatus;
+import com.example.demo.enums.Role;
+import com.example.demo.exception.BusinessException;
 import com.example.demo.service.DepartmentService;
 import com.example.demo.service.ActivityService; // NUEVO: Importar ActivityService
 import com.example.demo.service.DepartmentService.DepartmentStats;
+import com.example.demo.service.ProjectService;
 
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotBlank;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.DataAccessException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -33,23 +46,44 @@ import org.slf4j.LoggerFactory;
 @CrossOrigin(origins = "http://localhost:5173")
 public class DepartmentController {
 
+
     private static final Logger log = LoggerFactory.getLogger(DepartmentController.class);
-
+    @Autowired
     private final DepartmentService departmentService;
-    
-    // NUEVO: Inyección de ActivityService
-    @Autowired
-    private ActivityService activityService;
 
     @Autowired
-    private DepartmentRepository departmentRepository;
+    private ProjectRepository projectRepository;
 
-    @Autowired
-    private TeamMemberRepository teamMemberRepository;
+    private final ProjectService projectService;
+    private final ActivityService activityService;
+    private final DepartmentRepository departmentRepository;
+    private final TeamMemberRepository teamMemberRepository;
 
+    // Un solo constructor para todas las dependencias
     @Autowired
-    public DepartmentController(DepartmentService departmentService) {
+    public DepartmentController(
+            DepartmentService departmentService,
+            ProjectService projectService,
+            ActivityService activityService,
+            DepartmentRepository departmentRepository,
+            TeamMemberRepository teamMemberRepository) {
         this.departmentService = departmentService;
+        this.projectService = projectService;
+        this.activityService = activityService;
+        this.departmentRepository = departmentRepository;
+        this.teamMemberRepository = teamMemberRepository;
+    }
+
+    @GetMapping("/{departmentId}/projects/count")
+    public ResponseEntity<Map<String, Long>> countProjectsByDepartment(
+            @PathVariable Long departmentId) {
+        try {
+            long count = projectService.countProjectsByDepartment(departmentId);
+            return ResponseEntity.ok(Collections.singletonMap("count", count));
+        } catch (Exception e) {
+            log.error("Error counting projects for department {}: {}", departmentId, e.getMessage());
+            return ResponseEntity.internalServerError().build();
+        }
     }
 
     /**
@@ -296,6 +330,48 @@ public class DepartmentController {
         return ResponseEntity.ok(stats);
     }
 
+
+      @GetMapping("/{departmentId}/stats")
+    public ResponseEntity<?> getDepartmentStats(@PathVariable Long departmentId) {
+        try {
+            // 1. Validar que el departamento existe
+            Department department = departmentRepository.findById(departmentId)
+                .orElseThrow(() -> new EntityNotFoundException("Departamento no encontrado"));
+
+            // 2. Obtener estadísticas usando los métodos del ProjectService
+            long totalProjects = projectService.countProjectsByDepartment(departmentId);
+            long completedProjects = projectService.countByDepartmentIdAndStatus(departmentId, ProjectStatus.COMPLETED);
+            long activeProjects = projectService.countByDepartmentIdAndStatus(departmentId, ProjectStatus.IN_PROGRESS);
+            long plannedProjects = projectService.countByDepartmentIdAndStatus(departmentId, ProjectStatus.PLANNED);
+            long cancelledProjects = projectService.countByDepartmentIdAndStatus(departmentId, ProjectStatus.CANCELLED);
+            
+            double totalBudget = department.getBudget() != null ? department.getBudget().doubleValue() : 0.0;
+            double budgetUsed = projectService.getTotalBudgetUsedByDepartment(departmentId);
+
+            // 3. Retornar respuesta estructurada
+            Map<String, Object> response = Map.of(
+                "totalProjects", totalProjects,
+                "completedProjects", completedProjects,
+                "activeProjects", activeProjects,
+                "plannedProjects", plannedProjects,
+                "cancelledProjects", cancelledProjects,
+                "totalBudget", totalBudget,
+                "budgetUsed", budgetUsed
+            );
+
+            return ResponseEntity.ok(response);
+
+        } catch (EntityNotFoundException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .body(Map.of("error", e.getMessage()));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(Map.of("error", "Error al obtener estadísticas del departamento"));
+        }
+    }
+
+
+
     /**
      * VERIFICAR SI DEPARTAMENTO TIENE PRESUPUESTO SUFICIENTE
      * GET /api/departments/{id}/check-budget?amount=1000
@@ -362,4 +438,253 @@ public class DepartmentController {
         public BigDecimal getRequiredAmount() { return requiredAmount; }
         public boolean isHasSufficientBudget() { return hasSufficientBudget; }
     }
+
+
+     /**
+     * Asignar un usuario a un departamento
+     */
+    @PostMapping("/assign")
+    public ResponseEntity<?> assignUserToDepartment(@RequestBody AssignUserToDepartmentRequest request) {
+        log.info("Datos recibidos en /assign: {}", request); // <-- Añade esta línea
+        
+        try {
+            UsersAsignation assignment = departmentService.assignUserToDepartment(
+                request.getUsernameOrEmail(), 
+                request.getDepartmentId(), 
+                request.getRole()
+            );
+            log.info("Asignación exitosa: {}", assignment); // <-- Y esta
+            return ResponseEntity.ok(assignment);
+        } catch (Exception e) {
+            log.error("Error en asignación: ", e); // <-- Y esta
+            return ResponseEntity.badRequest()
+                .body(new ErrorResponse("Error al asignar usuario al departamento: " + e.getMessage()));
+        }
+    }
+    /**
+     * Actualizar el rol de un usuario en su departamento
+     */
+    @PutMapping("/update-role/{usernameOrEmail}")
+    public ResponseEntity<?> updateUserDepartmentRole(
+            @PathVariable String usernameOrEmail, 
+            @RequestBody UpdateUserRoleRequest request) {
+        try {
+            UsersAsignation assignment = departmentService.updateUserDepartmentRole(
+                usernameOrEmail, 
+                request.getNewRole()
+            );
+            return ResponseEntity.ok(assignment);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest()
+                .body(new ErrorResponse("Error al actualizar rol: " + e.getMessage()));
+        }
+    }
+
+    /**
+     * Remover usuario de su departamento
+     */
+    @DeleteMapping("/remove/{usernameOrEmail}")
+    public ResponseEntity<?> removeUserFromDepartment(@PathVariable String usernameOrEmail) {
+        try {
+            departmentService.removeUserFromDepartment(usernameOrEmail);
+            return ResponseEntity.ok(new SuccessResponse("Usuario removido del departamento exitosamente"));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest()
+                .body(new ErrorResponse("Error al remover usuario: " + e.getMessage()));
+        }
+    }
+
+    /**
+     * Obtener la asignación de departamento de un usuario
+     */
+    @GetMapping("/user/{usernameOrEmail}")
+    public ResponseEntity<?> getUserDepartmentAssignment(
+        @PathVariable @NotBlank String usernameOrEmail) {
+
+        try {
+            // 1. Validación básica del parámetro
+            if (usernameOrEmail.isBlank()) {
+                return ResponseEntity.badRequest()
+                    .body(new ErrorResponse("El username/email no puede estar vacío"));
+            }
+
+            // 2. Normalizar entrada
+            String normalizedInput = usernameOrEmail.trim().toLowerCase();
+            log.info("Buscando asignación para: {}", normalizedInput);
+
+            // 3. Obtener asignación (correctamente con Optional)
+            Optional<UsersAsignation> optionalAssignment = departmentService.getUserDepartmentAssignment(normalizedInput);
+
+            if (optionalAssignment.isEmpty()) {
+                log.warn("No se encontró asignación para el usuario: {}", normalizedInput);
+                return ResponseEntity.ok(Map.of(
+                    "message", "Usuario no encontrado o sin departamento asignado",
+                    "status", "NOT_FOUND"
+                ));
+            }
+
+            UsersAsignation assignment = optionalAssignment.get();
+            Department department = assignment.getDepartment();
+
+            if (department == null) {
+                log.error("Departamento nulo para la asignación ID: {}", assignment.getId());
+                return ResponseEntity.badRequest()
+                    .body(new ErrorResponse("El departamento asignado no existe"));
+            }
+
+            // 4. Obtener estadísticas del departamento
+            long totalProjects = projectService.countProjectsByDepartment(department.getId());
+            long completedProjects = projectService.countByDepartmentIdAndStatus(department.getId(), ProjectStatus.COMPLETED);
+            double totalBudget = department.getBudget() != null ? department.getBudget().doubleValue() : 0.0;
+            double budgetUsed = projectService.getTotalBudgetUsedByDepartment(department.getId());
+
+            // 5. Construir respuesta esperada por el frontend
+            Map<String, Object> response = Map.of(
+                "department", Map.of(
+                    "id", department.getId(),
+                    "name", department.getName() != null ? department.getName() : "Sin nombre"
+                ),
+                "totalProjects", totalProjects,
+                "completedProjects", completedProjects,
+                "totalBudget", totalBudget,
+                "budgetUsed", budgetUsed
+            );
+
+            log.info("Respuesta exitosa para usuario: {}", normalizedInput);
+            return ResponseEntity.ok(response);
+
+        } catch (DataAccessException e) {
+            log.error("Error de acceso a datos para usuario: " + usernameOrEmail, e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(Map.of(
+                    "error", "Error de base de datos",
+                    "message", "No se pudo acceder a los datos del usuario"
+                ));
+        } catch (Exception e) {
+            log.error("Error inesperado al obtener asignación para: " + usernameOrEmail, e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(Map.of(
+                    "error", "Error interno del servidor",
+                    "message", "Ocurrió un error inesperado al procesar la solicitud",
+                    "details", e.getMessage()
+                ));
+        }
+    }
+
+    /**
+     * Obtener todos los usuarios de un departamento
+     */
+    @GetMapping("/department/{departmentId}/users")
+    public ResponseEntity<?> getUsersByDepartment(@PathVariable Long departmentId) {
+        try {
+            List<UsersAsignation> users = departmentService.getUsersByDepartment(departmentId);
+            return ResponseEntity.ok(users);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest()
+                .body(new ErrorResponse("Error al obtener usuarios del departamento: " + e.getMessage()));
+        }
+    }
+
+
+    /**
+     * Verificar si un usuario tiene acceso a un departamento
+     */
+    @GetMapping("/check-access")
+    public ResponseEntity<?> checkDepartmentAccess(
+            @RequestParam String usernameOrEmail, 
+            @RequestParam Long departmentId) {
+        try {
+            boolean hasAccess = departmentService.hasAccessToDepartment(usernameOrEmail, departmentId);
+            return ResponseEntity.ok(new AccessCheckResponse(hasAccess));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest()
+                .body(new ErrorResponse("Error al verificar acceso: " + e.getMessage()));
+        }
+    }
+
+    /**
+     * Transferir usuario a otro departamento
+     */
+    @PutMapping("/transfer")
+    public ResponseEntity<?> transferUserToDepartment(@RequestBody TransferUserRequest request) {
+        try {
+            UsersAsignation assignment = departmentService.transferUserToDepartment(
+                request.getUsernameOrEmail(), 
+                request.getNewDepartmentId(), 
+                request.getRole()
+            );
+            return ResponseEntity.ok(assignment);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest()
+                .body(new ErrorResponse("Error al transferir usuario: " + e.getMessage()));
+        }
+    }
+
+    // DTOs para las respuestas
+    public static class ErrorResponse {
+        private String error;
+        
+        public ErrorResponse(String error) {
+            this.error = error;
+        }
+        
+        public String getError() { return error; }
+        public void setError(String error) { this.error = error; }
+    }
+
+    public static class SuccessResponse {
+        private String message;
+        
+        public SuccessResponse(String message) {
+            this.message = message;
+        }
+        
+        public String getMessage() { return message; }
+        public void setMessage(String message) { this.message = message; }
+    }
+
+    public static class InfoResponse {
+        private String info;
+        
+        public InfoResponse(String info) {
+            this.info = info;
+        }
+        
+        public String getInfo() { return info; }
+        public void setInfo(String info) { this.info = info; }
+    }
+
+    public static class AccessCheckResponse {
+        private boolean hasAccess;
+        
+        public AccessCheckResponse(boolean hasAccess) {
+            this.hasAccess = hasAccess;
+        }
+        
+        public boolean isHasAccess() { return hasAccess; }
+        public void setHasAccess(boolean hasAccess) { this.hasAccess = hasAccess; }
+    }
+
+    public static class TransferUserRequest {
+        private String usernameOrEmail;
+        private Long newDepartmentId;
+        private Role role;
+        
+        // Getters y setters
+        public String getUsernameOrEmail() { return usernameOrEmail; }
+        public void setUsernameOrEmail(String usernameOrEmail) { this.usernameOrEmail = usernameOrEmail; }
+        
+        public Long getNewDepartmentId() { return newDepartmentId; }
+        public void setNewDepartmentId(Long newDepartmentId) { this.newDepartmentId = newDepartmentId; }
+        
+        public Role getRole() { return role; }
+        public void setRole(Role role) { this.role = role; }
+    }
+
+
+
+
+
+
+
 }
