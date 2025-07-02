@@ -2,7 +2,6 @@ package com.example.demo.service;
 
 import com.example.demo.controller.ProjectController.DepartmentDTO;
 import com.example.demo.controller.ProjectController.ProjectResponse;
-import com.example.demo.dto.*;
 import com.example.demo.dto.request.project.ProjectCreateDTO;
 import com.example.demo.dto.request.project.ProjectUpdateDTO;
 import com.example.demo.dto.response.ProjectResponseDTO;
@@ -26,7 +25,9 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.stream.Collectors;
 
+
 import org.modelmapper.ModelMapper;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -42,6 +43,7 @@ public class ProjectService {
     @Autowired
     private DepartmentRepository departmentRepository;
 
+
     private final ModelMapper modelMapper;
     
     @Autowired
@@ -53,7 +55,9 @@ public class ProjectService {
     public ProjectService(ProjectRepository projectRepository) {
         this.projectRepository = projectRepository;
         this.modelMapper = new ModelMapper();
-    }
+
+
+
 
     // ============== Operaciones CRUD ==============
 
@@ -262,6 +266,7 @@ public class ProjectService {
         return mapToResponse(project);
     }
 
+
     public Project getProjectEntityById(Long id) {
         return projectRepository.findById(id)
             .orElseThrow(() -> new ProjectNotFoundException("Project not found with id: " + id));
@@ -286,6 +291,7 @@ public class ProjectService {
             );
         }
     }
+
 
     public long countByDepartmentIdAndStatus(Long departmentId, ProjectStatus status) {
         try {
@@ -339,4 +345,8 @@ public class ProjectService {
     }
 
 }
+
+
+
+
 

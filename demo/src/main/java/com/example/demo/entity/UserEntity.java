@@ -5,6 +5,8 @@ import java.util.Set;
 
 import com.example.demo.enums.Role;
 
+import com.example.demo.enums.Role;
+
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
 import lombok.*;

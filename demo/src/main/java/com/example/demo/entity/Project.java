@@ -86,6 +86,7 @@ public class Project {
 
     public boolean isActive() {
         return !isCancelled();
+        return !isCancelled();
     }
 
     public boolean isInProgress() {
@@ -146,6 +147,7 @@ public class Project {
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
+        if (o == null || getClass() != o.getClass()) return false;
         Project project = (Project) o;
         return id != null && id.equals(project.id);
     }
@@ -153,8 +155,14 @@ public class Project {
     @Override
     public int hashCode() {
         return 31;
+        return 31;
     }
 
+    @Builder
+    public Project(String name, String description, String objectives, 
+              ProjectPriority priority, ProjectStatus status,
+              LocalDate startDate, LocalDate endDate, 
+              BigDecimal budget, Department department)  {
     @Builder
     public Project(String name, String description, String objectives, 
               ProjectPriority priority, ProjectStatus status,
@@ -164,6 +172,7 @@ public class Project {
     }
 
     public boolean isCancelled() {
+        return this.status == ProjectStatus.CANCELLED;
         return this.status == ProjectStatus.CANCELLED;
     }
 }

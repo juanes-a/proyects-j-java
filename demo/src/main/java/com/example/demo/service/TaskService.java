@@ -1,5 +1,5 @@
 package com.example.demo.service;
-
+import com.example.demo.dto.request.task.TaskRequestDTO;
 import com.example.demo.entity.Project;
 import com.example.demo.entity.TaskEntity;
 import com.example.demo.entity.TaskEntity.TaskPriority;
@@ -34,7 +34,7 @@ public class TaskService {
 
     /**
      * Crear una nueva tarea
-     * @param task - Entidad tarea a crear
+     * @param dto - Entidad tarea a crear
      * @return TaskEntity - Tarea creada con ID generado
      */
     public TaskEntity createTask(TaskEntity task) {
@@ -44,6 +44,9 @@ public class TaskService {
         validateProjectExists(task.getProject().getId());
         
         // Validar usuario asignado si existe
+        if (task.getAssignedUser() != null) {
+            validateUserExists(task.getAssignedUser().getId());
+        }
         
         // Establecer valores por defecto si no vienen
         if (task.getStatus() == null) {
@@ -54,10 +57,9 @@ public class TaskService {
         }
         
         TaskEntity savedTask = taskRepository.save(task);
-        log.info("Tarea creada exitosamente con ID: {}", savedTask.getId());
+        log.info("✅ Tarea creada exitosamente con ID: {}", savedTask.getId());
         return savedTask;
     }
-
     /**
      * Obtener todas las tareas
      * @return List<TaskEntity> - Lista de todas las tareas

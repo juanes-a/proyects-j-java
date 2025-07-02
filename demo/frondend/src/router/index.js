@@ -47,6 +47,21 @@ const routes = [
     meta: { requiresAuth: true, roles: ['ADMIN_GLOBAL'] }
   },
 
+  {
+    path: '/tasks',
+    name: 'TasksGlobal',
+    component: () => import('@/views/adminG/TaskView.vue'),
+    meta: { requiresAuth: true, roles: ['ADMIN_GLOBAL']}
+  },
+  {
+      path: '/tasksDash',
+      name: 'TasksDashboard',
+      component: () => import('@/views/Collab/TaskDASH.vue'),
+      meta: { requiresAuth: true, roles: ['ADMIN_GLOBAL']}
+    },
+
+
+
   // Admin Departamento
   {
     path: '/departmentHome',
@@ -64,6 +79,7 @@ const routes = [
     component: DepartmentStats,
     meta: { requiresAuth: true, roles: ['ADMIN_DEPT'] }
   },
+
 
   // Catch-all: Redirige a login
   {
@@ -94,7 +110,6 @@ router.beforeEach((to, from, next) => {
 
   next();
 });
-
 
 
 export default router; 

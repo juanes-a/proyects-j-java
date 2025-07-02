@@ -50,23 +50,19 @@ public class DepartmentController {
     private static final Logger log = LoggerFactory.getLogger(DepartmentController.class);
     @Autowired
     private final DepartmentService departmentService;
+    
+    // NUEVO: Inyección de ActivityService
+    @Autowired
+    private ActivityService activityService;
 
     @Autowired
-    private ProjectRepository projectRepository;
+    private DepartmentRepository departmentRepository;
 
-    private final ProjectService projectService;
-    private final ActivityService activityService;
-    private final DepartmentRepository departmentRepository;
-    private final TeamMemberRepository teamMemberRepository;
-
-    // Un solo constructor para todas las dependencias
     @Autowired
-    public DepartmentController(
-            DepartmentService departmentService,
-            ProjectService projectService,
-            ActivityService activityService,
-            DepartmentRepository departmentRepository,
-            TeamMemberRepository teamMemberRepository) {
+    private TeamMemberRepository teamMemberRepository;
+
+    @Autowired
+    public DepartmentController(DepartmentService departmentService) {
         this.departmentService = departmentService;
         this.projectService = projectService;
         this.activityService = activityService;

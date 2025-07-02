@@ -187,6 +187,24 @@
         @save="handleSave"
       />
     </transition>
+    <transition name="fade">
+      <DepartmentViewModal
+        v-if="showViewModal"
+        :department="selectedDepartment"
+        @close="closeViewModal"
+        @edit="handleEditFromView"
+      />
+    </transition>
+
+    <transition name="fade">
+      <DepartmentModal
+        v-if="showModal"
+        :department="selectedDepartment"
+        :is-editing="isEditing"
+        @close="closeModal"
+        @save="handleSave"
+      />
+    </transition>
   </div>
 </template>
 
@@ -194,6 +212,8 @@
 import { ref, computed, onMounted } from 'vue'
 import { Building2, DollarSign, TrendingUp, Search, Plus, Eye, Edit, Power, Trash2 } from 'lucide-vue-next'
 import api from '../../api'
+import DepartmentModal from '../../components/departmentsGlobal/DepartmentModal.vue'
+import DepartmentViewModal from '../../components/departmentsGlobal/DepartmentViewModal.vue'
 import DepartmentModal from '../../components/departmentsGlobal/DepartmentModal.vue'
 import DepartmentViewModal from '../../components/departmentsGlobal/DepartmentViewModal.vue'
 import { useToastStore } from '../../stores/toast'
@@ -428,6 +448,18 @@ onMounted(() => {
   fetchStats()
 })
 </script>
+
+<style scoped>
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.2s ease;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+}
+</style>
 
 <style scoped>
 .fade-enter-active,

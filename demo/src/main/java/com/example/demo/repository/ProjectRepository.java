@@ -74,6 +74,7 @@ public interface ProjectRepository extends JpaRepository<Project, Long> {
     
     List<Project> findByDepartmentIdAndStatus(Long departmentId, ProjectStatus status);
 
+
     
     @Query("SELECT COUNT(p) FROM Project p WHERE p.department.id = :departmentId AND p.status != 'CANCELLED'")
     long countActiveProjectsByDepartment(@Param("departmentId") Long departmentId);

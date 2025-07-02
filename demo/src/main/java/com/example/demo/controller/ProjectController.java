@@ -36,6 +36,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.Collections;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -143,12 +144,17 @@ public class ProjectController {
             Project updatedProject = projectService.updateProject(id, projectUpdateDTO);
             ProjectResponseDTO response = ProjectResponseDTO.fromEntity(updatedProject);
             
+            Project updatedProject = projectService.updateProject(id, projectUpdateDTO);
+            ProjectResponseDTO response = ProjectResponseDTO.fromEntity(updatedProject);
+            
             activityService.logProjectUpdated(response.getName());
             return ResponseEntity.ok(response);
         } catch (ProjectNotFoundException e) {
             return ResponseEntity.notFound().build();
         } catch (BusinessException e) {
             return buildErrorResponse(e.getMessage());
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body("Error al actualizar el proyecto");
         } catch (Exception e) {
             return ResponseEntity.internalServerError().body("Error al actualizar el proyecto");
         }
@@ -169,6 +175,8 @@ public class ProjectController {
         List<ProjectResponse> projects = projectService.getAllProjects();
         return ResponseEntity.ok(projects);
     }
+
+    
 
     
 
@@ -241,7 +249,12 @@ public class ProjectController {
 
     @GetMapping("/overdue")
     public ResponseEntity<List<ProjectResponseDTO>> getOverdueProjects() {
+    public ResponseEntity<List<ProjectResponseDTO>> getOverdueProjects() {
         List<Project> projects = projectService.getOverdueProjects();
+        List<ProjectResponseDTO> dtos = projects.stream()
+                                            .map(ProjectResponseDTO::fromEntity)
+                                            .toList();
+        return ResponseEntity.ok(dtos);
         List<ProjectResponseDTO> dtos = projects.stream()
                                             .map(ProjectResponseDTO::fromEntity)
                                             .toList();
