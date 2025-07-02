@@ -70,7 +70,7 @@ public class Project {
     private Department department;
     
 @OneToMany(mappedBy = "project", cascade = CascadeType.ALL, orphanRemoval = true)
-@JsonManagedReference("project-tasks")
+
 private List<TaskEntity> tasks;
 
     

@@ -1,9 +1,7 @@
 package com.example.demo.service;
 
 import com.example.demo.controller.ProjectController.DepartmentDTO;
-import com.example.demo.controller.ProjectController.ProjectRequest;
 import com.example.demo.controller.ProjectController.ProjectResponse;
-import com.example.demo.dto.*;
 import com.example.demo.dto.request.project.ProjectCreateDTO;
 import com.example.demo.dto.request.project.ProjectUpdateDTO;
 import com.example.demo.entity.Project;

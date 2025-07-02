@@ -1,5 +1,5 @@
 package com.example.demo.service;
-
+import com.example.demo.dto.request.task.TaskRequestDTO;
 import com.example.demo.entity.Project;
 import com.example.demo.entity.TaskEntity;
 import com.example.demo.entity.TaskEntity.TaskPriority;
@@ -34,33 +34,43 @@ public class TaskService {
 
     /**
      * Crear una nueva tarea
-     * @param task - Entidad tarea a crear
+     * @param dto - Entidad tarea a crear
      * @return TaskEntity - Tarea creada con ID generado
      */
-    public TaskEntity createTask(TaskEntity task) {
-        log.info("Creando nueva tarea: {}", task.getName());
-        
-        // Validar que el proyecto existe
-        validateProjectExists(task.getProject().getId());
-        
-        // Validar usuario asignado si existe
-        if (task.getAssignedUser() != null) {
-            validateUserExists(task.getAssignedUser().getId());
+    public TaskEntity createTask(TaskRequestDTO dto) {
+        log.info("Creando nueva tarea desde DTO: {}", dto.getName());
+
+        // Validar y obtener el proyecto
+        Project project = projectRepository.findById(dto.getProjectId())
+                .orElseThrow(() -> new IllegalArgumentException("Proyecto no encontrado con ID: " + dto.getProjectId()));
+
+        // Validar y obtener el usuario asignado (si lo hay)
+        UserEntity user = null;
+        if (dto.getAssignedUserId() != null) {
+            user = userRepository.findById(dto.getAssignedUserId())
+                    .orElseThrow(() -> new IllegalArgumentException("Usuario no encontrado con ID: " + dto.getAssignedUserId()));
         }
-        
-        // Establecer valores por defecto si no vienen
-        if (task.getStatus() == null) {
-            task.setStatus(TaskStatus.PENDING);
-        }
-        if (task.getPriority() == null) {
-            task.setPriority(TaskPriority.MEDIUM);
-        }
-        
+
+        // Mapear DTO a entidad
+        TaskEntity task = new TaskEntity();
+        task.setName(dto.getName());
+        task.setDescription(dto.getDescription());
+        task.setStartDate(dto.getStartDate());
+        task.setEndDate(dto.getEndDate());
+        task.setEstimatedHours(dto.getEstimatedHours());
+        task.setActualHours(dto.getActualHours());
+        task.setProject(project);
+        task.setAssignedUser(user);
+
+        // Aplicar valores por defecto si no vienen
+        task.setStatus(dto.getStatus() != null ? TaskStatus.valueOf(dto.getStatus()) : TaskStatus.PENDING);
+        task.setPriority(dto.getPriority() != null ? TaskPriority.valueOf(dto.getPriority()) : TaskPriority.MEDIUM);
+
+        // Guardar
         TaskEntity savedTask = taskRepository.save(task);
-        log.info("Tarea creada exitosamente con ID: {}", savedTask.getId());
+        log.info("✅ Tarea creada exitosamente con ID: {}", savedTask.getId());
         return savedTask;
     }
-
     /**
      * Obtener todas las tareas
      * @return List<TaskEntity> - Lista de todas las tareas
