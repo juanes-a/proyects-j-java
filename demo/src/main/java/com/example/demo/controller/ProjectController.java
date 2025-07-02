@@ -141,8 +141,6 @@ public class ProjectController {
         }
         
         try {
-            Project updatedProject = projectService.updateProject(id, projectUpdateDTO);
-            ProjectResponseDTO response = ProjectResponseDTO.fromEntity(updatedProject);
             
             Project updatedProject = projectService.updateProject(id, projectUpdateDTO);
             ProjectResponseDTO response = ProjectResponseDTO.fromEntity(updatedProject);
@@ -153,8 +151,6 @@ public class ProjectController {
             return ResponseEntity.notFound().build();
         } catch (BusinessException e) {
             return buildErrorResponse(e.getMessage());
-        } catch (Exception e) {
-            return ResponseEntity.internalServerError().body("Error al actualizar el proyecto");
         } catch (Exception e) {
             return ResponseEntity.internalServerError().body("Error al actualizar el proyecto");
         }
@@ -249,12 +245,8 @@ public class ProjectController {
 
     @GetMapping("/overdue")
     public ResponseEntity<List<ProjectResponseDTO>> getOverdueProjects() {
-    public ResponseEntity<List<ProjectResponseDTO>> getOverdueProjects() {
         List<Project> projects = projectService.getOverdueProjects();
-        List<ProjectResponseDTO> dtos = projects.stream()
-                                            .map(ProjectResponseDTO::fromEntity)
-                                            .toList();
-        return ResponseEntity.ok(dtos);
+
         List<ProjectResponseDTO> dtos = projects.stream()
                                             .map(ProjectResponseDTO::fromEntity)
                                             .toList();

@@ -55,6 +55,9 @@ public class DepartmentController {
     @Autowired
     private ActivityService activityService;
 
+        @Autowired
+    private ProjectService projectService;
+
     @Autowired
     private DepartmentRepository departmentRepository;
 

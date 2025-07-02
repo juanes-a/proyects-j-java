@@ -214,8 +214,6 @@ import { Building2, DollarSign, TrendingUp, Search, Plus, Eye, Edit, Power, Tras
 import api from '../../api'
 import DepartmentModal from '../../components/departmentsGlobal/DepartmentModal.vue'
 import DepartmentViewModal from '../../components/departmentsGlobal/DepartmentViewModal.vue'
-import DepartmentModal from '../../components/departmentsGlobal/DepartmentModal.vue'
-import DepartmentViewModal from '../../components/departmentsGlobal/DepartmentViewModal.vue'
 import { useToastStore } from '../../stores/toast'
 
 const toastStore = useToastStore()

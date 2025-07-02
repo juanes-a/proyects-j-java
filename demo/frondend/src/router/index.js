@@ -56,8 +56,8 @@ const routes = [
   {
       path: '/tasksDash',
       name: 'TasksDashboard',
-      component: () => import('@/views/Collab/TaskDASH.vue'),
-      meta: { requiresAuth: true, roles: ['ADMIN_GLOBAL']}
+      component: () => import('../views/Collab/TaskDash.vue'),
+      meta: { requiresAuth: true, roles: ['COLLAB']}
     },
 
 

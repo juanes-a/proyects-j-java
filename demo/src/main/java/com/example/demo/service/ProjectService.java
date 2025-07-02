@@ -54,7 +54,8 @@ public class ProjectService {
 
     public ProjectService(ProjectRepository projectRepository) {
         this.projectRepository = projectRepository;
-        this.modelMapper = new ModelMapper();
+            this.modelMapper = new ModelMapper();
+        }
 
 
 
