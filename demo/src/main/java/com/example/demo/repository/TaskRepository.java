@@ -18,7 +18,9 @@ public interface TaskRepository extends JpaRepository<TaskEntity, Long> {
     // ========== BÚSQUEDAS BÁSICAS ==========
     
     // Buscar todas las tareas de un proyecto específico
-    List<TaskEntity> findByProjectId(Long projectId);
+    @Query("SELECT t FROM TaskEntity t WHERE t.project.id = :projectId")
+    List<TaskEntity> findByProjectId(@Param("projectId") Long projectId);
+
     
     // Buscar todas las tareas asignadas a un usuario específico
     List<TaskEntity> findByAssignedUserId(Long userId);

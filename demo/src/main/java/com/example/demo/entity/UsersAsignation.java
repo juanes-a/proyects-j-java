@@ -4,6 +4,7 @@ import java.time.LocalDateTime;
 
 import com.example.demo.enums.Role;
 
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
@@ -44,6 +45,7 @@ public class UsersAsignation {
     private TaskEntity task;
 
     @Enumerated(EnumType.STRING)
+    @Column(name = "rol_asignado", length = 30) 
     private Role rolAsignado;
 
     private LocalDateTime dateAsignDateTime;

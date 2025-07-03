@@ -5,9 +5,14 @@ import com.example.demo.entity.TaskEntity;
 import com.example.demo.entity.TaskEntity.TaskPriority;
 import com.example.demo.entity.TaskEntity.TaskStatus;
 import com.example.demo.entity.UserEntity;
+import com.example.demo.entity.UsersAsignation;
+import com.example.demo.enums.Role;
+import com.example.demo.exception.BusinessException;
 import com.example.demo.repository.ProjectRepository;
 import com.example.demo.repository.TaskRepository;
 import com.example.demo.repository.UserRepository;
+import com.example.demo.repository.UsersAsignationRepository;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -21,7 +26,7 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor  // Lombok genera constructor con campos final
-@Slf4j                   // Lombok genera logger automáticamente
+@Slf4j                  // Lombok genera logger automáticamente
 @Transactional           // Todas las operaciones son transaccionales por defecto
 public class TaskService {
 
@@ -29,6 +34,7 @@ public class TaskService {
     private final TaskRepository taskRepository;
     private final ProjectRepository projectRepository;
     private final UserRepository userRepository;
+    private final UsersAsignationRepository usersAsignationRepository;
 
     // ========== OPERACIONES CRUD BÁSICAS ==========
 
@@ -219,28 +225,43 @@ public class TaskService {
 
     /**
      * Asignar tarea a un usuario
-     * @param taskId - ID de la tarea
-     * @param userId - ID del usuario a asignar
-     * @return TaskEntity - Tarea con usuario asignado
      */
-    public TaskEntity assignTask(Long taskId, Long userId) {
-        log.info("Asignando tarea {} al usuario {}", taskId, userId);
-        
-        TaskEntity task = getTaskByIdOrThrow(taskId);
-        UserEntity user = userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("Usuario no encontrado con ID: " + userId));
-        
-        task.setAssignedUser(user);
-        
-        // Si la tarea estaba pendiente, cambiarla a en progreso
-        if (task.getStatus() == TaskStatus.PENDING) {
-            task.setStatus(TaskStatus.IN_PROGRESS);
+    public UsersAsignation assignUserToTask(String usernameOrEmail, Long taskId, Role role) {
+        // Validar usuario
+        UserEntity user = userRepository.findByUsernameOrEmail(usernameOrEmail, usernameOrEmail)
+            .orElseThrow(() -> new BusinessException("Usuario no encontrado: " + usernameOrEmail));
+
+        // Validar tarea
+        TaskEntity taskEntity = taskRepository.findById(taskId)
+            .orElseThrow(() -> new BusinessException("Tarea no encontrada con ID: " + taskId));
+
+        // Asignar rol (si aplica cambiarlo)
+        user.setRole(role);
+        userRepository.save(user);
+
+        // Verificar si ya está asignado a esta tarea (único caso que no permites)
+        Optional<UsersAsignation> existingAssignment = usersAsignationRepository
+            .findByUserAndTask(user, taskEntity);
+
+        if (existingAssignment.isPresent()) {
+            throw new BusinessException("El usuario ya está asignado a esta tarea.");
         }
-        
-        TaskEntity savedTask = taskRepository.save(task);
-        log.info("Tarea asignada exitosamente");
-        return savedTask;
+
+        // Crear asignación
+        UsersAsignation assignment = new UsersAsignation();
+        assignment.setUser(user);
+        assignment.setTask(taskEntity);
+        assignment.setRolAsignado(role);
+        assignment.setDateAsignDateTime(LocalDateTime.now());
+
+        log.info("Asignando usuario a la tarea {}...", taskEntity.getId());
+        UsersAsignation saved = usersAsignationRepository.save(assignment);
+        usersAsignationRepository.flush();
+
+        log.info("Asignación guardada: {}", saved);
+        return saved;
     }
+
 
     /**
      * Desasignar tarea (quitar usuario asignado)

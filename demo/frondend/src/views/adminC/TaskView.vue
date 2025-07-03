@@ -1,40 +1,5 @@
 <template>
   <div class="space-y-6 bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 min-h-screen p-6">
-    <!-- Header Banner -->
-    <div class="bg-gradient-to-r from-indigo-600 to-purple-700 rounded-xl p-6 text-white relative overflow-hidden">
-      <div class="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -translate-y-16 translate-x-16"></div>
-      <div class="absolute bottom-0 left-0 w-24 h-24 bg-white/10 rounded-full translate-y-12 -translate-x-12"></div>
-      <div class="relative z-10">
-        <div class="flex flex-col md:flex-row md:items-center md:justify-between space-y-4 md:space-y-0">
-          <div>
-            <div class="flex items-center space-x-3 mb-2">
-              <div class="w-12 h-12 bg-white/20 rounded-lg flex items-center justify-center">
-                <i class="fas fa-tasks text-white text-xl"></i>
-              </div>
-              <div>
-                <h1 class="text-2xl font-bold">Gestión de Tareas</h1>
-                <p class="text-indigo-100">Panel de Administración de Tareas</p>
-              </div>
-            </div>
-            <p class="text-indigo-100 mt-2">
-              ¡Bienvenido de vuelta! Aquí tienes el resumen de tus tareas para hoy.
-            </p>
-          </div>
-          <div class="flex items-center space-x-4">
-            <div class="hidden md:block">
-              <div class="w-20 h-20 bg-white/10 rounded-full flex items-center justify-center">
-                <i class="fas fa-clipboard-list text-white/80 text-2xl"></i>
-              </div>
-            </div>
-            <button @click="openCreateModal" class="btn-primary-header">
-              <i class="fas fa-plus mr-2"></i>
-              Nueva Tarea
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
-
     <!-- Stats Cards -->
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
       <div v-for="stat in headerStats" :key="stat.title" class="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm card-hover border border-slate-100 dark:border-gray-700">
@@ -97,15 +62,6 @@
            <select v-model="filters.projectId" @change="filterTasks" class="form-select w-full">
              <option value="">Todos los proyectos</option>
              <option v-for="project in projects" :key="project.id" :value="project.id">{{ project.name }}</option>
-           </select>
-         </div>
-
-         <!-- Usuario asignado -->
-         <div>
-           <label class="block text-sm font-semibold text-slate-700 dark:text-gray-300 mb-2">Asignado a</label>
-           <select v-model="filters.assignedUserId" @change="filterTasks" class="form-select w-full">
-             <option value="">Todos los usuarios</option>
-             <option v-for="user in users" :key="user.id" :value="user.id">{{ user.fullName }}</option>
            </select>
          </div>
 
@@ -442,12 +398,15 @@
             </div>
           </div>
 
-          <div>
-            <label class="form-label">Proyecto *</label>
-            <select v-model="taskForm.projectId" required class="form-select">
-              <option value="">Seleccionar proyecto</option>
-              <option v-for="project in projects" :key="project.id" :value="project.id">{{ project.name }}</option>
-            </select>
+
+          <div v-if="!isEditing">
+            <label class="form-label">Asignar a (username o email)</label>
+            <input 
+              v-model="taskForm.assignedUserIdentifier" 
+              type="text" 
+              placeholder="Ingrese username o email del usuario" 
+              class="form-input"
+            >
           </div>
 
           <div class="flex justify-end space-x-3 pt-6 border-t border-slate-200 dark:border-gray-600">
@@ -462,6 +421,10 @@
 
 <script>
 import axios from 'axios'
+import { useAuthStore } from '../../stores/auth'
+
+const authStore = useAuthStore()
+
 
 export default {
   name: 'TaskView',
@@ -492,7 +455,8 @@ export default {
        endDate: '',
        estimatedHours: null,
        actualHours: null,
-       projectId: ''
+       projectId: '',
+       assignedUserIdentifier: '' 
      }
    };
 
@@ -530,27 +494,61 @@ export default {
   },
   async mounted() {
     await this.loadTasks()
-    await this.loadProjects()
-    await this.loadUsers() // nuevo
   },
 
   methods: {
     async loadTasks() {
-      try {
-        const response = await axios.get('/api/tasks')
-        this.tasks = response.data
-        this.filteredTasks = [...this.tasks]
+    try {
+        // Obtener el username/email del usuario actual (ajusta según tu sistema)
+        const userEmail = authStore.user?.email || localStorage.getItem('userEmail');
+         console.log('🔍 Usuario actual:', userEmail); 
+    
+        if (!userEmail) {
+          throw new Error('User email not available');
+        }
+
+        const response = await axios.get(`/api/projects/assing-project/${userEmail}`);
+         console.log('📦 Respuesta completa del backend:', response);
+
+        console.log('📊 Datos recibidos:', response.data); // Log 3
+        console.log('🆔 ID del proyecto:', response.data.projectId); // Log 4
+        console.log('🏷️ Nombre del proyecto:', response.data.projectName); // Log 5
+        console.log('✅ Tareas recibidas:', response.data.tasks);
+        
+        // Actualiza los datos con la respuesta
+        this.projects = [{ 
+          id: response.data.projectId, 
+          name: response.data.projectName 
+        }];
+        
+        this.tasks = response.data.tasks;
+        this.filteredTasks = [...this.tasks];
+        this.taskForm.projectId = response.data.projectId;
+
       } catch (error) {
-        console.error('Error loading tasks:', error)
+        console.error('Error loading tasks:', error);
+
+        this.projects = [];
+        this.tasks = [];
+        this.filteredTasks = [];
       }
     },
+      async assignUserToTask(taskId) {
+      const usernameOrEmail = prompt("Ingrese el username o email del usuario a asignar:");
+      if (!usernameOrEmail) return;
 
-    async loadProjects() {
       try {
-        const response = await axios.get('/api/projects')
-        this.projects = response.data
+        const response = await axios.post('/api/tasks/assign-task', {
+          usernameOrEmail: usernameOrEmail,
+          taskId: taskId,
+          role: 'COLLAB'
+        });
+        
+        alert('Usuario asignado correctamente');
+        await this.loadTasks(); // Recargar las tareas para ver los cambios
       } catch (error) {
-        console.error('Error loading projects:', error)
+        console.error('Error assigning user to task:', error);
+        alert(error.response?.data?.message || 'Error al asignar usuario');
       }
     },
 
@@ -562,18 +560,6 @@ export default {
         month: 'long',
         day: 'numeric'
       })
-    },
-
-
-
-
-    async loadUsers() {
-      try {
-        const response = await axios.get('/api/users')
-        this.users = response.data
-      } catch (error) {
-        console.error('Error loading users:', error)
-      }
     },
 
     filterTasks() {
@@ -624,21 +610,52 @@ export default {
     },
     async saveTask() {
       try {
+        // Verifica que haya un proyecto asignado
+        if (!this.projects.length || !this.projects[0].id) {
+          throw new Error('No hay proyecto asignado');
+        }
+
         const taskData = {
-          name: this.taskForm.name, description: this.taskForm.description, status: this.taskForm.status,
-          priority: this.taskForm.priority, startDate: this.taskForm.startDate || null, endDate: this.taskForm.endDate || null,
-          estimatedHours: this.taskForm.estimatedHours, actualHours: this.taskForm.actualHours, projectId: this.taskForm.projectId
-        }
+          name: this.taskForm.name,
+          description: this.taskForm.description,
+          status: this.taskForm.status,
+          priority: this.taskForm.priority,
+          startDate: this.taskForm.startDate || null,
+          endDate: this.taskForm.endDate || null,
+          estimatedHours: this.taskForm.estimatedHours,
+          actualHours: this.taskForm.actualHours,
+          projectId: this.projects[0].id
+        };
+
+        let response;
         if (this.isEditing) {
-          await axios.put(`/api/tasks/${this.taskForm.id}`, taskData)
+          response = await axios.put(`/api/tasks/${this.taskForm.id}`, taskData);
         } else {
-          await axios.post('/api/tasks', taskData)
+          // 1. Primero creamos la tarea
+          response = await axios.post('/api/tasks', taskData);
+          
+          // 2. Si hay un usuario para asignar, lo hacemos después
+          if (this.taskForm.assignedUserIdentifier) {
+            try {
+              await axios.post('/api/tasks/assign-task', {
+                usernameOrEmail: this.taskForm.assignedUserIdentifier,
+                taskId: response.data.id, 
+                role: 'COLLAB'
+              });
+              
+              console.log("Usuario asignado correctamente");
+            } catch (assignError) {
+              console.error('Error asignando usuario:', assignError);
+              alert('Tarea creada pero falló la asignación del usuario');
+            }
+          }
         }
-        await this.loadTasks()
-        this.closeModal()
+
+        await this.loadTasks();
+        this.closeModal();
       } catch (error) {
-        console.error('Error saving task:', error)
-        alert('Error al guardar la tarea')
+        console.error('Error saving task:', error);
+        alert(error.response?.data?.message || 'Error al guardar la tarea');
       }
     },
     async deleteTask(taskId) {

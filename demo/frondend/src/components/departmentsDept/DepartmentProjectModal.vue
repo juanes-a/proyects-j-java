@@ -148,6 +148,20 @@
           </p>
         </div>
 
+                <!-- User Assignment (Solo en creación) -->
+        <div v-if="!isEditing">
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            Assign Project Admin (Username or Email)
+          </label>
+          <input
+            v-model="form.assignedUser"
+            type="text"
+            placeholder="Enter admin's username or email"
+            class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          />
+          <p v-if="userAssignmentError" class="text-red-500 text-sm mt-1">{{ userAssignmentError }}</p>
+        </div>
+
         <!-- Error message general -->
         <div v-if="generalError" class="bg-red-50 border-l-4 border-red-500 p-4">
           <div class="flex">
@@ -203,6 +217,7 @@ const emit = defineEmits(['close', 'save'])
 const loading = ref(false)
 const errors = ref({})
 const generalError = ref('')
+const userAssignmentError = ref(null)
 
 const form = reactive({
   name: '',
@@ -213,7 +228,8 @@ const form = reactive({
   priority: 'MEDIUM',
   startDate: new Date().toISOString().split('T')[0],
   endDate: '',
-  budget: null
+  budget: null,
+  assignedUser: ''
 })
 
 console.log('📋 Form inicial:', form)
@@ -275,6 +291,7 @@ watch(
 const validateForm = () => {
   errors.value = {}
   let isValid = true
+  userAssignmentError.value = null
   
   if (!form.name.trim()) {
     errors.value.name = 'Project name is required'
@@ -313,17 +330,25 @@ const handleSubmit = async () => {
   generalError.value = ''
   
   try {
-    const projectData = {
-      name: form.name.trim(),
-      description: form.description ? form.description.trim() || null : null,
-      objectives: form.objectives ? form.objectives.trim() || null : null,
-      departmentId: Number(form.departmentId),
-      status: form.status,
-      priority: form.priority,
-      startDate: form.startDate,
-      endDate: form.endDate,
-      budget: form.budget !== null ? Number(form.budget) : null
+  let userAssignment = null;
+  if (!props.isEditing && form.assignedUser) {
+    userAssignment = {
+      usernameOrEmail: form.assignedUser
     }
+  }
+
+  const projectData = {
+    name: form.name.trim(),
+    description: form.description ? form.description.trim() || null : null,
+    objectives: form.objectives ? form.objectives.trim() || null : null,
+    departmentId: Number(form.departmentId),
+    status: form.status,
+    priority: form.priority,
+    startDate: form.startDate,
+    endDate: form.endDate,
+    budget: form.budget !== null ? Number(form.budget) : null,
+    userAssignment // ✅ ahora se asigna correctamente
+  }
     
     console.log('📦 Datos a enviar:', projectData)
     

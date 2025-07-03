@@ -193,9 +193,17 @@ const menuItems = [
   { name: 'Projects', path: '/projectsDept', icon: FolderOpen, roles: ['ADMIN_DEPT'] },
   { name: 'Stats', path: '/deptStats', icon: Users, roles: ['ADMIN_DEPT'] },
   { name: 'Settings', path: '/settings', icon: Settings, roles: ['ADMIN_DEPT'] },
+
+  { name: 'Dashboard', path: '/dashTask', icon: FolderOpen, roles: ['ADMIN_COLLAB'] },
+  { name: 'Tasks', path: '/tasks', icon: Users, roles: ['ADMIN_COLLAB'] },
+  { name: 'Settings', path: '/settings', icon: Settings, roles: ['ADMIN_COLLAB'] },
+
+  { name: 'Dashboard', path: '/homeTask', icon: FolderOpen, roles: ['COLLAB'] },
+  { name: 'Tasks', path: '/tasksDash', icon: Users, roles: ['COLLAB'] },
+  { name: 'Settings', path: '/settings', icon: Settings, roles: ['COLLAB'] },
   
   // Item de logout
-  { name: 'Cerrar sesión', path: '#logout', icon: LogOut, roles: ['ADMIN_GLOBAL', 'ADMIN_DEPT'] }
+  { name: 'Cerrar sesión', path: '#logout', icon: LogOut, roles: ['ADMIN_GLOBAL', 'ADMIN_DEPT', 'ADMIN_COLLAB', 'COLLAB'] }
 ]
 
 // Función para cerrar sesión

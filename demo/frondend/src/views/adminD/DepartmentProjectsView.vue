@@ -584,9 +584,31 @@ const handleSave = async (projectData) => {
       await api.put(`/projects/${selectedProject.value.id}`, projectData)
       toastStore.showToast('Project updated successfully', 'success')
     } else {
-      await api.post('/projects', projectData)
+      const createResponse = await api.post('/projects', projectData)
       toastStore.showToast('Project created successfully', 'success')
+
+      console.log('Project Data:', projectData)
+      if (projectData.userAssignment) {
+        try {
+          await api.post('/projects/assign-user', {
+            usernameOrEmail: projectData.userAssignment.usernameOrEmail,
+            projectId: createResponse.data.id,
+            role: 'ADMIN_COLLAB'
+          })
+
+          console.log("→ Enviando asignación al backend:", {
+          usernameOrEmail: projectData.userAssignment.usernameOrEmail,
+          projectId: createResponse.data.id,
+          role: 'ADMIN_COLLAB'
+        })
+          toastStore.showToast('Admin assigned successfully', 'success')
+        } catch (assignError) {
+          console.error('Error assigning admin:', assignError)
+          toastStore.showToast('Project created but failed to assign admin', 'warning')
+        }
+      }
     }
+
     
     await fetchDepartmentProjects()
     closeModal()

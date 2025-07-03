@@ -47,21 +47,6 @@ const routes = [
     meta: { requiresAuth: true, roles: ['ADMIN_GLOBAL'] }
   },
 
-  {
-    path: '/tasks',
-    name: 'TasksGlobal',
-    component: () => import('@/views/adminG/TaskView.vue'),
-    meta: { requiresAuth: true, roles: ['ADMIN_GLOBAL']}
-  },
-  {
-      path: '/tasksDash',
-      name: 'TasksDashboard',
-      component: () => import('../views/Collab/TaskDash.vue'),
-      meta: { requiresAuth: true, roles: ['COLLAB']}
-    },
-
-
-
   // Admin Departamento
   {
     path: '/departmentHome',
@@ -78,6 +63,36 @@ const routes = [
     name: 'deptStats',
     component: DepartmentStats,
     meta: { requiresAuth: true, roles: ['ADMIN_DEPT'] }
+  },
+
+  // Admin Departamento
+  
+  {
+    path: '/tasks',
+    name: 'TasksGlobal',
+    component: () => import('@/views/adminC/TaskView.vue'),
+    meta: { requiresAuth: true, roles: ['ADMIN_COLLAB']}
+  },
+    {
+    path: '/dashTask',
+    name: 'taskdash',
+    component: () => import('@/views/adminC/DashboardView.vue'),
+    meta: { requiresAuth: true, roles: ['ADMIN_COLLAB']}
+  },
+
+  // Collab
+  
+  {
+      path: '/tasksDash',
+      name: 'TasksDashboard',
+      component: () => import('../views/Collab/TaskDash.vue'),
+      meta: { requiresAuth: true, roles: ['COLLAB']}
+  },
+  {
+      path: '/homeTask',
+      name: 'homeTask',
+      component: () => import('../views/Collab/home.vue'),
+      meta: { requiresAuth: true, roles: ['COLLAB']}
   },
 
 

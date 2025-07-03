@@ -113,7 +113,8 @@ const handleLogin = async () => {
     const redirectPaths = {
       'ADMIN_GLOBAL': '/homeDepartaments',
       'ADMIN_DEPT': '/departmentHome', 
-      'COLLAB': '/tasksDash'
+      'ADMIN_COLLAB': '/dashTask', 
+      'COLLAB': '/homeTask'
     }
     
     const redirectPath = redirectPaths[userData.role] || '/access-denied'

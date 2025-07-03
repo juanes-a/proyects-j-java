@@ -6,10 +6,18 @@ import com.example.demo.dto.request.project.ProjectCreateDTO;
 import com.example.demo.dto.request.project.ProjectUpdateDTO;
 import com.example.demo.dto.response.ProjectResponseDTO;
 import com.example.demo.entity.Project;
+import com.example.demo.entity.UserEntity;
+import com.example.demo.entity.UsersAsignation;
 import com.example.demo.entity.Department;
 import com.example.demo.enums.ProjectStatus;
+import com.example.demo.enums.Role;
 import com.example.demo.enums.ProjectPriority;
 import com.example.demo.repository.ProjectRepository;
+import com.example.demo.repository.UserRepository;
+import com.example.demo.repository.UsersAsignationRepository;
+
+import jakarta.persistence.EntityNotFoundException;
+
 import com.example.demo.repository.DepartmentRepository;
 import com.example.demo.exception.ProjectNotFoundException;
 import com.example.demo.exception.BusinessException;
@@ -22,17 +30,19 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
-
+import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
+@Slf4j
 @Service
-@Transactional(readOnly = true)
+@Transactional
 public class ProjectService {
 
     private static final Logger logger = LoggerFactory.getLogger(ProjectService.class);
@@ -42,6 +52,12 @@ public class ProjectService {
 
     @Autowired
     private DepartmentRepository departmentRepository;
+
+    @Autowired
+    private UsersAsignationRepository usersAsignationRepository;
+
+    @Autowired
+    private UserRepository userRepository;
 
 
     private final ModelMapper modelMapper;
@@ -344,6 +360,65 @@ public class ProjectService {
             })
             .collect(Collectors.toList());
     }
+
+
+
+    public UsersAsignation assignUserToProject(String usernameOrEmail, Long projectId, Role role) {
+        // Validar usuario
+        UserEntity user = userRepository.findByUsernameOrEmail(usernameOrEmail, usernameOrEmail)
+            .orElseThrow(() -> new BusinessException("Usuario no encontrado: " + usernameOrEmail));
+
+        // Validar proyecto
+        Project project = projectRepository.findById(projectId)
+            .orElseThrow(() -> new BusinessException("Proyecto no encontrado con ID: " + projectId));
+
+        // Asignar rol
+        user.setRole(role);
+        userRepository.save(user);
+
+        // Verificar si ya está asignado al proyecto
+        Optional<UsersAsignation> existingAssignment = usersAsignationRepository
+            .findByUserAndProject(user, project);
+
+        if (existingAssignment.isPresent()) {
+            throw new BusinessException("El usuario ya está asignado a este proyecto.");
+        }
+
+        // Crear asignación
+        UsersAsignation assignment = new UsersAsignation();
+        assignment.setUser(user);
+        assignment.setProject(project);
+        assignment.setRolAsignado(role);
+        assignment.setDateAsignDateTime(LocalDateTime.now());
+
+        logger.info("Asignando usuario al proyecto {}...", project.getId());
+        UsersAsignation saved = usersAsignationRepository.save(assignment);
+        usersAsignationRepository.flush(); // Fuerza el INSERT
+        logger.info("Asignación guardada: {}", saved);
+
+        return saved;
+    }
+
+    public Optional<UsersAsignation> getUserProjectAssignment(String usernameOrEmail) {
+        // 1. Validación básica del input
+        if (usernameOrEmail == null || usernameOrEmail.isBlank()) {
+            throw new IllegalArgumentException("Username/email no puede estar vacío");
+        }
+
+        // 2. Normalización del input
+        String normalizedInput = usernameOrEmail.trim().toLowerCase();
+
+        // 3. Buscar usuario (con mejor manejo de errores)
+        UserEntity user = userRepository.findByUsernameOrEmail(normalizedInput, normalizedInput)
+            .orElseThrow(() -> new EntityNotFoundException(
+                "Usuario '" + normalizedInput + "' no encontrado"));
+
+        // 4. Obtener asignación activa más reciente
+        return usersAsignationRepository.findTopByUserAndProjectIsNotNullOrderByDateAsignDateTimeDesc(user);
+    }
+
+
+
 
 }
 

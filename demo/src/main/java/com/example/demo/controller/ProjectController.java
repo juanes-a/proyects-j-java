@@ -2,11 +2,14 @@ package com.example.demo.controller;
 
 import com.example.demo.controller.ProjectController.ProjectResponse;
 import com.example.demo.dto.*;
+import com.example.demo.dto.request.project.AssignUserToProjectRequest;
 import com.example.demo.dto.request.project.ProjectCreateDTO;
 import com.example.demo.dto.request.project.ProjectUpdateDTO;
 import com.example.demo.dto.response.ProjectResponseDTO;
+import com.example.demo.dto.response.TaskResponse;
 import com.example.demo.entity.Department;
 import com.example.demo.entity.Project;
+import com.example.demo.entity.TaskEntity;
 import com.example.demo.entity.UsersAsignation;
 import com.example.demo.enums.ProjectStatus;
 import com.example.demo.enums.ProjectPriority;
@@ -16,10 +19,12 @@ import com.example.demo.service.ProjectService;
 import com.example.demo.exception.ProjectNotFoundException;
 import com.example.demo.exception.ResourceNotFoundException;
 import com.example.demo.repository.ProjectRepository;
+import com.example.demo.repository.TaskRepository;
 import com.example.demo.exception.BusinessException;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.scheduling.config.Task;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.validation.BindingResult;
@@ -31,6 +36,7 @@ import jakarta.validation.constraints.NotBlank;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -43,6 +49,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+@Slf4j
 @RestController
 @RequestMapping("/api/projects")
 @CrossOrigin(origins = "http://localhost:5173")
@@ -56,6 +63,9 @@ public class ProjectController {
     
         @Autowired
     private ProjectRepository projectRepository;
+
+        @Autowired
+    private TaskRepository taskRepository;
     
 
     @Autowired
@@ -299,49 +309,120 @@ public class ProjectController {
     }
 
     /*  Obtener lo projectos por email */
-@GetMapping("user/{usernameOrEmail}")
-public ResponseEntity<?> getProjectsByUserDepartment(@PathVariable @NotBlank String usernameOrEmail) {
-    try {
-        // Validación básica
-        if (usernameOrEmail.isBlank()) {
-            return ResponseEntity.badRequest()
-                .body(Map.of("message", "El username/email no puede estar vacío"));
+    @GetMapping("user/{usernameOrEmail}")
+    public ResponseEntity<?> getProjectsByUserDepartment(@PathVariable @NotBlank String usernameOrEmail) {
+        try {
+            // Validación básica
+            if (usernameOrEmail.isBlank()) {
+                return ResponseEntity.badRequest()
+                    .body(Map.of("message", "El username/email no puede estar vacío"));
+            }
+
+            String normalizedInput = usernameOrEmail.trim().toLowerCase();
+            
+            // Obtener asignación del usuario
+            UsersAsignation assignment = departmentService.getUserDepartmentAssignment(normalizedInput)
+                .orElseThrow(() -> new ResourceNotFoundException("Usuario no encontrado o sin departamento asignado"));
+
+            Department department = Optional.ofNullable(assignment.getDepartment())
+                .orElseThrow(() -> new ResourceNotFoundException("Departamento no encontrado para el usuario"));
+
+            // Obtener las entidades Project directamente del repositorio
+            List<Project> projectEntities = projectRepository.findByDepartmentId(department.getId());
+            
+            // Convertir a DTOs
+            List<ProjectResponseDTO> projects = projectEntities.stream()
+                .map(ProjectResponseDTO::fromEntity)
+                .toList();
+
+            // Construir respuesta
+            Map<String, Object> response = new HashMap<>();
+            response.put("departmentId", department.getId());
+            response.put("departmentName", department.getName());
+            response.put("projects", projects);
+
+            return ResponseEntity.ok(response);
+
+        } catch (ResourceNotFoundException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .body(Map.of("message", e.getMessage()));
+        } catch (Exception e) {
+            logger.error("Error en getProjectsByUserDepartment: ", e);
+            return ResponseEntity.internalServerError()
+                .body(Map.of("message", "Error interno del servidor"));
         }
+    }
 
-        String normalizedInput = usernameOrEmail.trim().toLowerCase();
-        
-        // Obtener asignación del usuario
-        UsersAsignation assignment = departmentService.getUserDepartmentAssignment(normalizedInput)
-            .orElseThrow(() -> new ResourceNotFoundException("Usuario no encontrado o sin departamento asignado"));
 
-        Department department = Optional.ofNullable(assignment.getDepartment())
-            .orElseThrow(() -> new ResourceNotFoundException("Departamento no encontrado para el usuario"));
+    /*Asignar un proyecto */
+    @PostMapping("/assign-user")
+    public ResponseEntity<?> assignUserToProject(@RequestBody AssignUserToProjectRequest request) {
+        log.info("Datos recibidos en /projects/assign: {}", request);
 
-        // Obtener las entidades Project directamente del repositorio
-        List<Project> projectEntities = projectRepository.findByDepartmentId(department.getId());
-        
+        try {
+            UsersAsignation assignment = projectService.assignUserToProject(
+                request.getUsernameOrEmail(),
+                request.getProjectId(),
+                request.getRole()
+            );
+            log.info("Asignación exitosa a proyecto: {}", assignment);
+            return ResponseEntity.ok(assignment);
+        } catch (Exception e) {
+            log.error("Error en asignación a proyecto: ", e);
+            return ResponseEntity.badRequest()
+                .body(new ErrorResponse("Error al asignar usuario al proyecto: " + e.getMessage()));
+        }
+    }
+
+    /*Cargar proyecto asignado */
+    @GetMapping("assing-project/{usernameOrEmail}")
+    public ResponseEntity<?> getProjectsByUserProject(@PathVariable @NotBlank String usernameOrEmail) {
+        try {
+            // Validación básica
+            if (usernameOrEmail.isBlank()) {
+                return ResponseEntity.badRequest()
+                    .body(Map.of("message", "El username/email no puede estar vacío"));
+            }
+
+            String normalizedInput = usernameOrEmail.trim().toLowerCase();
+            
+            // Obtener asignación del usuario
+            UsersAsignation assignment = projectService.getUserProjectAssignment(normalizedInput)
+                .orElseThrow(() -> new ResourceNotFoundException("Usuario no encontrado o sin proyecto asignado"));
+            
+            // Obtener proyecto
+            Project project = Optional.ofNullable(assignment.getProject())
+                .orElseThrow(() -> new ResourceNotFoundException("Proyecto no encontrado para el usuario"));
+
+            // Obtener las entidades tareas directamente del repositorio
+        List<TaskEntity> taskList = taskRepository.findByProjectId(project.getId());
+            
         // Convertir a DTOs
-        List<ProjectResponseDTO> projects = projectEntities.stream()
-            .map(ProjectResponseDTO::fromEntity)
-            .toList();
+        List<TaskResponse> taskResponses = taskList.stream()
+        .map(TaskResponse::fromEntity)
+        .toList();
 
         // Construir respuesta
         Map<String, Object> response = new HashMap<>();
-        response.put("departmentId", department.getId());
-        response.put("departmentName", department.getName());
-        response.put("projects", projects);
+        response.put("projectId", project.getId());
+        response.put("projectName", project.getName());
+        response.put("tasks", taskResponses);
 
         return ResponseEntity.ok(response);
 
-    } catch (ResourceNotFoundException e) {
-        return ResponseEntity.status(HttpStatus.NOT_FOUND)
-            .body(Map.of("message", e.getMessage()));
-    } catch (Exception e) {
-        logger.error("Error en getProjectsByUserDepartment: ", e);
-        return ResponseEntity.internalServerError()
-            .body(Map.of("message", "Error interno del servidor"));
+        } catch (ResourceNotFoundException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .body(Map.of("message", e.getMessage()));
+        } catch (Exception e) {
+            logger.error("Error en getProjectsByUserDepartment: ", e);
+            return ResponseEntity.internalServerError()
+                .body(Map.of("message", "Error interno del servidor"));
+        }
     }
-}
+
+
+
+
 }
 
     

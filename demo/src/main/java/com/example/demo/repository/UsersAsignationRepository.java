@@ -29,13 +29,21 @@ public interface UsersAsignationRepository extends JpaRepository<UsersAsignation
     Optional<UsersAsignation> findDepartmentAssignmentByUserId(@Param("userId") Long userId);
 
     // Consultas para Proyectos
-    List<UsersAsignation> findByUserAndProjectIsNotNull(UserEntity user);
+    Optional<UsersAsignation> findByUserAndProjectIsNotNull(UserEntity user);
+
+    Optional<UsersAsignation> findByUserAndProject(UserEntity user, Project project);
+
+    Optional<UsersAsignation> findByUserAndTask(UserEntity user, TaskEntity taskEntity);
     
     List<UsersAsignation> findByProject(Project project);
     
     List<UsersAsignation> findByProjectAndRolAsignado(Project project, Role role);
 
     // Consultas para Tareas
+    @Query("SELECT ua FROM UsersAsignation ua WHERE ua.user = :user AND ua.task IS NOT NULL")
+    List<UsersAsignation> findAssignedTasks(@Param("user") UserEntity user);
+
+
     List<UsersAsignation> findByUserAndTaskIsNotNull(UserEntity user);
     
     List<UsersAsignation> findByTask(TaskEntity task);
@@ -86,5 +94,14 @@ public interface UsersAsignationRepository extends JpaRepository<UsersAsignation
         "AND d.isActive = true " +
         "ORDER BY ua.dateAsignDateTime DESC")
     Optional<UsersAsignation> findTopByUserAndDepartmentIsNotNullOrderByDateAsignDateTimeDesc(
+        @Param("user") UserEntity user);
+
+
+    @Query("SELECT ua FROM UsersAsignation ua " +
+        "JOIN ua.project p " +
+        "WHERE ua.user = :user " +
+        "AND ua.project IS NOT NULL " +
+        "ORDER BY ua.dateAsignDateTime DESC")
+    Optional<UsersAsignation> findTopByUserAndProjectIsNotNullOrderByDateAsignDateTimeDesc(
         @Param("user") UserEntity user);
 }

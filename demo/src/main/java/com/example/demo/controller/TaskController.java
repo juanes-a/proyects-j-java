@@ -1,10 +1,20 @@
 package com.example.demo.controller;
 
+import com.example.demo.dto.request.project.AssignUserToProjectRequest;
+import com.example.demo.dto.request.task.AssignUserToTaskRequest;
 import com.example.demo.dto.request.task.TaskRequestDTO;
+import com.example.demo.dto.response.TaskResponse;
 import com.example.demo.entity.TaskEntity;
 import com.example.demo.entity.TaskEntity.TaskPriority;
 import com.example.demo.entity.TaskEntity.TaskStatus;
+import com.example.demo.entity.UserEntity;
+import com.example.demo.entity.UsersAsignation;
+import com.example.demo.exception.ResourceNotFoundException;
+import com.example.demo.repository.UserRepository;
+import com.example.demo.repository.UsersAsignationRepository;
 import com.example.demo.service.TaskService;
+
+import jakarta.validation.constraints.NotBlank;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -15,8 +25,10 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 
 @RestController                    // Indica que es un controlador REST que devuelve JSON
@@ -28,6 +40,9 @@ public class TaskController {
 
     // Inyección automática del servicio
     private final TaskService taskService;
+    private final UserRepository userRepository;
+    private final UsersAsignationRepository usersAsignationRepository;
+
 
     // ========== ENDPOINTS CRUD BÁSICOS ==========
 
@@ -261,31 +276,26 @@ public class TaskController {
 
     // ========== ENDPOINTS DE ASIGNACIÓN ==========
 
-    /**
-     * 🔵 PUT /api/tasks/{taskId}/assign/{userId} - Asignar tarea a usuario
-     * Ejemplo: PUT http://localhost:8080/api/tasks/1/assign/5
-     */
-    @PutMapping("/{taskId}/assign/{userId}")
-    public ResponseEntity<TaskEntity> assignTask(@PathVariable Long taskId,
-                                               @PathVariable Long userId) {
-        log.info("👥 PUT /api/tasks/{}/assign/{} - Asignando tarea a usuario", taskId, userId);
+        /*Asignar tareas */
+    @PostMapping("/assign-task")
+    public ResponseEntity<?> assignUserToTask(@RequestBody AssignUserToTaskRequest request) {
+        log.info("Datos recibidos en /task/assign: {}", request);
 
         try {
-            TaskEntity assignedTask = taskService.assignTask(taskId, userId);
-            log.info("✅ Tarea {} asignada al usuario {} exitosamente", taskId, userId);
-
-            return ResponseEntity.ok(assignedTask);
-
-        } catch (RuntimeException e) {
-            log.error("❌ Error al asignar tarea {}: {}", taskId, e.getMessage());
-            return ResponseEntity.notFound().build();
-
+            UsersAsignation assignment = taskService.assignUserToTask(
+                request.getUsernameOrEmail(),
+                request.getTaskId(),
+                request.getRole()
+            );
+            log.info("Asignación exitosa a proyecto: {}", assignment);
+            return ResponseEntity.ok(assignment);
         } catch (Exception e) {
-            log.error("❌ Error interno al asignar tarea {}: {}", taskId, e.getMessage());
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+            log.error("Error en asignación a proyecto: ", e);
+            return ResponseEntity.badRequest()
+                .body(new ErrorResponse("Error al asignar usuario al proyecto: " + e.getMessage()));
         }
     }
-
+    
     /**
      * 🔵 PUT /api/tasks/{taskId}/unassign - Desasignar tarea (quitar usuario)
      * Ejemplo: PUT http://localhost:8080/api/tasks/1/unassign
@@ -392,4 +402,69 @@ public class TaskController {
         }
     }
 
+    /*Cargar tareas por user */
+    
+        @GetMapping("assigned-tasks/{usernameOrEmail}")
+    public ResponseEntity<?> getAssignedTasks(@PathVariable @NotBlank String usernameOrEmail) {
+        try {
+            if (usernameOrEmail.isBlank()) {
+                return ResponseEntity.badRequest()
+                    .body(Map.of("message", "El username/email no puede estar vacío"));
+            }
+
+            String normalizedInput = usernameOrEmail.trim().toLowerCase();
+
+            // Buscar usuario
+            UserEntity user = userRepository.findByUsernameOrEmail(normalizedInput, normalizedInput)
+                .orElseThrow(() -> new ResourceNotFoundException("Usuario no encontrado"));
+
+            // Buscar todas las asignaciones a tareas de este usuario
+            List<UsersAsignation> assignments = usersAsignationRepository.findAssignedTasks(user);
+
+            // Obtener las tareas asignadas (evitar duplicados si los hay)
+            List<TaskEntity> taskList = assignments.stream()
+                .map(UsersAsignation::getTask)
+                .filter(Objects::nonNull)
+                .distinct()
+                .toList();
+
+            // Convertir a DTOs
+            List<TaskResponse> taskResponses = taskList.stream()
+                .map(TaskResponse::fromEntity)
+                .toList();
+
+            // Respuesta
+            Map<String, Object> response = new HashMap<>();
+            response.put("user", user.getUsername());
+            response.put("assignedTasks", taskResponses);
+
+            return ResponseEntity.ok(response);
+
+        } catch (ResourceNotFoundException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .body(Map.of("message", e.getMessage()));
+        } catch (Exception e) {
+            log.error("Error en getAssignedTasks: ", e);
+            return ResponseEntity.internalServerError()
+                .body(Map.of("message", "Error interno del servidor"));
+        }
+    }
+
+}
+
+// Simple error response class for error messages
+class ErrorResponse {
+    private String message;
+
+    public ErrorResponse(String message) {
+        this.message = message;
+    }
+
+    public String getMessage() {
+        return message;
+    }
+
+    public void setMessage(String message) {
+        this.message = message;
+    }
 }
