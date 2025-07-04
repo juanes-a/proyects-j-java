@@ -2,7 +2,7 @@
   <div class="auth-container">
     <div class="auth-card">
       <h1 class="auth-title">Registro en ProyectS-J</h1>
-      
+
       <form @submit.prevent="handleRegister" class="auth-form">
         <!-- Full Name Input -->
         <div class="input-group">
@@ -28,7 +28,7 @@
             autocomplete="name"
           />
         </div>
-        
+
         <!-- Email Input -->
         <div class="input-group">
           <label for="email">Correo electrónico</label>
@@ -41,7 +41,7 @@
             autocomplete="email"
           />
         </div>
-        
+
         <!-- Password Input -->
         <div class="input-group">
           <label for="password">Contraseña</label>
@@ -55,7 +55,7 @@
           />
           <p class="input-hint">Mínimo 8 caracteres</p>
         </div>
-        
+
         <!-- Confirm Password Input -->
         <div class="input-group">
           <label for="confirmPassword">Confirmar contraseña</label>
@@ -68,13 +68,13 @@
             autocomplete="new-password"
           />
         </div>
-        
+
         <!-- Submit Button -->
         <button type="submit" class="auth-button" :disabled="loading || !passwordsMatch">
           <span v-if="!loading">Crear cuenta</span>
           <span v-else>Procesando...</span>
         </button>
-        
+
         <!-- Form Footer -->
         <div class="auth-footer">
           <p>¿Ya tienes una cuenta? <router-link to="/login">Inicia sesión</router-link></p>
@@ -110,9 +110,9 @@ const passwordsMatch = computed(() => {
 // Register handler
 const handleRegister = async () => {
   if (!passwordsMatch.value) return;
-  
+
   loading.value = true;
-  
+
   try {
     const response = await fetch('http://localhost:8081/api/auth/register', {
       method: 'POST',

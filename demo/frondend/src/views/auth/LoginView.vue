@@ -2,7 +2,7 @@
   <div class="auth-container">
     <div class="auth-card">
       <h1 class="auth-title">Iniciar sesión en ProyectS-J</h1>
-      
+
       <form @submit.prevent="handleLogin" class="auth-form">
         <!-- Email Input -->
         <div class="input-group">
@@ -16,7 +16,7 @@
             autocomplete="username"
           />
         </div>
-        
+
         <!-- Password Input -->
         <div class="input-group">
           <label for="password">Contraseña</label>
@@ -29,13 +29,13 @@
             autocomplete="current-password"
           />
         </div>
-        
+
         <!-- Submit Button -->
         <button type="submit" class="auth-button" :disabled="loading">
           <span v-if="!loading">Iniciar sesión</span>
           <span v-else>Procesando...</span>
         </button>
-        
+
         <!-- Form Footer -->
         <div class="auth-footer">
           <p>¿No tienes una cuenta? <router-link to="/register">Regístrate</router-link></p>
@@ -69,12 +69,12 @@ const handleLogin = async () => {
 
   try {
     console.log('🚀 Iniciando login con datos:', loginForm.value)
-    
+
     // 1. Hacer login
     const response = await api.post('/auth/login', loginForm.value)
     console.log('✅ Login response:', response.data)
     console.log('✅ Status code:', response.status)
-    
+
     if (!response.data.token) {
       throw new Error('No se recibió token de autenticación')
     }
@@ -85,10 +85,10 @@ const handleLogin = async () => {
 
     // 3. Probar endpoint /me con un pequeño delay
     console.log('🔍 Probando endpoint /auth/me...')
-    
+
     // Pequeño delay para asegurar que el token esté disponible
     await new Promise(resolve => setTimeout(resolve, 100))
-    
+
     const meResponse = await api.get('/auth/me')
     console.log('✅ /auth/me response:', meResponse.data)
 
@@ -112,17 +112,17 @@ const handleLogin = async () => {
     // 6. Redirigir según rol
     const redirectPaths = {
       'ADMIN_GLOBAL': '/homeDepartaments',
-      'ADMIN_DEPT': '/departmentHome', 
-      'ADMIN_COLLAB': '/dashTask', 
+      'ADMIN_DEPT': '/departmentHome',
+      'ADMIN_COLLAB': '/dashTask',
       'COLLAB': '/homeTask'
     }
-    
+
     const redirectPath = redirectPaths[userData.role] || '/access-denied'
-    
+
     console.log('🔄 Rol del usuario:', userData.role)
     console.log('🔄 Ruta calculada:', redirectPath)
     console.log('🔄 Rutas disponibles:', Object.keys(redirectPaths))
-    
+
     try {
       console.log('🔄 Intentando redirección...')
       await router.push(redirectPath)
@@ -130,7 +130,7 @@ const handleLogin = async () => {
     } catch (navError) {
       console.error('❌ Error en navegación:', navError)
       console.log('🔄 Intentando redirección alternativa...')
-      
+
       // Intenta una redirección alternativa
       window.location.href = redirectPath
     }
@@ -140,12 +140,12 @@ const handleLogin = async () => {
     console.error('❌ Response data:', error.response?.data)
     console.error('❌ Status:', error.response?.status)
     console.error('❌ Request config:', error.config)
-    
-    errorMessage.value = error.response?.data?.error || 
-                        error.response?.data?.message || 
-                        error.message || 
+
+    errorMessage.value = error.response?.data?.error ||
+                        error.response?.data?.message ||
+                        error.message ||
                         'Error al iniciar sesión'
-    
+
     // Limpiar credenciales
     authStore.logout()
     localStorage.removeItem('authToken')  // 👈 Cambié por 'authToken'

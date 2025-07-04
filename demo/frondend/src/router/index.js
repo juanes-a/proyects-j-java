@@ -47,6 +47,7 @@ const routes = [
     meta: { requiresAuth: true, roles: ['ADMIN_GLOBAL'] }
   },
 
+
   // Admin Departamento
   {
     path: '/departmentHome',
@@ -58,6 +59,7 @@ const routes = [
     component: DepartmentProjects,
     meta: { requiresAuth: true, roles: ['ADMIN_DEPT'] }
   },
+
   {
     path: '/deptStats',
     name: 'deptStats',
@@ -66,12 +68,12 @@ const routes = [
   },
 
   // Admin Departamento
-  
+
   {
     path: '/tasks',
     name: 'TasksGlobal',
     component: () => import('@/views/adminC/TaskView.vue'),
-    meta: { requiresAuth: true, roles: ['ADMIN_COLLAB']}
+    meta: { requiresAuth: true, roles: ['ADMIN_COLLAB','ADMIN_GLOBAL']}
   },
     {
     path: '/dashTask',
@@ -81,7 +83,7 @@ const routes = [
   },
 
   // Collab
-  
+
   {
       path: '/tasksDash',
       name: 'TasksDashboard',
@@ -127,4 +129,4 @@ router.beforeEach((to, from, next) => {
 });
 
 
-export default router; 
+export default router;

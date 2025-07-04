@@ -72,6 +72,10 @@ public class ProjectService {
         this.projectRepository = projectRepository;
             this.modelMapper = new ModelMapper();
         }
+    public List<Project> getAllProjectEntities() {
+        return projectRepository.findAll();
+    }
+
 
 
 
@@ -224,6 +228,28 @@ public class ProjectService {
             throw new BusinessException("Project name already exists in this department");
         }
     }
+    public List<Project> searchProjects(
+            String name,
+            Long departmentId,
+            ProjectStatus status,
+            ProjectPriority priority,
+            LocalDate startDate,
+            LocalDate endDate,
+            BigDecimal minBudget,
+            BigDecimal maxBudget
+    ) {
+        return projectRepository.findAll().stream()
+                .filter(p -> name == null || p.getName().toLowerCase().contains(name.toLowerCase()))
+                .filter(p -> departmentId == null || (p.getDepartment() != null && p.getDepartment().getId().equals(departmentId)))
+                .filter(p -> status == null || p.getStatus() == status)
+                .filter(p -> priority == null || p.getPriority() == priority)
+                .filter(p -> startDate == null || !p.getStartDate().isBefore(startDate))
+                .filter(p -> endDate == null || !p.getEndDate().isAfter(endDate))
+                .filter(p -> minBudget == null || p.getBudget().compareTo(minBudget) >= 0)
+                .filter(p -> maxBudget == null || p.getBudget().compareTo(maxBudget) <= 0)
+                .toList();
+    }
+
 
     private void validateProjectDates(LocalDate startDate, LocalDate endDate) {
         if (startDate == null || endDate == null) {

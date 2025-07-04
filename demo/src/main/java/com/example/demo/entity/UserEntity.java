@@ -36,7 +36,7 @@ public class UserEntity {
 
     @Enumerated(EnumType.STRING)
     @Column(name = "role", length = 30)
-    private Role role;
+    public Role role;
 
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL)
     private List<UsersAsignation> asignaciones;

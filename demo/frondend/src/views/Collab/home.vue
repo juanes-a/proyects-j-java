@@ -1,4 +1,4 @@
-<template>
+ <template>
   <div class="min-h-screen bg-gray-50">
     <!-- Banner de bienvenida mejorado -->
     <header class="bg-gradient-to-r from-blue-600 to-indigo-800 text-white shadow-lg">
@@ -154,11 +154,11 @@ export default {
   setup() {
     const authStore = useAuthStore()
     const username = ref('Usuario')
-    const currentDate = ref(new Date().toLocaleDateString('es-ES', { 
-      weekday: 'long', 
-      year: 'numeric', 
-      month: 'long', 
-      day: 'numeric' 
+    const currentDate = ref(new Date().toLocaleDateString('es-ES', {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
     }))
     const assignedTasks = ref([])
     const urgentTasks = ref([])
@@ -179,18 +179,18 @@ export default {
       try {
         const usernameOrEmail = authStore.user?.email || localStorage.getItem('userEmail')
         if (!usernameOrEmail) throw new Error('No se pudo obtener el usuario autenticado')
-        
+
         const response = await axios.get(`/api/tasks/assigned-tasks/${usernameOrEmail}`)
         username.value = response.data.user || 'Usuario'
         assignedTasks.value = response.data.assignedTasks || []
-        
+
         calculateStats(response.data.assignedTasks)
         filterUrgentTasks(response.data.assignedTasks)
-        
+
         // Renderizar el gráfico después de que los datos estén disponibles
         await nextTick()
         renderChart()
-        
+
       } catch (error) {
         console.error('Error fetching assigned tasks:', error)
       }
@@ -198,11 +198,11 @@ export default {
 
     const calculateStats = (tasks) => {
       if (!tasks) return
-      
+
       stats.value.totalTasks = tasks.length
       stats.value.completedTasks = tasks.filter(t => t.status === 'COMPLETED').length
       stats.value.pendingTasks = tasks.filter(t => t.status !== 'COMPLETED').length
-      
+
       const today = new Date()
       stats.value.overdueTasks = tasks.filter(t => {
         if (!t.endDate || t.status === 'COMPLETED') return false
@@ -214,7 +214,7 @@ export default {
       const today = new Date()
       const nextWeek = new Date(today)
       nextWeek.setDate(nextWeek.getDate() + 7)
-      
+
       urgentTasks.value = tasks
         .filter(task => {
           if (!task.endDate || task.status === 'COMPLETED') return false
@@ -228,15 +228,15 @@ export default {
     const renderChart = async () => {
       // Esperar a que el DOM esté completamente renderizado
       await nextTick()
-      
+
       if (!chartCanvas.value || !hasData.value) return
-      
+
       if (chartInstance) {
         chartInstance.destroy()
       }
 
       const ctx = chartCanvas.value.getContext('2d')
-      
+
       if (chartType.value === 'doughnut') {
         chartInstance = new Chart(ctx, {
           type: 'doughnut',

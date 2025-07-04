@@ -80,7 +80,7 @@
           Clear All
         </button>
       </div>
-      
+
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <!-- Search -->
         <div>
@@ -151,7 +151,22 @@
           <input v-model.number="filters.maxBudget" type="number" min="0" step="0.01" class="form-input" />
         </div>
       </div>
+      <div class="mt-4">
+        <button
+          @click="generatePdf"
+          class="bg-red-600 hover:bg-red-700 text-white font-semibold py-2 px-4 rounded flex items-center gap-2"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none"
+               viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M12 4v16m8-8H4" />
+          </svg>
+          Generar PDF
+        </button>
+      </div>
+
     </div>
+
 
     <!-- Main Content -->
     <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm">
@@ -162,7 +177,7 @@
             <h2 class="text-xl font-semibold text-gray-800 dark:text-white">Projects</h2>
             <p class="text-sm text-gray-600 dark:text-gray-400">Manage your organization projects</p>
           </div>
-          
+
           <button
             @click="openCreateModal"
             class="flex items-center space-x-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors duration-200"
@@ -263,7 +278,7 @@
                   >
                     <Edit class="w-4 h-4" />
                   </button>
-                  
+
                   <!-- Status Actions -->
                   <button
                     v-if="project.status === 'PLANNED'"
@@ -304,7 +319,7 @@
                     <div class="text-sm text-gray-500 dark:text-gray-400">
                       {{ formatDate(project.endDate) }}
                     </div>
-                    
+
                     <!-- Mostrar advertencias -->
                     <div v-for="warning in getProjectWarnings(project)" :key="warning.type" :class="warning.class" class="text-xs mt-1">
                       {{ warning.message }}
@@ -374,7 +389,7 @@
 import { ref, computed, onMounted, watch, nextTick  } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import {
-  FolderOpen, Users, DollarSign, TrendingUp, CheckCircle, Search, Plus, Eye, Edit, 
+  FolderOpen, Users, DollarSign, TrendingUp, CheckCircle, Search, Plus, Eye, Edit,
   Play, XCircle, Trash2, AlertTriangle, Zap, Calendar, Circle, AlertCircle
 } from 'lucide-vue-next'
 import axios from 'axios'
@@ -387,6 +402,84 @@ import { useToastStore } from '../stores/toast'
 const route = useRoute()
 const router = useRouter()
 const toastStore = useToastStore()
+const generatePdf = async () => {
+  try {
+    // Construir los parámetros de consulta basados en los filtros actuales
+    const params = new URLSearchParams();
+
+    // Solo agregar parámetros que tengan valores
+    if (filters.value.name && filters.value.name.trim()) {
+      params.append('name', filters.value.name.trim());
+    }
+
+    if (filters.value.departmentId && filters.value.departmentId !== '') {
+      params.append('departmentId', filters.value.departmentId);
+    }
+
+    if (filters.value.status && filters.value.status !== '') {
+      params.append('status', filters.value.status);
+    }
+
+    if (filters.value.priority && filters.value.priority !== '') {
+      params.append('priority', filters.value.priority);
+    }
+
+    if (filters.value.startDate && filters.value.startDate !== '') {
+      params.append('startDate', filters.value.startDate);
+    }
+
+    if (filters.value.endDate && filters.value.endDate !== '') {
+      params.append('endDate', filters.value.endDate);
+    }
+
+    if (filters.value.minBudget !== null && filters.value.minBudget !== '' && filters.value.minBudget >= 0) {
+      params.append('minBudget', filters.value.minBudget);
+    }
+
+    if (filters.value.maxBudget !== null && filters.value.maxBudget !== '' && filters.value.maxBudget >= 0) {
+      params.append('maxBudget', filters.value.maxBudget);
+    }
+
+    // Construir la URL con los parámetros
+    const url = `http://localhost:8081/api/projects/report/pdf${params.toString() ? '?' + params.toString() : ''}`;
+
+    console.log('📄 Generando PDF con URL:', url);
+    console.log('📊 Filtros aplicados:', {
+      name: filters.value.name,
+      departmentId: filters.value.departmentId,
+      status: filters.value.status,
+      priority: filters.value.priority,
+      startDate: filters.value.startDate,
+      endDate: filters.value.endDate,
+      minBudget: filters.value.minBudget,
+      maxBudget: filters.value.maxBudget
+    });
+
+    const response = await axios.get(url, {
+      responseType: 'blob'
+    });
+
+    const blob = new Blob([response.data], { type: 'application/pdf' });
+    const downloadUrl = window.URL.createObjectURL(blob);
+
+    const link = document.createElement('a');
+    link.href = downloadUrl;
+    link.setAttribute('download', 'projects-report.pdf');
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+
+    window.URL.revokeObjectURL(downloadUrl);
+
+    toastStore.showToast('PDF generado exitosamente', 'success');
+
+  } catch (error) {
+    console.error('Error generating PDF:', error);
+    toastStore.showToast('Error al generar el PDF', 'error');
+  }
+};
+
+
 
 // Data
 const projects = ref([])
@@ -425,35 +518,35 @@ const filters = ref({
 
 // Stats
 const headerStats = ref([
-  { 
-    title: 'Total Projects', 
-    value: '0', 
-    icon: FolderOpen, 
-    iconBg: 'bg-blue-500' 
+  {
+    title: 'Total Projects',
+    value: '0',
+    icon: FolderOpen,
+    iconBg: 'bg-blue-500'
   },
-  { 
-    title: 'In Progress', 
-    value: '0', 
-    icon: TrendingUp, 
-    iconBg: 'bg-green-500' 
+  {
+    title: 'In Progress',
+    value: '0',
+    icon: TrendingUp,
+    iconBg: 'bg-green-500'
   },
-  { 
-    title: 'Completed', 
-    value: '0', 
-    icon: CheckCircle, 
-    iconBg: 'bg-purple-500' 
+  {
+    title: 'Completed',
+    value: '0',
+    icon: CheckCircle,
+    iconBg: 'bg-purple-500'
   },
-  { 
-    title: 'Total Budget', 
-    value: '$0', 
-    icon: DollarSign, 
-    iconBg: 'bg-orange-500' 
+  {
+    title: 'Total Budget',
+    value: '$0',
+    icon: DollarSign,
+    iconBg: 'bg-orange-500'
   },
-  { 
-    title: 'Avg. Budget', 
-    value: '$0', 
-    icon: Users, 
-    iconBg: 'bg-indigo-500' 
+  {
+    title: 'Avg. Budget',
+    value: '$0',
+    icon: Users,
+    iconBg: 'bg-indigo-500'
   }
 ])
 
@@ -497,18 +590,17 @@ const filteredProjects = computed(() => {
 
   return filtered
 })
-
 // Methods
 const fetchProjects = async () => {
   try {
     loading.value = true
     let url = '/api/projects'
-    
+
     // Aplicar filtro de departamento desde la URL
     if (route.query.department) {
       url += `?departmentId=${route.query.department}`
     }
-    
+
     const response = await axios.get(url)
     projects.value = response.data
     updateStats()
@@ -535,7 +627,7 @@ const fetchSpecialProjects = async () => {
       axios.get('/api/projects/urgent'),
       axios.get('/api/projects/ending-this-week')
     ]);
-    
+
     overdueProjects.value = overdueRes.data;
     urgentProjects.value = urgentRes.data;
     endingThisWeekProjects.value = endingRes.data;
@@ -561,12 +653,12 @@ const updateStats = () => {
 // Función handleError mejorada para mostrar más detalles
 const handleError = (error, message) => {
   console.error(message, error)
-  
+
   let errorMessage = message
-  
+
   if (error.response) {
     console.error('Error details:', error.response.data)
-    
+
     // Extraer mensaje específico del servidor si existe
     if (error.response.data?.message) {
       errorMessage = error.response.data.message
@@ -574,14 +666,14 @@ const handleError = (error, message) => {
       errorMessage = error.response.data
     }
   }
-  
+
   toastStore.showToast(errorMessage, 'error')
 }
 
 // Función para mostrar advertencias visuales en la tabla
 const getProjectWarnings = (project) => {
   const warnings = []
-  
+
   if (!canStartProject(project) && project.status === 'PLANNED') {
     warnings.push({
       type: 'start-date',
@@ -589,7 +681,7 @@ const getProjectWarnings = (project) => {
       class: 'text-orange-600 dark:text-orange-400'
     })
   }
-  
+
   // Verificar si el proyecto está atrasado
   if (project.endDate && new Date() > new Date(project.endDate) && project.status !== 'COMPLETED') {
     warnings.push({
@@ -598,7 +690,7 @@ const getProjectWarnings = (project) => {
       class: 'text-red-600 dark:text-red-400'
     })
   }
-  
+
   return warnings
 }
 
@@ -751,21 +843,21 @@ const handleSave = async (projectData) => {
       await axios.post('/api/projects', cleanedData)
       toastStore.showToast('Project created successfully', 'success')
     }
-    
+
     await fetchProjects()
     await fetchSpecialProjects() // Refrescar también los proyectos especiales
     closeModal()
   } catch (error) {
     console.error('Error saving project:', error)
-    
+
     // Mostrar más detalles del error
     if (error.response) {
       console.error('Error response:', error.response.data)
       console.error('Error status:', error.response.status)
-      
+
       // Mostrar mensaje más específico basado en el error del servidor
-      const errorMessage = error.response.data?.message || 
-                          error.response.data?.error || 
+      const errorMessage = error.response.data?.message ||
+                          error.response.data?.error ||
                           'Error saving project'
       toastStore.showToast(errorMessage, 'error')
     } else {
@@ -776,7 +868,7 @@ const handleSave = async (projectData) => {
 
 const deleteProject = async (project) => {
   if (!confirm(`Are you sure you want to delete "${project.name}"?`)) return
-  
+
   try {
     await axios.delete(`/api/projects/${project.id}`)
     projects.value = projects.value.filter(p => p.id !== project.id)
@@ -791,14 +883,14 @@ const deleteProject = async (project) => {
 // Función auxiliar para validar fechas
 const canStartProject = (project) => {
   if (!project.startDate) return true // Si no hay fecha de inicio definida, permitir inicio
-  
+
   const today = new Date()
   const startDate = new Date(project.startDate)
-  
+
   // Resetear las horas para comparar solo fechas
   today.setHours(0, 0, 0, 0)
   startDate.setHours(0, 0, 0, 0)
-  
+
   return today >= startDate
 }
 
@@ -813,7 +905,7 @@ const startProject = async (project) => {
   if (!canStartProject(project)) {
     const startDate = new Date(project.startDate).toLocaleDateString()
     toastStore.showToast(
-      `Cannot start project before its start date (${startDate})`, 
+      `Cannot start project before its start date (${startDate})`,
       'warning'
     )
     return
@@ -829,13 +921,13 @@ const startProject = async (project) => {
 
   try {
     await axios.post(`/api/projects/${project.id}/start`)
-    
+
     // Actualizar el proyecto localmente
     const projectIndex = projects.value.findIndex(p => p.id === project.id)
     if (projectIndex !== -1) {
       projects.value[projectIndex].status = 'IN_PROGRESS'
     }
-    
+
     updateStats()
     await fetchSpecialProjects()
     toastStore.showToast('Project started successfully', 'success')
@@ -852,16 +944,16 @@ const completeProject = async (project) => {
   }
 
   if (!confirm(`Are you sure you want to mark "${project.name}" as completed?`)) return
-  
+
   try {
     await axios.post(`/api/projects/${project.id}/complete`)
-    
+
     // Actualizar el proyecto localmente
     const projectIndex = projects.value.findIndex(p => p.id === project.id)
     if (projectIndex !== -1) {
       projects.value[projectIndex].status = 'COMPLETED'
     }
-    
+
     updateStats()
     await fetchSpecialProjects()
     toastStore.showToast('Project completed successfully', 'success')
@@ -918,7 +1010,7 @@ const clearFilters = () => {
     minBudget: null,
     maxBudget: null
   }
-  
+
   // Limpiar también el query de la URL
   router.replace({ query: null })
 }

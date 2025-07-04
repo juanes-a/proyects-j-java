@@ -11,6 +11,9 @@ import com.example.demo.entity.Department;
 import com.example.demo.entity.Project;
 import com.example.demo.entity.TaskEntity;
 import com.example.demo.entity.UsersAsignation;
+import com.example.demo.entity.UserEntity;
+import com.example.demo.enums.Role;
+import com.example.demo.service.UserService;
 import com.example.demo.enums.ProjectStatus;
 import com.example.demo.enums.ProjectPriority;
 import com.example.demo.service.ActivityService;
@@ -21,8 +24,16 @@ import com.example.demo.exception.ResourceNotFoundException;
 import com.example.demo.repository.ProjectRepository;
 import com.example.demo.repository.TaskRepository;
 import com.example.demo.exception.BusinessException;
+import java.io.IOException;
 
+
+import com.example.demo.service.UserService;
+import com.example.demo.util.PdfProjectReportGenerator;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.io.InputStreamResource;
+import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.scheduling.config.Task;
 import org.springframework.http.HttpStatus;
@@ -38,15 +49,12 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
+import java.io.ByteArrayInputStream;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.*;
 import java.util.Collections;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -72,7 +80,9 @@ public class ProjectController {
     private DepartmentService departmentService;
 
     @Autowired
-    private ActivityService activityService; 
+    private ActivityService activityService;
+    @Autowired
+    private UserService UserService;
 
     // ============== DTOs ==============
     
@@ -113,7 +123,52 @@ public class ProjectController {
         private String reason;
     }
 
-    // ============== Endpoints CRUD ==============
+    @GetMapping("/report/pdf")
+    public ResponseEntity<byte[]> generatePdfReport(
+            @RequestParam(required = false) String name,
+            @RequestParam(required = false) Long departmentId,
+            @RequestParam(required = false) ProjectStatus status,
+            @RequestParam(required = false) ProjectPriority priority,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate,
+            @RequestParam(required = false) BigDecimal minBudget,
+            @RequestParam(required = false) BigDecimal maxBudget
+    ) {
+        try {
+            log.info("📄 Generando PDF con filtros: name={}, deptId={}, status={}, priority={}, start={}, end={}, minBudget={}, maxBudget={}",
+                    name, departmentId, status, priority, startDate, endDate, minBudget, maxBudget);
+
+            // 👉 Usamos el nuevo método del servicio que sí filtra bien
+            List<Project> filteredProjects = projectService.searchProjects(
+                    name,
+                    departmentId,
+                    status,
+                    priority,
+                    startDate,
+                    endDate,
+                    minBudget,
+                    maxBudget
+            );
+
+            ByteArrayInputStream pdfStream = PdfProjectReportGenerator.generate(filteredProjects);
+            byte[] pdfBytes = pdfStream.readAllBytes();
+
+            HttpHeaders headers = new HttpHeaders();
+            headers.add(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=projects-report.pdf");
+
+            return ResponseEntity.ok()
+                    .headers(headers)
+                    .contentType(MediaType.APPLICATION_PDF)
+                    .body(pdfBytes);
+
+        } catch (Exception e) {
+            log.error("❌ Error al generar el reporte PDF: {}", e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+
+
 
     @PostMapping
     public ResponseEntity<?> createProject(
@@ -374,49 +429,56 @@ public class ProjectController {
         }
     }
 
+
+    // Agregar este método en tu controller
+
+
     /*Cargar proyecto asignado */
     @GetMapping("assing-project/{usernameOrEmail}")
     public ResponseEntity<?> getProjectsByUserProject(@PathVariable @NotBlank String usernameOrEmail) {
         try {
-            // Validación básica
-            if (usernameOrEmail.isBlank()) {
-                return ResponseEntity.badRequest()
-                    .body(Map.of("message", "El username/email no puede estar vacío"));
+            String normalizedInput = usernameOrEmail.trim().toLowerCase();
+
+            // Obtener usuario para verificar rol
+            UserEntity user = UserService.findByUsernameOrEmail(normalizedInput);
+
+
+            List<TaskResponse> taskResponses;
+            Map<String, Object> response = new HashMap<>();
+
+            // Si es ADMIN_GLOBAL, obtener TODAS las tareas
+            if (Role.ADMIN_GLOBAL.equals(user.getRole())){
+                List<TaskEntity> allTasks = taskRepository.findAll();
+                taskResponses = allTasks.stream()
+                        .map(TaskResponse::fromEntity)
+                        .toList();
+
+                response.put("projectId", null);
+                response.put("projectName", "Todos los proyectos");
+                response.put("tasks", taskResponses);
+
+            } else {
+                // Lógica existente para ADMIN_COLLAB
+                UsersAsignation assignment = projectService.getUserProjectAssignment(normalizedInput)
+                        .orElseThrow(() -> new ResourceNotFoundException("Usuario sin proyecto asignado"));
+
+                Project project = assignment.getProject();
+                List<TaskEntity> taskList = taskRepository.findByProjectId(project.getId());
+
+                taskResponses = taskList.stream()
+                        .map(TaskResponse::fromEntity)
+                        .toList();
+
+                response.put("projectId", project.getId());
+                response.put("projectName", project.getName());
+                response.put("tasks", taskResponses);
             }
 
-            String normalizedInput = usernameOrEmail.trim().toLowerCase();
-            
-            // Obtener asignación del usuario
-            UsersAsignation assignment = projectService.getUserProjectAssignment(normalizedInput)
-                .orElseThrow(() -> new ResourceNotFoundException("Usuario no encontrado o sin proyecto asignado"));
-            
-            // Obtener proyecto
-            Project project = Optional.ofNullable(assignment.getProject())
-                .orElseThrow(() -> new ResourceNotFoundException("Proyecto no encontrado para el usuario"));
-
-            // Obtener las entidades tareas directamente del repositorio
-        List<TaskEntity> taskList = taskRepository.findByProjectId(project.getId());
-            
-        // Convertir a DTOs
-        List<TaskResponse> taskResponses = taskList.stream()
-        .map(TaskResponse::fromEntity)
-        .toList();
-
-        // Construir respuesta
-        Map<String, Object> response = new HashMap<>();
-        response.put("projectId", project.getId());
-        response.put("projectName", project.getName());
-        response.put("tasks", taskResponses);
-
-        return ResponseEntity.ok(response);
+            return ResponseEntity.ok(response);
 
         } catch (ResourceNotFoundException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                .body(Map.of("message", e.getMessage()));
-        } catch (Exception e) {
-            logger.error("Error en getProjectsByUserDepartment: ", e);
-            return ResponseEntity.internalServerError()
-                .body(Map.of("message", "Error interno del servidor"));
+                    .body(Map.of("message", e.getMessage()));
         }
     }
 

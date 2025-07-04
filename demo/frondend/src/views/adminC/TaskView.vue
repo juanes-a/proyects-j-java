@@ -30,6 +30,7 @@
          </button>
        </div>
 
+
        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
          <!-- Estado -->
          <div>
@@ -82,8 +83,21 @@
            <label class="block text-sm font-semibold text-slate-700 dark:text-gray-300 mb-2">Palabra clave</label>
            <input type="text" v-model="filters.keyword" @input="filterTasks" placeholder="Buscar por nombre o descripción" class="form-input w-full">
          </div>
+
        </div>
+       <!-- Botón para generar PDF -->
+       <div class="mt-4 md:col-span-2">
+         <button
+           class="btn btn-primary"
+           @click="generatePdf"
+         >
+           <i class="fas fa-file-pdf mr-2"></i>
+           Descargar Reporte PDF
+         </button>
+       </div>
+
      </div>
+
 
 
       <!-- Quick Actions -->
@@ -203,22 +217,26 @@
                 <div class="text-sm text-slate-500 dark:text-gray-400">Real: {{ task.actualHours || '-' }}h</div>
               </td>
 
-              <!-- Acciones -->
-              <td class="px-6 py-4">
-                <div class="flex items-center space-x-3">
-                  <button @click="editTask(task)" class="action-btn bg-indigo-100 text-indigo-700 hover:bg-indigo-200 dark:bg-indigo-900/30 dark:text-indigo-400" title="Editar">
-                    <i class="fas fa-edit text-lg"></i>
-                  </button>
-                  <button @click="deleteTask(task.id)" class="action-btn bg-red-100 text-red-700 hover:bg-red-200 dark:bg-red-900/30 dark:text-red-400" title="Eliminar">
-                    <i class="fas fa-trash text-lg"></i>
-                  </button>
-                </div>
-              </td>
+
+
+             <!-- Acciones -->
+             <td class="px-6 py-4">
+               <div class="flex items-center space-x-3">
+                 <button @click="editTask(task)" class="action-btn bg-indigo-100 text-indigo-700 hover:bg-indigo-200 dark:bg-indigo-900/30 dark:text-indigo-400" title="Editar">
+                   ✏️
+                 </button>
+                 <button @click="deleteTask(task.id)" class="action-btn bg-red-100 text-red-700 hover:bg-red-200 dark:bg-red-900/30 dark:text-red-400" title="Eliminar">
+                   🗑️
+                 </button>
+               </div>
+             </td>
+
 
             </tr>
           </tbody>
           </table>
           </div>
+
 
 
       <!-- Empty State -->
@@ -401,10 +419,10 @@
 
           <div v-if="!isEditing">
             <label class="form-label">Asignar a (username o email)</label>
-            <input 
-              v-model="taskForm.assignedUserIdentifier" 
-              type="text" 
-              placeholder="Ingrese username o email del usuario" 
+            <input
+              v-model="taskForm.assignedUserIdentifier"
+              type="text"
+              placeholder="Ingrese username o email del usuario"
               class="form-input"
             >
           </div>
@@ -456,7 +474,7 @@ export default {
        estimatedHours: null,
        actualHours: null,
        projectId: '',
-       assignedUserIdentifier: '' 
+       assignedUserIdentifier: ''
      }
    };
 
@@ -498,58 +516,51 @@ export default {
 
   methods: {
     async loadTasks() {
-    try {
-        // Obtener el username/email del usuario actual (ajusta según tu sistema)
-        const userEmail = authStore.user?.email || localStorage.getItem('userEmail');
-         console.log('🔍 Usuario actual:', userEmail); 
-    
-        if (!userEmail) {
-          throw new Error('User email not available');
-        }
+     try {
+       const userEmail = authStore.user?.email || localStorage.getItem('userEmail');
+       console.log('🔍 Usuario actual:', userEmail);
 
-        const response = await axios.get(`/api/projects/assing-project/${userEmail}`);
-         console.log('📦 Respuesta completa del backend:', response);
+       if (!userEmail) {
+         throw new Error('User email not available');
+       }
 
-        console.log('📊 Datos recibidos:', response.data); // Log 3
-        console.log('🆔 ID del proyecto:', response.data.projectId); // Log 4
-        console.log('🏷️ Nombre del proyecto:', response.data.projectName); // Log 5
-        console.log('✅ Tareas recibidas:', response.data.tasks);
-        
-        // Actualiza los datos con la respuesta
-        this.projects = [{ 
-          id: response.data.projectId, 
-          name: response.data.projectName 
-        }];
-        
-        this.tasks = response.data.tasks;
-        this.filteredTasks = [...this.tasks];
-        this.taskForm.projectId = response.data.projectId;
+       const response = await axios.get(`http://localhost:8081/api/projects/assing-project/${userEmail}`);
 
-      } catch (error) {
-        console.error('Error loading tasks:', error);
+       console.log('📦 Respuesta completa del backend:', response);
+       console.log('📊 Datos recibidos:', response.data);
+       console.log('✅ Tareas recibidas:', response.data.tasks);
 
-        this.projects = [];
-        this.tasks = [];
-        this.filteredTasks = [];
-      }
-    },
-      async assignUserToTask(taskId) {
-      const usernameOrEmail = prompt("Ingrese el username o email del usuario a asignar:");
-      if (!usernameOrEmail) return;
+       this.tasks = response.data.tasks;
+       this.filteredTasks = [...this.tasks];
 
-      try {
-        const response = await axios.post('/api/tasks/assign-task', {
-          usernameOrEmail: usernameOrEmail,
-          taskId: taskId,
-          role: 'COLLAB'
-        });
-        
-        alert('Usuario asignado correctamente');
-        await this.loadTasks(); // Recargar las tareas para ver los cambios
-      } catch (error) {
-        console.error('Error assigning user to task:', error);
-        alert(error.response?.data?.message || 'Error al asignar usuario');
-      }
+       if (response.data.projectName === 'Todos los proyectos') {
+         const allProjectsResponse = await axios.get('http://localhost:8081/api/projects');
+
+         this.projects = [
+           { id: null, name: 'Todos los proyectos' },
+           ...allProjectsResponse.data.map(project => ({
+             id: project.id,
+             name: project.name
+           }))
+         ];
+
+         this.taskForm.projectId = null;
+       } else {
+         this.projects = [{
+           id: response.data.projectId,
+           name: response.data.projectName
+         }];
+
+         this.taskForm.projectId = response.data.projectId;
+       }
+
+
+     } catch (error) {
+       console.error('Error loading tasks:', error);
+       this.projects = [];
+       this.tasks = [];
+       this.filteredTasks = [];
+     }
     },
 
     // 👇 Esta es la función que te da la fecha formateada
@@ -561,6 +572,23 @@ export default {
         day: 'numeric'
       })
     },
+
+  generatePdf() {
+    const params = new URLSearchParams();
+
+    if (this.filters.projectId) params.append('projectId', this.filters.projectId);
+    if (this.filters.status) params.append('status', this.filters.status);
+    if (this.filters.priority) params.append('priority', this.filters.priority);
+    if (this.filters.startDate) params.append('startDate', `${this.filters.startDate}T00:00:00`);
+    if (this.filters.endDate) params.append('endDate', `${this.filters.endDate}T23:59:59`);
+    if (this.filters.keyword) params.append('keyword', this.filters.keyword);
+
+    const url = `/api/tasks/report?${params.toString()}`;
+    console.log("🧾 Abriendo PDF en:", url); // Debug
+    window.open(url, '_blank');
+  },
+
+
 
     filterTasks() {
       this.filteredTasks = this.tasks.filter(task => {
@@ -633,16 +661,16 @@ export default {
         } else {
           // 1. Primero creamos la tarea
           response = await axios.post('/api/tasks', taskData);
-          
+
           // 2. Si hay un usuario para asignar, lo hacemos después
           if (this.taskForm.assignedUserIdentifier) {
             try {
               await axios.post('/api/tasks/assign-task', {
                 usernameOrEmail: this.taskForm.assignedUserIdentifier,
-                taskId: response.data.id, 
+                taskId: response.data.id,
                 role: 'COLLAB'
               });
-              
+
               console.log("Usuario asignado correctamente");
             } catch (assignError) {
               console.error('Error asignando usuario:', assignError);
@@ -748,6 +776,8 @@ export default {
         }
       }
 
+
+
     </script>
 
     <style scoped>
@@ -760,6 +790,7 @@ export default {
       transform: translateY(-2px);
       box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
     }
+
 
     .btn-primary {
       @apply bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-semibold py-2 px-4 rounded-lg transition-all duration-200 shadow-md hover:shadow-lg;

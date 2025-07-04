@@ -50,6 +50,8 @@ public class SecurityConfig {
                                 "/h2-console/**",
                                 "/v3/api-docs/**",
                                 "/api/departments/**",
+                               "/api/departments/3/deactivate",
+                                "/api/report/pdf",
                                 "/api/users/**",
                                 "/api/tasks/**",
                                 "/api/test-pdf",

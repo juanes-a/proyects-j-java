@@ -14,16 +14,19 @@ import com.example.demo.repository.UserRepository;
 import com.example.demo.repository.UsersAsignationRepository;
 import com.example.demo.service.TaskService;
 
+import com.example.demo.util.PdfReportGenerator;
 import jakarta.validation.constraints.NotBlank;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.io.ByteArrayInputStream;
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
@@ -50,6 +53,41 @@ public class TaskController {
      * 🟢 GET /api/tasks - Obtener todas las tareas
      * Ejemplo: GET http://localhost:8080/api/tasks
      */
+    @GetMapping("/report")
+    public ResponseEntity<byte[]> generateTaskReport(
+            @RequestParam(required = false) Long projectId,
+            @RequestParam(required = false) Long assignedUserId,
+            @RequestParam(required = false) TaskEntity.TaskStatus status,
+            @RequestParam(required = false) TaskEntity.TaskPriority priority,
+            @RequestParam(required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime startDate,
+            @RequestParam(required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime endDate,
+            @RequestParam(required = false) String keyword) {
+
+        log.info("📄 Generando reporte PDF con filtros: proyecto={}, usuario={}, estado={}",
+                projectId, assignedUserId, status);
+
+        try {
+            List<TaskEntity> filteredTasks = taskService.searchTasks(
+                    projectId, assignedUserId, status, priority, startDate, endDate, keyword);
+
+            ByteArrayInputStream pdfStream = PdfReportGenerator.generateTaskReport(filteredTasks);
+            byte[] pdfBytes = pdfStream.readAllBytes();
+
+            HttpHeaders headers = new HttpHeaders();
+            headers.add("Content-Disposition", "attachment; filename=reporte_tareas.pdf");
+
+            return ResponseEntity.ok()
+                    .headers(headers)
+                    .contentType(MediaType.APPLICATION_PDF)
+                    .body(pdfBytes);
+
+        } catch (Exception e) {
+            log.error("❌ Error al generar el reporte PDF: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
     @GetMapping
     public ResponseEntity<List<TaskEntity>> getAllTasks() {
         log.info("📋 GET /api/tasks - Obteniendo todas las tareas");
@@ -295,7 +333,7 @@ public class TaskController {
                 .body(new ErrorResponse("Error al asignar usuario al proyecto: " + e.getMessage()));
         }
     }
-    
+
     /**
      * 🔵 PUT /api/tasks/{taskId}/unassign - Desasignar tarea (quitar usuario)
      * Ejemplo: PUT http://localhost:8080/api/tasks/1/unassign
@@ -402,8 +440,11 @@ public class TaskController {
         }
     }
 
+
+
+
     /*Cargar tareas por user */
-    
+
         @GetMapping("assigned-tasks/{usernameOrEmail}")
     public ResponseEntity<?> getAssignedTasks(@PathVariable @NotBlank String usernameOrEmail) {
         try {
