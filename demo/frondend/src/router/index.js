@@ -1,4 +1,7 @@
 import { createRouter, createWebHistory } from 'vue-router';
+
+import index from '../views/index.vue';
+
 import LoginView from '../views/auth/LoginView.vue';
 import RegisterView from '../views/auth/RegisterView.vue';
 
@@ -16,6 +19,11 @@ import UnauthorizedView from '../views/Unauthorized.vue';
 const routes = [
   {
     path: '/',
+    name: 'index',
+    component: index,
+  },
+  {
+    path: '/login',
     name: 'login',
     component: LoginView,
   },

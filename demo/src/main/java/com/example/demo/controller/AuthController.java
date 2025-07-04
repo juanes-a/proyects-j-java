@@ -100,7 +100,7 @@ public class AuthController {
             UserEntity user = userService.findByUsernameOrEmail(loginRequest.getUsernameOrEmail());
             if (user == null) {
                 System.out.println("❌ Usuario no encontrado: " + loginRequest.getUsernameOrEmail());
-                return ResponseEntity.status(404).body(Map.of("error", "Usuario no encontrado"));
+                return ResponseEntity.status(404).body(Map.of("error", "Credenciales incorrectas"));
             }
             
             System.out.println("✅ Usuario encontrado: " + user.getUsername());
