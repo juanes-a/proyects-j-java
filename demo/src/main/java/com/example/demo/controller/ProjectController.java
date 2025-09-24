@@ -18,6 +18,7 @@ import com.example.demo.enums.ProjectStatus;
 import com.example.demo.enums.ProjectPriority;
 import com.example.demo.service.ActivityService;
 import com.example.demo.service.DepartmentService;
+import com.example.demo.service.EmailService;
 import com.example.demo.service.ProjectService;
 import com.example.demo.exception.ProjectNotFoundException;
 import com.example.demo.exception.ResourceNotFoundException;
@@ -54,7 +55,6 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.*;
-import java.util.Collections;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -83,6 +83,8 @@ public class ProjectController {
     private ActivityService activityService;
     @Autowired
     private UserService UserService;
+    @Autowired
+    private  EmailService emailService ; 
 
     // ============== DTOs ==============
     
@@ -420,14 +422,30 @@ public class ProjectController {
                 request.getProjectId(),
                 request.getRole()
             );
+
             log.info("Asignación exitosa a proyecto: {}", assignment);
+
+            // 👇 Buscar el correo del usuario asignado
+            UserEntity usuarioAsignado = UserService.findByUsernameOrEmail(request.getUsernameOrEmail());
+
+            if (usuarioAsignado != null && usuarioAsignado.getEmail() != null) {
+                emailService.enviarCorreo(
+                    usuarioAsignado.getEmail(),
+                    "Asignación a proyecto",
+                    "Has sido asignado al proyecto con ID: " + request.getProjectId() +
+                    " con el rol de: " + request.getRole()
+                );
+            }
+
             return ResponseEntity.ok(assignment);
+
         } catch (Exception e) {
             log.error("Error en asignación a proyecto: ", e);
             return ResponseEntity.badRequest()
                 .body(new ErrorResponse("Error al asignar usuario al proyecto: " + e.getMessage()));
         }
     }
+
 
 
     // Agregar este método en tu controller

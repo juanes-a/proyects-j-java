@@ -45,4 +45,8 @@ public class ProjectCreateDTO {
     
     @NotNull(message = "El estado es obligatorio")
     private ProjectStatus status;
+
+    private boolean sendEmail;
+    private String emailDestino;
+
 }

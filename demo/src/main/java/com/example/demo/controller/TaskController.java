@@ -12,8 +12,9 @@ import com.example.demo.entity.UsersAsignation;
 import com.example.demo.exception.ResourceNotFoundException;
 import com.example.demo.repository.UserRepository;
 import com.example.demo.repository.UsersAsignationRepository;
+import com.example.demo.service.EmailService;
 import com.example.demo.service.TaskService;
-
+import com.example.demo.service.UserService;
 import com.example.demo.util.PdfReportGenerator;
 import jakarta.validation.constraints.NotBlank;
 import lombok.RequiredArgsConstructor;
@@ -44,6 +45,8 @@ public class TaskController {
     // Inyección automática del servicio
     private final TaskService taskService;
     private final UserRepository userRepository;
+    private final EmailService emailService;
+    private final UserService userService;
     private final UsersAsignationRepository usersAsignationRepository;
 
 
@@ -325,14 +328,33 @@ public class TaskController {
                 request.getTaskId(),
                 request.getRole()
             );
-            log.info("Asignación exitosa a proyecto: {}", assignment);
+
+            log.info("Asignación exitosa a tarea: {}", assignment);
+
+            // 👇 Buscar el usuario asignado
+            UserEntity usuarioAsignado = userService.findByUsernameOrEmail(request.getUsernameOrEmail());
+
+            if (usuarioAsignado != null && usuarioAsignado.getEmail() != null) {
+                emailService.enviarCorreo(
+                    usuarioAsignado.getEmail(),
+                    "Nueva tarea asignada",
+                    "Hola " + usuarioAsignado.getUsername() +
+                    ", se te ha asignado la tarea con ID: " + request.getTaskId() +
+                    " con el rol de: " + request.getRole()
+                );
+            } else {
+                log.warn("No se pudo enviar correo: usuario sin email configurado.");
+            }
+
             return ResponseEntity.ok(assignment);
+
         } catch (Exception e) {
-            log.error("Error en asignación a proyecto: ", e);
+            log.error("Error en asignación a tarea: ", e);
             return ResponseEntity.badRequest()
-                .body(new ErrorResponse("Error al asignar usuario al proyecto: " + e.getMessage()));
+                .body(new ErrorResponse("Error al asignar usuario a la tarea: " + e.getMessage()));
         }
     }
+
 
     /**
      * 🔵 PUT /api/tasks/{taskId}/unassign - Desasignar tarea (quitar usuario)

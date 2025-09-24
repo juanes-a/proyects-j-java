@@ -11,6 +11,7 @@ import com.example.demo.repository.ProjectRepository;
 import com.example.demo.repository.TeamMemberRepository;
 import com.example.demo.entity.Department;
 import com.example.demo.entity.Project;
+import com.example.demo.entity.UserEntity;
 import com.example.demo.entity.UsersAsignation;
 import com.example.demo.enums.ProjectStatus;
 import com.example.demo.enums.Role;
@@ -18,7 +19,9 @@ import com.example.demo.exception.BusinessException;
 import com.example.demo.service.DepartmentService;
 import com.example.demo.service.ActivityService; // NUEVO: Importar ActivityService
 import com.example.demo.service.DepartmentService.DepartmentStats;
+import com.example.demo.service.EmailService;
 import com.example.demo.service.ProjectService;
+import com.example.demo.service.UserService;
 
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.validation.Valid;
@@ -63,14 +66,23 @@ public class DepartmentController {
 
     @Autowired
     private TeamMemberRepository teamMemberRepository;
+    
+
 
     @Autowired
-    public DepartmentController(DepartmentService departmentService) {
+    private  EmailService emailService ;
+    private UserService userService; 
+
+    
+
+    @Autowired
+    public DepartmentController(DepartmentService departmentService, UserService userService) {
         this.departmentService = departmentService;
         this.projectService = projectService;
         this.activityService = activityService;
         this.departmentRepository = departmentRepository;
         this.teamMemberRepository = teamMemberRepository;
+        this.userService = userService;
     }
 
     @GetMapping("/{departmentId}/projects/count")
@@ -444,22 +456,38 @@ public class DepartmentController {
      */
     @PostMapping("/assign")
     public ResponseEntity<?> assignUserToDepartment(@RequestBody AssignUserToDepartmentRequest request) {
-        log.info("Datos recibidos en /assign: {}", request); // <-- Añade esta línea
-        
+        log.info("Datos recibidos en /assign: {}", request);
+
         try {
             UsersAsignation assignment = departmentService.assignUserToDepartment(
                 request.getUsernameOrEmail(), 
                 request.getDepartmentId(), 
                 request.getRole()
             );
-            log.info("Asignación exitosa: {}", assignment); // <-- Y esta
+
+            log.info("Asignación exitosa: {}", assignment);
+
+            // 👇 Buscar el correo del usuario asignado
+             UserEntity usuarioAsignado = userService.findByUsernameOrEmail(request.getUsernameOrEmail());
+
+            if (usuarioAsignado != null && usuarioAsignado.getEmail() != null) {
+                emailService.enviarCorreo(
+                    usuarioAsignado.getEmail(),
+                    "Asignación a departamento",
+                    "Has sido asignado al departamento con ID: " + request.getDepartmentId() +
+                    " con el rol de: " + request.getRole()
+                );
+            }
+
             return ResponseEntity.ok(assignment);
+
         } catch (Exception e) {
-            log.error("Error en asignación: ", e); // <-- Y esta
+            log.error("Error en asignación: ", e);
             return ResponseEntity.badRequest()
                 .body(new ErrorResponse("Error al asignar usuario al departamento: " + e.getMessage()));
         }
     }
+
     /**
      * Actualizar el rol de un usuario en su departamento
      */
