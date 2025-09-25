@@ -33,6 +33,7 @@ public interface UsersAsignationRepository extends JpaRepository<UsersAsignation
 
     Optional<UsersAsignation> findByUserAndProject(UserEntity user, Project project);
 
+
     Optional<UsersAsignation> findByUserAndTask(UserEntity user, TaskEntity taskEntity);
     
     List<UsersAsignation> findByProject(Project project);
@@ -45,6 +46,7 @@ public interface UsersAsignationRepository extends JpaRepository<UsersAsignation
 
 
     List<UsersAsignation> findByUserAndTaskIsNotNull(UserEntity user);
+
     
     List<UsersAsignation> findByTask(TaskEntity task);
     

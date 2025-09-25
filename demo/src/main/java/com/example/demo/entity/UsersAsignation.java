@@ -36,6 +36,7 @@ public class UsersAsignation {
     @JoinColumn(name = "department_id", nullable = true)
     private Department department;
 
+
     @ManyToOne
     @JoinColumn(name = "project_id", nullable = true)
     private Project project;

@@ -36,6 +36,8 @@ public interface ProjectRepository extends JpaRepository<Project, Long> {
     @Query("SELECT p FROM Project p WHERE p.priority IN ('HIGH', 'CRITICAL') AND p.status != 'COMPLETED'")
     List<Project> findUrgentProjects();
 
+
+
     // Método alternativo para proyectos vencidos que no están completados
     @Query("SELECT p FROM Project p WHERE p.endDate < CURRENT_DATE AND p.status != 'COMPLETED'")
     List<Project> findOverdueProjects();

@@ -33,6 +33,7 @@ public class Project {
     @Column(nullable = false, length = 100)
     private String name;
 
+
     @Size(max = 500, message = "La descripción no puede exceder 500 caracteres")
     @Column(length = 500)
     private String description;

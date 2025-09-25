@@ -32,6 +32,7 @@ public interface TaskRepository extends JpaRepository<TaskEntity, Long> {
     List<TaskEntity> findByPriority(TaskPriority priority);
 
     // ========== BÚSQUEDAS COMBINADAS ==========
+
     
     // Buscar tareas de un proyecto con estado específico
     List<TaskEntity> findByProjectIdAndStatus(Long projectId, TaskStatus status);
