@@ -68,7 +68,8 @@ public class TaskEntity {
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
-    // Relación con Project (obligatoria)
+
+    // Relación  con Project
     @JsonIgnore
     @NotNull(message = "El proyecto es obligatorio")
     @ManyToOne(fetch = FetchType.LAZY)

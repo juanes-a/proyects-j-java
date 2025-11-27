@@ -20,6 +20,7 @@ public interface DepartmentRepository extends JpaRepository<Department, Long> {
     boolean existsByNameIgnoreCase(String name);
 
     // Buscar solo departamentos activos
+
     List<Department> findByIsActiveTrue();
 
     // Buscar solo departamentos inactivos

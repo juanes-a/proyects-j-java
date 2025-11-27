@@ -25,3 +25,4 @@ public class EmailTestController {
         return ResponseEntity.ok("Correo enviado a " + to);
     }
 }
+

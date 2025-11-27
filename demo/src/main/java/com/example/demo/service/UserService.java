@@ -34,6 +34,7 @@ public class UserService {
         return userRepository.save(userEntity);
     }
 
+
     /**
      * Buscar usuario por username o email
      */

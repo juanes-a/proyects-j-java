@@ -46,6 +46,7 @@ public class DepartmentService {
         this.departmentRepository = departmentRepository;
     }
 
+
     /**
      * CREAR NUEVO DEPARTAMENTO
      * - Valida que el nombre no exista

@@ -57,6 +57,7 @@ public class TaskService {
                     .orElseThrow(() -> new IllegalArgumentException("Usuario no encontrado con ID: " + dto.getAssignedUserId()));
         }
 
+
         // Mapear DTO a entidad
         TaskEntity task = new TaskEntity();
         task.setName(dto.getName());
