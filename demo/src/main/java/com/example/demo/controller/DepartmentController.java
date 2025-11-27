@@ -470,14 +470,30 @@ public class DepartmentController {
             // 👇 Buscar el correo del usuario asignado
              UserEntity usuarioAsignado = userService.findByUsernameOrEmail(request.getUsernameOrEmail());
 
-            if (usuarioAsignado != null && usuarioAsignado.getEmail() != null) {
-                emailService.enviarCorreo(
-                    usuarioAsignado.getEmail(),
-                    "Asignación a departamento",
-                    "Has sido asignado al departamento con ID: " + request.getDepartmentId() +
-                    " con el rol de: " + request.getRole()
-                );
-            }
+        if (usuarioAsignado != null && usuarioAsignado.getEmail() != null) {
+            String subject = "Asignación a departamento";
+
+            String body = "<html>" +
+                "<body style='font-family: Arial, sans-serif;'>" +
+                "<h2 style='color:#333;'>Asignación a departamento</h2>" +
+                "<p>Hola <b>" + usuarioAsignado.getName() + "</b>,</p>" +
+                "<p>Has sido asignado al departamento con ID: <b>" + request.getDepartmentId() + "</b> " +
+                "con el rol de: <b>" + request.getRole() + "</b>.</p>" +
+                "<p>Puedes consultar más detalles en el siguiente enlace:</p>" +
+                "<p><a href='http://localhost:5173/departmentHome/" + request.getDepartmentId() + "' " +
+                "style='display:inline-block; background-color:#28a745; color:white; padding:10px 15px; " +
+                "text-decoration:none; border-radius:5px;'>Ver Departamento</a></p>" +
+                "<br><p>Saludos,<br>Equipo de Administración</p>" +
+                "</body>" +
+                "</html>";
+
+            emailService.enviarCorreo(
+                usuarioAsignado.getEmail(),
+                subject,
+                body
+            );
+        }
+
 
             return ResponseEntity.ok(assignment);
 

@@ -334,17 +334,30 @@ public class TaskController {
             // 👇 Buscar el usuario asignado
             UserEntity usuarioAsignado = userService.findByUsernameOrEmail(request.getUsernameOrEmail());
 
-            if (usuarioAsignado != null && usuarioAsignado.getEmail() != null) {
-                emailService.enviarCorreo(
-                    usuarioAsignado.getEmail(),
-                    "Nueva tarea asignada",
-                    "Hola " + usuarioAsignado.getUsername() +
-                    ", se te ha asignado la tarea con ID: " + request.getTaskId() +
-                    " con el rol de: " + request.getRole()
-                );
-            } else {
-                log.warn("No se pudo enviar correo: usuario sin email configurado.");
-            }
+        if (usuarioAsignado != null && usuarioAsignado.getEmail() != null) {
+            String subject = "Nueva tarea asignada";
+
+            String body = "<html>" +
+                "<body style='font-family: Arial, sans-serif;'>" +
+                "<h2 style='color:#333;'>Nueva tarea asignada</h2>" +
+                "<p>Hola <b>" + usuarioAsignado.getUsername() + "</b>,</p>" +
+                "<p>Se te ha asignado la tarea con ID: <b>" + request.getTaskId() + "</b> " +
+                "con el rol de: <b>" + request.getRole() + "</b>.</p>" +
+                "<p>Puedes ver los detalles y gestionarla en el siguiente enlace:</p>" +
+                "<p><a href='http://localhost:5173/homeTask/" + request.getTaskId() + "' " +
+                "style='display:inline-block; background-color:#17a2b8; color:white; padding:10px 15px; " +
+                "text-decoration:none; border-radius:5px;'>Ver Tarea</a></p>" +
+                "<br><p>Saludos,<br>Equipo de Administración</p>" +
+                "</body>" +
+                "</html>";
+
+            emailService.enviarCorreo(
+                usuarioAsignado.getEmail(),
+                subject,
+                body
+            );
+        }
+
 
             return ResponseEntity.ok(assignment);
 

@@ -426,8 +426,20 @@ const toggleDepartmentStatus = async (department) => {
 }
 
 const deleteDepartment = async (department) => {
+
+  // y comparar con el string 'active'
+  if (department.status === 'active') { 
+    toastStore.showToast(
+      '⚠️ No puedes eliminar un departamento activo. Por favor, desactívalo primero.', 
+      'warning'
+    );
+    return; 
+  }
+
+  // 2. CONFIRMACIÓN (Código existente)
   if (!confirm(`Are you sure you want to delete ${department.name}?`)) return
   
+  // 3. INTENTO DE BORRADO (Código existente)
   try {
     await api.delete(`/departments/${department.id}`)
     departments.value = departments.value.filter(d => d.id !== department.id)

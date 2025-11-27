@@ -29,19 +29,21 @@
       </button>
 
       <!-- Logo Section -->
-      <div class="flex items-center justify-center h-16 border-b border-gray-200 dark:border-gray-700 px-4">
-        <div class="flex items-center space-x-2">
-          <div class="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg flex items-center justify-center flex-shrink-0">
-            <Building2 class="w-5 h-5 text-white" />
+      <div class="border-t border-gray-200 dark:border-gray-700 p-4">
+        <div class="flex items-center">
+          <div class="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center text-white font-bold">
+            {{ authStore.user?.name?.charAt(0) || 'U' }}
           </div>
-          <span 
-            :class="[
-              'text-xl font-bold text-gray-800 dark:text-white transition-all duration-300',
-              isOpen ? 'opacity-100 w-auto' : 'opacity-0 w-0 overflow-hidden'
-            ]"
-          >
-            DeptManager
-          </span>
+          
+          <div v-if="isOpen" class="ml-3 transition-opacity duration-200">
+            <p class="text-sm font-medium text-gray-700 dark:text-gray-200">
+              {{ authStore.user?.name || 'User' }}
+            </p>
+            
+            <p class="text-xs text-gray-500 dark:text-gray-400">
+              {{ userRoleLabel }}
+            </p>
+          </div>
         </div>
       </div>
       
@@ -147,6 +149,7 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
+import { useAuthStore } from '../stores/auth'
 import { 
   Building2, 
   Home, 
@@ -162,6 +165,20 @@ import api from '../api'
 
 const router = useRouter()
 const route = useRoute()
+const authStore = useAuthStore()
+
+const userRoleLabel = computed(() => {
+  const role = authStore.user?.role || ''
+  
+  const roleMap = {
+    'ADMIN_GLOBAL': 'Global Manager',
+    'ADMIN_DEPT': 'Department Manager',
+    'ADMIN_COLLAB': 'Project Manager',
+    'COLLAB': 'Collaborator'
+  }
+  
+  return roleMap[role] || role || 'User' // Retorna el nombre mapeado, o el rol crudo, o 'User' por defecto
+})
 
 // Estado reactivo para autenticación
 const authState = ref({

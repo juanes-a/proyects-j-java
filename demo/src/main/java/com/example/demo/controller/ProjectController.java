@@ -428,14 +428,30 @@ public class ProjectController {
             // 👇 Buscar el correo del usuario asignado
             UserEntity usuarioAsignado = UserService.findByUsernameOrEmail(request.getUsernameOrEmail());
 
-            if (usuarioAsignado != null && usuarioAsignado.getEmail() != null) {
-                emailService.enviarCorreo(
-                    usuarioAsignado.getEmail(),
-                    "Asignación a proyecto",
-                    "Has sido asignado al proyecto con ID: " + request.getProjectId() +
-                    " con el rol de: " + request.getRole()
-                );
-            }
+        if (usuarioAsignado != null && usuarioAsignado.getEmail() != null) {
+            String subject = "Asignación a proyecto";
+
+            String body = "<html>" +
+                "<body style='font-family: Arial, sans-serif;'>" +
+                "<h2 style='color:#333;'>Asignación a proyecto</h2>" +
+                "<p>Hola <b>" + usuarioAsignado.getName() + "</b>,</p>" +
+                "<p>Se te ha asignado al proyecto con ID: <b>" + request.getProjectId() + "</b> " +
+                "con el rol de: <b>" + request.getRole() + "</b>.</p>" +
+                "<p>Puedes consultar más detalles y gestionar el proyecto en el siguiente enlace:</p>" +
+                "<p><a href='http://localhost:5173/dashTask/" + request.getProjectId() + "' " +
+                "style='display:inline-block; background-color:#007bff; color:white; padding:10px 15px; " +
+                "text-decoration:none; border-radius:5px;'>Ver Proyecto</a></p>" +
+                "<br><p>Saludos,<br>Equipo de Administración</p>" +
+                "</body>" +
+                "</html>";
+
+            emailService.enviarCorreo(
+                usuarioAsignado.getEmail(),
+                subject,
+                body
+            );
+        }
+
 
             return ResponseEntity.ok(assignment);
 
