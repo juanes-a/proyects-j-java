@@ -1,6 +1,5 @@
 <template>
   <div class="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 dark:from-gray-900 dark:to-gray-800 p-6">
-    <!-- Header -->
     <div class="bg-gradient-to-r from-indigo-600 to-purple-700 rounded-2xl p-6 text-white mb-8 relative overflow-hidden">
       <div class="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -translate-y-16 translate-x-16"></div>
       <div class="absolute bottom-0 left-0 w-24 h-24 bg-white/10 rounded-full translate-y-12 -translate-x-12"></div>
@@ -8,8 +7,8 @@
       <div class="relative z-10">
         <div class="flex flex-col md:flex-row md:items-center md:justify-between">
           <div>
-            <h1 class="text-3xl font-bold mb-2">¡Bienvenido de vuelta!</h1>
-            <p class="text-indigo-100 text-lg">Estás trabajando en el proyecto: <strong>{{ projectName }}</strong></p>
+            <h1 class="text-3xl font-bold mb-2">Welcome back!</h1>
+            <p class="text-indigo-100 text-lg">You are working on project: <strong>{{ projectName }}</strong></p>
           </div>
           <div class="mt-4 md:mt-0">
             <div class="flex items-center space-x-3">
@@ -17,7 +16,7 @@
                 <i class="fas fa-project-diagram text-2xl"></i>
               </div>
               <div>
-                <p class="text-indigo-100">Proyecto ID</p>
+                <p class="text-indigo-100">Project ID</p>
                 <p class="font-bold text-xl">{{ projectId }}</p>
               </div>
             </div>
@@ -26,7 +25,6 @@
       </div>
     </div>
 
-    <!-- Stats Cards -->
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
       <div v-for="stat in stats" :key="stat.title" 
            class="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm hover:shadow-md transition-shadow duration-300 border border-slate-100 dark:border-gray-700">
@@ -43,41 +41,35 @@
       </div>
     </div>
 
-    <!-- Main Content -->
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-      <!-- Completion Chart -->
       <div class="lg:col-span-2 bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 border border-slate-100 dark:border-gray-700">
-        <h3 class="text-lg font-semibold text-slate-800 dark:text-white mb-6">Progreso del Proyecto</h3>
+        <h3 class="text-lg font-semibold text-slate-800 dark:text-white mb-6">Project Progress</h3>
         <div class="h-64">
           <canvas ref="progressChart"></canvas>
         </div>
       </div>
 
-      <!-- Task Distribution -->
       <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 border border-slate-100 dark:border-gray-700">
-        <h3 class="text-lg font-semibold text-slate-800 dark:text-white mb-6">Distribución de Tareas</h3>
+        <h3 class="text-lg font-semibold text-slate-800 dark:text-white mb-6">Task Distribution</h3>
         <div class="h-64">
           <canvas ref="statusChart"></canvas>
         </div>
       </div>
     </div>
 
-    <!-- Priority and Recent Tasks -->
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-      <!-- Priority Distribution -->
       <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 border border-slate-100 dark:border-gray-700">
-        <h3 class="text-lg font-semibold text-slate-800 dark:text-white mb-6">Prioridades</h3>
+        <h3 class="text-lg font-semibold text-slate-800 dark:text-white mb-6">Priorities</h3>
         <div class="h-64">
           <canvas ref="priorityChart"></canvas>
         </div>
       </div>
 
-      <!-- Recent Tasks -->
       <div class="lg:col-span-2 bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 border border-slate-100 dark:border-gray-700">
         <div class="flex items-center justify-between mb-6">
-          <h3 class="text-lg font-semibold text-slate-800 dark:text-white">Tareas Recientes</h3>
+          <h3 class="text-lg font-semibold text-slate-800 dark:text-white">Recent Tasks</h3>
           <router-link to="/tasks" class="text-sm text-indigo-600 dark:text-indigo-400 hover:underline">
-            Ver todas
+            View all
           </router-link>
         </div>
         
@@ -87,7 +79,7 @@
             <div class="flex items-start justify-between">
               <div>
                 <h4 class="font-medium text-slate-800 dark:text-white">{{ task.name }}</h4>
-                <p class="text-sm text-slate-500 dark:text-gray-400 mt-1">{{ task.description || 'Sin descripción' }}</p>
+                <p class="text-sm text-slate-500 dark:text-gray-400 mt-1">{{ task.description || 'No description' }}</p>
               </div>
               <div class="flex items-center space-x-2">
                 <span :class="getStatusClass(task.status)" class="px-3 py-1 rounded-full text-xs font-medium">
@@ -118,7 +110,6 @@ import axios from 'axios';
 import { useAuthStore } from '../../stores/auth'
 
 const authStore = useAuthStore()
-
 
 Chart.register(...registerables);
 
@@ -159,7 +150,7 @@ export default {
     async loadProjectData() {
       try {
         const userEmail = authStore.user?.email || localStorage.getItem('userEmail');
-         console.log('🔍 Usuario actual:', userEmail); 
+         console.log('🔍 Current user:', userEmail); 
     
         if (!userEmail) {
           throw new Error('User email not available');
@@ -170,7 +161,7 @@ export default {
         this.projectName = response.data.projectName;
         this.tasks = response.data.tasks || [];
         
-        // Ordenar tareas recientes por fecha
+        // Sort recent tasks by date
         this.recentTasks = [...this.tasks]
           .sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt))
           .slice(0, 5);
@@ -183,30 +174,30 @@ export default {
     prepareStats() {
       this.stats = [
         { 
-          title: 'Total Tareas', 
+          title: 'Total Tasks', 
           value: this.tasks.length,
-          change: '+2 esta semana',
+          change: '+2 this week',
           icon: 'fas fa-tasks',
           iconBg: 'bg-gradient-to-r from-indigo-500 to-indigo-600'
         },
         { 
-          title: 'Completadas', 
+          title: 'Completed', 
           value: this.completedTasks,
           change: `${Math.round((this.completedTasks / this.tasks.length) * 100) || 0}%`,
           icon: 'fas fa-check-circle',
           iconBg: 'bg-gradient-to-r from-green-500 to-emerald-500'
         },
         { 
-          title: 'En Progreso', 
+          title: 'In Progress', 
           value: this.inProgressTasks,
           change: `${Math.round((this.inProgressTasks / this.tasks.length) * 100) || 0}%`,
           icon: 'fas fa-spinner',
           iconBg: 'bg-gradient-to-r from-blue-500 to-cyan-500'
         },
         { 
-          title: 'Urgentes', 
+          title: 'Urgent', 
           value: this.urgentTasks,
-          change: 'Prioridad máxima',
+          change: 'Maximum priority',
           icon: 'fas fa-exclamation-triangle',
           iconBg: 'bg-gradient-to-r from-red-500 to-rose-500'
         }
@@ -218,9 +209,9 @@ export default {
       this.progressChart = new Chart(this.$refs.progressChart, {
         type: 'line',
         data: {
-          labels: ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun'],
+          labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
           datasets: [{
-            label: 'Tareas Completadas',
+            label: 'Completed Tasks',
             data: [12, 19, 3, 5, 2, 3],
             borderColor: '#6366f1',
             backgroundColor: 'rgba(99, 102, 241, 0.1)',
@@ -228,14 +219,14 @@ export default {
             fill: true
           }]
         },
-        options: this.getChartOptions('Progreso Mensual')
+        options: this.getChartOptions('Monthly Progress')
       });
       
       // Status Distribution (Doughnut)
       this.statusChart = new Chart(this.$refs.statusChart, {
         type: 'doughnut',
         data: {
-          labels: ['Completadas', 'En Progreso', 'Pendientes', 'Canceladas'],
+          labels: ['Completed', 'In Progress', 'Pending', 'Cancelled'],
           datasets: [{
             data: [
               this.completedTasks,
@@ -269,9 +260,9 @@ export default {
       this.priorityChart = new Chart(this.$refs.priorityChart, {
         type: 'bar',
         data: {
-          labels: ['Baja', 'Media', 'Alta', 'Urgente'],
+          labels: ['Low', 'Medium', 'High', 'Urgent'],
           datasets: [{
-            label: 'Tareas por Prioridad',
+            label: 'Tasks by Priority',
             data: [
               this.tasks.filter(t => t.priority === 'LOW').length,
               this.tasks.filter(t => t.priority === 'MEDIUM').length,
@@ -293,7 +284,7 @@ export default {
             borderWidth: 1
           }]
         },
-        options: this.getChartOptions('Distribución por Prioridad')
+        options: this.getChartOptions('Priority Distribution')
       });
     },
     
@@ -356,9 +347,9 @@ export default {
     },
     
     formatDate(dateString) {
-      if (!dateString) return 'Sin fecha';
+      if (!dateString) return 'No date';
       const options = { day: 'numeric', month: 'short', year: 'numeric' };
-      return new Date(dateString).toLocaleDateString('es-ES', options);
+      return new Date(dateString).toLocaleDateString('en-US', options);
     }
   },
   

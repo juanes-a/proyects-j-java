@@ -1,16 +1,15 @@
- <template>
+<template>
   <div class="min-h-screen bg-gray-50">
-    <!-- Banner de bienvenida mejorado -->
     <header class="bg-gradient-to-r from-blue-600 to-indigo-800 text-white shadow-lg">
       <div class="container mx-auto px-4 py-8">
         <div class="flex flex-col md:flex-row justify-between items-center">
           <div>
-            <h1 class="text-3xl md:text-4xl font-bold mb-2">¡Bienvenido, {{ username }}!</h1>
-            <p class="text-blue-100 text-lg">Resumen visual de tus tareas</p>
+            <h1 class="text-3xl md:text-4xl font-bold mb-2">Welcome, {{ username }}!</h1>
+            <p class="text-blue-100 text-lg">Visual summary of your tasks</p>
           </div>
           <div class="mt-4 md:mt-0 flex items-center space-x-4">
             <div class="bg-white/10 backdrop-blur-sm rounded-lg p-4 border border-white/20">
-              <p class="text-sm text-blue-100">Fecha actual</p>
+              <p class="text-sm text-blue-100">Current Date</p>
               <p class="text-xl font-semibold">{{ currentDate }}</p>
             </div>
           </div>
@@ -18,20 +17,17 @@
       </div>
     </header>
 
-    <!-- Sección principal de gráficos -->
     <main class="container mx-auto px-4 py-8">
-      <!-- Estadísticas rápidas -->
+      <h2 class="text-xl font-bold text-gray-800 mb-4">Quick Stats</h2>
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
         <div class="bg-white rounded-xl shadow-md p-6 border-l-4 border-blue-500">
           <div class="flex items-center justify-between">
             <div>
-              <p class="text-gray-500 text-sm">Total tareas</p>
-              <h3 class="text-2xl font-bold text-gray-800">{{ stats.totalTasks }}</h3>
+              <p class="text-gray-500 text-sm font-medium uppercase">Total Tasks</p>
+              <p class="text-2xl font-bold text-gray-800">{{ stats.total || 0 }}</p>
             </div>
-            <div class="bg-blue-100 p-3 rounded-full">
-              <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-              </svg>
+            <div class="p-3 bg-blue-100 rounded-full">
+              <i class="fas fa-tasks text-blue-600 text-xl"></i>
             </div>
           </div>
         </div>
@@ -39,13 +35,11 @@
         <div class="bg-white rounded-xl shadow-md p-6 border-l-4 border-green-500">
           <div class="flex items-center justify-between">
             <div>
-              <p class="text-gray-500 text-sm">Completadas</p>
-              <h3 class="text-2xl font-bold text-gray-800">{{ stats.completedTasks }}</h3>
+              <p class="text-gray-500 text-sm font-medium uppercase">Completed</p>
+              <p class="text-2xl font-bold text-gray-800">{{ stats.completed || 0 }}</p>
             </div>
-            <div class="bg-green-100 p-3 rounded-full">
-              <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-              </svg>
+            <div class="p-3 bg-green-100 rounded-full">
+              <i class="fas fa-check-circle text-green-600 text-xl"></i>
             </div>
           </div>
         </div>
@@ -53,87 +47,52 @@
         <div class="bg-white rounded-xl shadow-md p-6 border-l-4 border-yellow-500">
           <div class="flex items-center justify-between">
             <div>
-              <p class="text-gray-500 text-sm">Pendientes</p>
-              <h3 class="text-2xl font-bold text-gray-800">{{ stats.pendingTasks }}</h3>
+              <p class="text-gray-500 text-sm font-medium uppercase">Pending</p>
+              <p class="text-2xl font-bold text-gray-800">{{ stats.pending || 0 }}</p>
             </div>
-            <div class="bg-yellow-100 p-3 rounded-full">
-              <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-yellow-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-              </svg>
+            <div class="p-3 bg-yellow-100 rounded-full">
+              <i class="fas fa-clock text-yellow-600 text-xl"></i>
             </div>
           </div>
         </div>
-
+        
         <div class="bg-white rounded-xl shadow-md p-6 border-l-4 border-red-500">
           <div class="flex items-center justify-between">
             <div>
-              <p class="text-gray-500 text-sm">Vencidas</p>
-              <h3 class="text-2xl font-bold text-gray-800">{{ stats.overdueTasks }}</h3>
+              <p class="text-gray-500 text-sm font-medium uppercase">Urgent</p>
+              <p class="text-2xl font-bold text-gray-800">{{ stats.urgent || 0 }}</p>
             </div>
-            <div class="bg-red-100 p-3 rounded-full">
-              <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
+            <div class="p-3 bg-red-100 rounded-full">
+              <i class="fas fa-exclamation-triangle text-red-600 text-xl"></i>
             </div>
           </div>
         </div>
       </div>
 
-      <!-- Gráfico principal -->
-      <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <!-- Gráfico circular de estado de tareas -->
-        <div class="lg:col-span-2 bg-white rounded-2xl shadow-xl p-6">
-          <div class="flex justify-between items-center mb-6">
-            <h2 class="text-2xl font-bold text-gray-800">Distribución de Tareas</h2>
-            <div class="flex space-x-2">
-              <button @click="changeChartType('doughnut')" :class="`px-3 py-1 text-xs rounded-full ${chartType === 'doughnut' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-600'}`">
-                Circular
-              </button>
-              <button @click="changeChartType('bar')" :class="`px-3 py-1 text-xs rounded-full ${chartType === 'bar' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-600'}`">
-                Barras
-              </button>
-            </div>
-          </div>
-          <div class="h-80">
-            <canvas v-if="hasData" ref="chartCanvas"></canvas>
-            <div v-else class="flex flex-col items-center justify-center h-full text-gray-500 space-y-2">
-              <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-              </svg>
-              <p>No hay tareas asignadas actualmente</p>
-            </div>
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+        <div class="bg-white rounded-xl shadow-md p-6">
+          <h3 class="text-lg font-bold text-gray-800 mb-4">Task Distribution</h3>
+          <div class="h-64 relative">
+             <canvas ref="taskChart"></canvas>
           </div>
         </div>
-
-        <!-- Tareas urgentes -->
-        <div class="bg-white rounded-2xl shadow-xl p-6">
-          <h3 class="text-lg font-semibold text-gray-800 mb-4">Tareas urgentes</h3>
+        
+        <div class="bg-white rounded-xl shadow-md p-6">
+          <div class="flex items-center justify-between mb-4">
+             <h3 class="text-lg font-bold text-gray-800">Upcoming Deadlines</h3>
+             <button class="text-sm text-blue-600 hover:text-blue-800 font-medium">View all</button>
+          </div>
           <div class="space-y-4">
-            <div v-for="task in urgentTasks" :key="task.id" class="border-l-4 border-red-500 pl-4 py-3 bg-red-50 rounded-r-lg">
-              <div class="flex justify-between items-start">
-                <div>
-                  <h4 class="font-medium text-gray-800">{{ task.name }}</h4>
-                  <p class="text-sm text-gray-500">{{ task.projectName }}</p>
-                </div>
-                <span class="text-xs px-2 py-1 bg-red-100 text-red-800 rounded-full">
-                  {{ daysUntilDue(task.endDate) }} días
-                </span>
-              </div>
-              <div class="flex items-center mt-2 text-sm text-gray-500">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-                <span>Vence: {{ formatDate(task.endDate) }}</span>
-              </div>
-              <div class="mt-2 flex items-center text-sm">
-                <span :class="`px-2 py-1 text-xs rounded-full ${getPriorityClass(task.priority)}`">
-                  {{ task.priorityDisplayName }}
-                </span>
-              </div>
+            <div v-for="task in urgentTasks" :key="task.id" class="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+               <div>
+                 <p class="font-medium text-gray-800">{{ task.title }}</p>
+                 <p class="text-xs text-gray-500">Due: {{ formatDate(task.dueDate) }}</p>
+               </div>
+               <span :class="getPriorityClass(task.priority)" class="px-2 py-1 text-xs rounded-full font-semibold">
+                 {{ task.priority }}
+               </span>
             </div>
-            <div v-if="urgentTasks.length === 0" class="text-center py-4 text-gray-500">
-              No hay tareas urgentes
-            </div>
+            <p v-if="urgentTasks.length === 0" class="text-gray-500 text-center py-4">No upcoming deadlines</p>
           </div>
         </div>
       </div>

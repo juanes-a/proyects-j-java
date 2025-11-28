@@ -1,13 +1,12 @@
 <template>
   <div class="space-y-6 bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 min-h-screen p-6">
-    <!-- Stats Cards -->
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
       <div v-for="stat in headerStats" :key="stat.title" class="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm card-hover border border-slate-100 dark:border-gray-700">
         <div class="flex items-center justify-between">
           <div>
             <p class="text-sm font-medium text-slate-600 dark:text-gray-300 mb-1">{{ stat.title }}</p>
             <p class="text-3xl font-bold text-slate-800 dark:text-white">{{ stat.value }}</p>
-            <p class="text-sm text-slate-500 dark:text-gray-400 mt-1">+2 este mes</p>
+            <p class="text-sm text-slate-500 dark:text-gray-400 mt-1">+2 this month</p>
           </div>
           <div :class="stat.iconBg" class="w-12 h-12 rounded-xl flex items-center justify-center shadow-md">
             <i :class="stat.icon" class="text-white text-lg"></i>
@@ -16,83 +15,74 @@
       </div>
     </div>
 
-   <!-- Filters and Quick Actions Section -->
    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-     <!-- Filters -->
      <div class="lg:col-span-2 bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 card-hover border border-slate-100 dark:border-gray-700">
        <div class="flex items-center justify-between mb-4">
          <h3 class="text-lg font-semibold text-slate-800 dark:text-white flex items-center">
            <i class="fas fa-filter text-indigo-500 mr-2"></i>
-           Filtros
+           Filters
          </h3>
          <button @click="clearFilters" class="text-sm text-slate-500 dark:text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 font-medium transition-colors">
-           Limpiar Todo
+           Clear All
          </button>
        </div>
 
 
        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-         <!-- Estado -->
          <div>
-           <label class="block text-sm font-semibold text-slate-700 dark:text-gray-300 mb-2">Estado</label>
+           <label class="block text-sm font-semibold text-slate-700 dark:text-gray-300 mb-2">Status</label>
            <select v-model="filters.status" @change="filterTasks" class="form-select w-full">
-             <option value="">Todos los estados</option>
-             <option value="PENDING">Pendiente</option>
-             <option value="IN_PROGRESS">En Progreso</option>
-             <option value="IN_REVIEW">En Revisión</option>
-             <option value="COMPLETED">Completada</option>
-             <option value="CANCELLED">Cancelada</option>
+             <option value="">All statuses</option>
+             <option value="PENDING">Pending</option>
+             <option value="IN_PROGRESS">In Progress</option>
+             <option value="IN_REVIEW">In Review</option>
+             <option value="COMPLETED">Completed</option>
+             <option value="CANCELLED">Cancelled</option>
            </select>
          </div>
 
-         <!-- Prioridad -->
          <div>
-           <label class="block text-sm font-semibold text-slate-700 dark:text-gray-300 mb-2">Prioridad</label>
+           <label class="block text-sm font-semibold text-slate-700 dark:text-gray-300 mb-2">Priority</label>
            <select v-model="filters.priority" @change="filterTasks" class="form-select w-full">
-             <option value="">Todas las prioridades</option>
-             <option value="LOW">Baja</option>
-             <option value="MEDIUM">Media</option>
-             <option value="HIGH">Alta</option>
-             <option value="URGENT">Urgente</option>
+             <option value="">All priorities</option>
+             <option value="LOW">Low</option>
+             <option value="MEDIUM">Medium</option>
+             <option value="HIGH">High</option>
+             <option value="URGENT">Urgent</option>
            </select>
          </div>
 
-         <!-- Proyecto -->
          <div>
-           <label class="block text-sm font-semibold text-slate-700 dark:text-gray-300 mb-2">Proyecto</label>
+           <label class="block text-sm font-semibold text-slate-700 dark:text-gray-300 mb-2">Project</label>
            <select v-model="filters.projectId" @change="filterTasks" class="form-select w-full">
-             <option value="">Todos los proyectos</option>
+             <option value="">All projects</option>
              <option v-for="project in projects" :key="project.id" :value="project.id">{{ project.name }}</option>
            </select>
          </div>
 
-         <!-- Fecha desde -->
          <div>
-           <label class="block text-sm font-semibold text-slate-700 dark:text-gray-300 mb-2">Fecha desde</label>
+           <label class="block text-sm font-semibold text-slate-700 dark:text-gray-300 mb-2">Start Date</label>
            <input type="date" v-model="filters.startDate" @change="filterTasks" class="form-input w-full">
          </div>
 
-         <!-- Fecha hasta -->
          <div>
-           <label class="block text-sm font-semibold text-slate-700 dark:text-gray-300 mb-2">Fecha hasta</label>
+           <label class="block text-sm font-semibold text-slate-700 dark:text-gray-300 mb-2">End Date</label>
            <input type="date" v-model="filters.endDate" @change="filterTasks" class="form-input w-full">
          </div>
 
-         <!-- Palabra clave -->
          <div class="md:col-span-2">
-           <label class="block text-sm font-semibold text-slate-700 dark:text-gray-300 mb-2">Palabra clave</label>
-           <input type="text" v-model="filters.keyword" @input="filterTasks" placeholder="Buscar por nombre o descripción" class="form-input w-full">
+           <label class="block text-sm font-semibold text-slate-700 dark:text-gray-300 mb-2">Keyword</label>
+           <input type="text" v-model="filters.keyword" @input="filterTasks" placeholder="Search by name or description" class="form-input w-full">
          </div>
 
        </div>
-       <!-- Botón para generar PDF -->
        <div class="mt-4 md:col-span-2">
          <button
            class="btn btn-primary"
            @click="generatePdf"
          >
            <i class="fas fa-file-pdf mr-2"></i>
-           Descargar Reporte PDF
+           Download PDF Report
          </button>
        </div>
 
@@ -100,9 +90,8 @@
 
 
 
-      <!-- Quick Actions -->
       <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 card-hover border border-slate-100 dark:border-gray-700">
-        <h3 class="text-lg font-semibold text-gray-800 dark:text-white mb-4">Acciones Rápidas</h3>
+        <h3 class="text-lg font-semibold text-gray-800 dark:text-white mb-4">Quick Actions</h3>
         <div class="space-y-3">
           <button
             @click="openCreateModal"
@@ -112,8 +101,8 @@
               <i class="fas fa-plus text-white text-sm"></i>
             </div>
             <div>
-              <p class="font-medium text-gray-800 dark:text-white text-sm">Nueva Tarea</p>
-              <p class="text-xs text-gray-500 dark:text-gray-400">Crear una nueva tarea</p>
+              <p class="font-medium text-gray-800 dark:text-white text-sm">New Task</p>
+              <p class="text-xs text-gray-500 dark:text-gray-400">Create a new task</p>
             </div>
           </button>
           <button
@@ -124,48 +113,44 @@
               <i class="fas fa-eye text-white text-sm"></i>
             </div>
             <div>
-              <p class="font-medium text-gray-800 dark:text-white text-sm">Ver Todas</p>
-              <p class="text-xs text-gray-500 dark:text-gray-400">Mostrar todas las tareas</p>
+              <p class="font-medium text-gray-800 dark:text-white text-sm">View All</p>
+              <p class="text-xs text-gray-500 dark:text-gray-400">Show all tasks</p>
             </div>
           </button>
         </div>
       </div>
     </div>
 
-    <!-- Tasks Table -->
     <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-slate-100 dark:border-gray-700 overflow-hidden card-hover">
-      <!-- Table Header -->
       <div class="bg-gradient-to-r from-slate-50 to-slate-100 dark:from-gray-700 dark:to-gray-800 p-6 border-b border-slate-200 dark:border-gray-600">
         <div class="flex flex-col md:flex-row md:items-center md:justify-between space-y-4 md:space-y-0">
           <div>
             <h2 class="text-xl font-bold text-slate-800 dark:text-white flex items-center">
               <i class="fas fa-list-ul text-indigo-500 mr-3"></i>
-              Lista de Tareas
+              Task List
             </h2>
-            <p class="text-slate-600 dark:text-gray-400 mt-1">{{ filteredTasks.length }} tareas encontradas</p>
+            <p class="text-slate-600 dark:text-gray-400 mt-1">{{ filteredTasks.length }} tasks found</p>
           </div>
         </div>
       </div>
 
-      <!-- Table Content -->
       <div class="overflow-x-auto">
         <table class="w-full">
           <thead class="bg-slate-50 dark:bg-gray-700 border-b border-slate-200 dark:border-gray-600">
             <tr>
-              <th class="px-6 py-4 text-left text-sm font-bold text-slate-700 dark:text-gray-300 uppercase tracking-wide">Tarea</th>
-              <th class="px-6 py-4 text-left text-sm font-bold text-slate-700 dark:text-gray-300 uppercase tracking-wide">Proyecto</th>
+              <th class="px-6 py-4 text-left text-sm font-bold text-slate-700 dark:text-gray-300 uppercase tracking-wide">Task</th>
+              <th class="px-6 py-4 text-left text-sm font-bold text-slate-700 dark:text-gray-300 uppercase tracking-wide">Project</th>
 
-              <th class="px-6 py-4 text-left text-sm font-bold text-slate-700 dark:text-gray-300 uppercase tracking-wide">Estado</th>
-              <th class="px-6 py-4 text-left text-sm font-bold text-slate-700 dark:text-gray-300 uppercase tracking-wide">Prioridad</th>
-              <th class="px-6 py-4 text-left text-sm font-bold text-slate-700 dark:text-gray-300 uppercase tracking-wide">Fechas</th>
-              <th class="px-6 py-4 text-left text-sm font-bold text-slate-700 dark:text-gray-300 uppercase tracking-wide">Horas</th>
-              <th class="px-6 py-4 text-left text-sm font-bold text-slate-700 dark:text-gray-300 uppercase tracking-wide">Acciones</th>
+              <th class="px-6 py-4 text-left text-sm font-bold text-slate-700 dark:text-gray-300 uppercase tracking-wide">Status</th>
+              <th class="px-6 py-4 text-left text-sm font-bold text-slate-700 dark:text-gray-300 uppercase tracking-wide">Priority</th>
+              <th class="px-6 py-4 text-left text-sm font-bold text-slate-700 dark:text-gray-300 uppercase tracking-wide">Dates</th>
+              <th class="px-6 py-4 text-left text-sm font-bold text-slate-700 dark:text-gray-300 uppercase tracking-wide">Hours</th>
+              <th class="px-6 py-4 text-left text-sm font-bold text-slate-700 dark:text-gray-300 uppercase tracking-wide">Actions</th>
             </tr>
           </thead>
           <tbody class="divide-y divide-slate-100 dark:divide-gray-600">
             <tr v-for="task in filteredTasks" :key="task.id" class="hover:bg-slate-50 dark:hover:bg-gray-700 transition-colors duration-200">
 
-              <!-- Tarea -->
               <td class="px-6 py-4">
                 <div class="flex items-center">
                   <div class="w-12 h-12 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-xl flex items-center justify-center shadow-md">
@@ -173,31 +158,28 @@
                   </div>
                   <div class="ml-4">
                     <div class="text-sm font-bold text-slate-900 dark:text-white">{{ task.name }}</div>
-                    <div class="text-sm text-slate-500 dark:text-gray-400 truncate max-w-xs">{{ task.description || 'Sin descripción' }}</div>
+                    <div class="text-sm text-slate-500 dark:text-gray-400 truncate max-w-xs">{{ task.description || 'No description' }}</div>
                   </div>
                 </div>
               </td>
 
-              <!-- ✅ Proyecto -->
-             <td class="px-6 py-4">
+              <td class="px-6 py-4">
                <div class="flex items-center">
                  <i class="fas fa-folder-open text-indigo-500 dark:text-indigo-400 mr-2 text-lg"></i>
                  <span class="inline-block bg-indigo-200/70 text-indigo-900 dark:bg-indigo-800/50 dark:text-indigo-200 text-sm font-bold px-4 py-1 rounded-xl shadow-sm tracking-wide uppercase">
-                   {{ task.projectName || 'Sin proyecto' }}
+                   {{ task.projectName || 'No project' }}
                  </span>
                </div>
              </td>
 
 
 
-              <!-- Estado -->
               <td class="px-6 py-4">
                 <span :class="getStatusClass(task.status)" class="status-badge">
                   {{ getStatusDisplay(task.status) }}
                 </span>
               </td>
 
-              <!-- Prioridad -->
               <td class="px-6 py-4">
                 <div class="flex items-center">
                   <i :class="getPriorityIcon(task.priority)" class="mr-2 text-lg"></i>
@@ -205,27 +187,24 @@
                 </div>
               </td>
 
-              <!-- Fechas -->
               <td class="px-6 py-4">
                 <div class="text-sm font-medium text-slate-900 dark:text-white">{{ formatDate(task.startDate) }}</div>
                 <div class="text-sm text-slate-500 dark:text-gray-400">{{ formatDate(task.endDate) }}</div>
               </td>
 
-              <!-- Horas -->
               <td class="px-6 py-4">
                 <div class="text-sm font-medium text-slate-900 dark:text-white">Est: {{ task.estimatedHours || '-' }}h</div>
-                <div class="text-sm text-slate-500 dark:text-gray-400">Real: {{ task.actualHours || '-' }}h</div>
+                <div class="text-sm text-slate-500 dark:text-gray-400">Act: {{ task.actualHours || '-' }}h</div>
               </td>
 
 
 
-             <!-- Acciones -->
              <td class="px-6 py-4">
                <div class="flex items-center space-x-3">
-                 <button @click="editTask(task)" class="action-btn bg-indigo-100 text-indigo-700 hover:bg-indigo-200 dark:bg-indigo-900/30 dark:text-indigo-400" title="Editar">
+                 <button @click="editTask(task)" class="action-btn bg-indigo-100 text-indigo-700 hover:bg-indigo-200 dark:bg-indigo-900/30 dark:text-indigo-400" title="Edit">
                    ✏️
                  </button>
-                 <button @click="deleteTask(task.id)" class="action-btn bg-red-100 text-red-700 hover:bg-red-200 dark:bg-red-900/30 dark:text-red-400" title="Eliminar">
+                 <button @click="deleteTask(task.id)" class="action-btn bg-red-100 text-red-700 hover:bg-red-200 dark:bg-red-900/30 dark:text-red-400" title="Delete">
                    🗑️
                  </button>
                </div>
@@ -239,25 +218,22 @@
 
 
 
-      <!-- Empty State -->
       <div v-if="filteredTasks.length === 0" class="text-center py-16">
         <div class="w-24 h-24 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-full flex items-center justify-center mx-auto mb-6 shadow-lg">
           <i class="fas fa-tasks text-white text-3xl"></i>
         </div>
-        <h3 class="text-xl font-bold text-slate-800 dark:text-white mb-2">No se encontraron tareas</h3>
-        <p class="text-slate-500 dark:text-gray-400 mb-6">Comienza creando tu primera tarea o ajusta los filtros.</p>
+        <h3 class="text-xl font-bold text-slate-800 dark:text-white mb-2">No tasks found</h3>
+        <p class="text-slate-500 dark:text-gray-400 mb-6">Start by creating your first task or adjust the filters.</p>
         <button @click="openCreateModal" class="btn-primary">
           <i class="fas fa-plus mr-2"></i>
-          Nueva Tarea
+          New Task
         </button>
       </div>
     </div>
 
-    <!-- Task Performance Indicators -->
     <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 card-hover border border-slate-100 dark:border-gray-700">
-      <h3 class="text-lg font-semibold text-gray-800 dark:text-white mb-6">Indicadores de Rendimiento</h3>
+      <h3 class="text-lg font-semibold text-gray-800 dark:text-white mb-6">Performance Indicators</h3>
       <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <!-- Completion Rate -->
         <div class="text-center">
           <div class="w-20 h-20 mx-auto mb-4 relative">
             <svg class="w-20 h-20 transform -rotate-90" viewBox="0 0 36 36">
@@ -282,11 +258,10 @@
               <span class="text-lg font-bold text-indigo-600 dark:text-indigo-400">{{ completionRate }}%</span>
             </div>
           </div>
-          <p class="text-sm font-medium text-gray-800 dark:text-white">Tasa de Finalización</p>
-          <p class="text-xs text-gray-500 dark:text-gray-400">Tareas completadas</p>
+          <p class="text-sm font-medium text-gray-800 dark:text-white">Completion Rate</p>
+          <p class="text-xs text-gray-500 dark:text-gray-400">Completed tasks</p>
         </div>
 
-        <!-- Progress Rate -->
         <div class="text-center">
           <div class="w-20 h-20 mx-auto mb-4 relative">
             <svg class="w-20 h-20 transform -rotate-90" viewBox="0 0 36 36">
@@ -311,11 +286,10 @@
               <span class="text-lg font-bold text-green-600 dark:text-green-400">{{ progressRate }}%</span>
             </div>
           </div>
-          <p class="text-sm font-medium text-gray-800 dark:text-white">En Progreso</p>
-          <p class="text-xs text-gray-500 dark:text-gray-400">Tareas activas</p>
+          <p class="text-sm font-medium text-gray-800 dark:text-white">In Progress</p>
+          <p class="text-xs text-gray-500 dark:text-gray-400">Active tasks</p>
         </div>
 
-        <!-- Pending Rate -->
         <div class="text-center">
           <div class="w-20 h-20 mx-auto mb-4 relative">
             <svg class="w-20 h-20 transform -rotate-90" viewBox="0 0 36 36">
@@ -340,20 +314,19 @@
               <span class="text-lg font-bold text-amber-600 dark:text-amber-400">{{ pendingRate }}%</span>
             </div>
           </div>
-          <p class="text-sm font-medium text-gray-800 dark:text-white">Pendientes</p>
-          <p class="text-xs text-gray-500 dark:text-gray-400">Tareas por iniciar</p>
+          <p class="text-sm font-medium text-gray-800 dark:text-white">Pending</p>
+          <p class="text-xs text-gray-500 dark:text-gray-400">Tasks to start</p>
         </div>
       </div>
     </div>
 
-    <!-- Modal -->
     <div v-if="showModal" class="fixed inset-0 z-50 overflow-y-auto bg-black bg-opacity-50 flex items-center justify-center p-4">
       <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
         <div class="bg-gradient-to-r from-indigo-600 to-purple-600 p-6 text-white rounded-t-2xl">
           <div class="flex items-center justify-between">
             <h3 class="text-xl font-bold flex items-center">
               <i class="fas fa-tasks mr-2"></i>
-              {{ isEditing ? 'Editar Tarea' : 'Nueva Tarea' }}
+              {{ isEditing ? 'Edit Task' : 'New Task' }}
             </h3>
             <button @click="closeModal" class="text-white hover:bg-white hover:bg-opacity-20 dark:hover:bg-gray-700 p-2 rounded-lg transition-colors">
               <i class="fas fa-times text-lg"></i>
@@ -363,73 +336,73 @@
 
         <form @submit.prevent="saveTask" class="p-6 space-y-4">
           <div>
-            <label class="form-label">Nombre *</label>
+            <label class="form-label">Name *</label>
             <input v-model="taskForm.name" type="text" required maxlength="100" class="form-input">
           </div>
 
           <div>
-            <label class="form-label">Descripción</label>
+            <label class="form-label">Description</label>
             <textarea v-model="taskForm.description" maxlength="500" rows="3" class="form-input"></textarea>
           </div>
 
           <div class="grid grid-cols-2 gap-4">
             <div>
-              <label class="form-label">Estado *</label>
+              <label class="form-label">Status *</label>
               <select v-model="taskForm.status" required class="form-select">
-                <option value="PENDING">Pendiente</option>
-                <option value="IN_PROGRESS">En Progreso</option>
-                <option value="IN_REVIEW">En Revisión</option>
-                <option value="COMPLETED">Completada</option>
-                <option value="CANCELLED">Cancelada</option>
+                <option value="PENDING">Pending</option>
+                <option value="IN_PROGRESS">In Progress</option>
+                <option value="IN_REVIEW">In Review</option>
+                <option value="COMPLETED">Completed</option>
+                <option value="CANCELLED">Cancelled</option>
               </select>
             </div>
             <div>
-              <label class="form-label">Prioridad *</label>
+              <label class="form-label">Priority *</label>
               <select v-model="taskForm.priority" required class="form-select">
-                <option value="LOW">Baja</option>
-                <option value="MEDIUM">Media</option>
-                <option value="HIGH">Alta</option>
-                <option value="URGENT">Urgente</option>
+                <option value="LOW">Low</option>
+                <option value="MEDIUM">Medium</option>
+                <option value="HIGH">High</option>
+                <option value="URGENT">Urgent</option>
               </select>
             </div>
           </div>
 
           <div class="grid grid-cols-2 gap-4">
             <div>
-              <label class="form-label">Fecha Inicio</label>
+              <label class="form-label">Start Date</label>
               <input v-model="taskForm.startDate" type="datetime-local" class="form-input">
             </div>
             <div>
-              <label class="form-label">Fecha Fin</label>
+              <label class="form-label">End Date</label>
               <input v-model="taskForm.endDate" type="datetime-local" class="form-input">
             </div>
           </div>
 
           <div class="grid grid-cols-2 gap-4">
             <div>
-              <label class="form-label">Horas Estimadas</label>
+              <label class="form-label">Estimated Hours</label>
               <input v-model="taskForm.estimatedHours" type="number" min="0" class="form-input">
             </div>
             <div>
-              <label class="form-label">Horas Reales</label>
+              <label class="form-label">Actual Hours</label>
               <input v-model="taskForm.actualHours" type="number" min="0" class="form-input">
             </div>
           </div>
 
 
           <div v-if="!isEditing">
-            <label class="form-label">Asignar a (username o email)</label>
+            <label class="form-label">Assign to (username or email)</label>
             <input
               v-model="taskForm.assignedUserIdentifier"
               type="text"
-              placeholder="Ingrese username o email del usuario"
+              placeholder="Enter username or email"
               class="form-input"
             >
           </div>
 
           <div class="flex justify-end space-x-3 pt-6 border-t border-slate-200 dark:border-gray-600">
-            <button type="button" @click="closeModal" class="btn-secondary">Cancelar</button>
-            <button type="submit" class="btn-primary">{{ isEditing ? 'Actualizar' : 'Crear' }}</button>
+            <button type="button" @click="closeModal" class="btn-secondary">Cancel</button>
+            <button type="submit" class="btn-primary">{{ isEditing ? 'Update' : 'Create' }}</button>
           </div>
         </form>
       </div>
@@ -443,7 +416,6 @@ import { useAuthStore } from '../../stores/auth'
 
 const authStore = useAuthStore()
 
-
 export default {
   name: 'TaskView',
  data() {
@@ -451,7 +423,7 @@ export default {
      tasks: [],
      filteredTasks: [],
      projects: [],
-     users: [], // 🧑 Lista de usuarios asignables
+     users: [], // 🧑 List of assignable users
      showModal: false,
      isEditing: false,
      filters: {
@@ -491,10 +463,10 @@ export default {
     },
     headerStats() {
       return [
-        { title: 'Total de Tareas', value: this.stats.total, icon: 'fas fa-tasks', iconBg: 'bg-gradient-to-r from-indigo-500 to-indigo-600' },
-        { title: 'Pendientes', value: this.stats.pending, icon: 'fas fa-clock', iconBg: 'bg-gradient-to-r from-amber-500 to-orange-500' },
-        { title: 'En Progreso', value: this.stats.inProgress, icon: 'fas fa-spinner', iconBg: 'bg-gradient-to-r from-green-500 to-emerald-500' },
-        { title: 'Completadas', value: this.stats.completed, icon: 'fas fa-check-circle', iconBg: 'bg-gradient-to-r from-purple-500 to-purple-600' }
+        { title: 'Total Tasks', value: this.stats.total, icon: 'fas fa-tasks', iconBg: 'bg-gradient-to-r from-indigo-500 to-indigo-600' },
+        { title: 'Pending', value: this.stats.pending, icon: 'fas fa-clock', iconBg: 'bg-gradient-to-r from-amber-500 to-orange-500' },
+        { title: 'In Progress', value: this.stats.inProgress, icon: 'fas fa-spinner', iconBg: 'bg-gradient-to-r from-green-500 to-emerald-500' },
+        { title: 'Completed', value: this.stats.completed, icon: 'fas fa-check-circle', iconBg: 'bg-gradient-to-r from-purple-500 to-purple-600' }
       ]
     },
     completionRate() {
@@ -518,7 +490,7 @@ export default {
     async loadTasks() {
      try {
        const userEmail = authStore.user?.email || localStorage.getItem('userEmail');
-       console.log('🔍 Usuario actual:', userEmail);
+       console.log('🔍 Current user:', userEmail);
 
        if (!userEmail) {
          throw new Error('User email not available');
@@ -526,18 +498,18 @@ export default {
 
        const response = await axios.get(`http://localhost:8081/api/projects/assing-project/${userEmail}`);
 
-       console.log('📦 Respuesta completa del backend:', response);
-       console.log('📊 Datos recibidos:', response.data);
-       console.log('✅ Tareas recibidas:', response.data.tasks);
+       console.log('📦 Complete backend response:', response);
+       console.log('📊 Data received:', response.data);
+       console.log('✅ Tasks received:', response.data.tasks);
 
        this.tasks = response.data.tasks;
        this.filteredTasks = [...this.tasks];
 
-       if (response.data.projectName === 'Todos los proyectos') {
+       if (response.data.projectName === 'All projects') {
          const allProjectsResponse = await axios.get('http://localhost:8081/api/projects');
 
          this.projects = [
-           { id: null, name: 'Todos los proyectos' },
+           { id: null, name: 'All projects' },
            ...allProjectsResponse.data.map(project => ({
              id: project.id,
              name: project.name
@@ -563,10 +535,10 @@ export default {
      }
     },
 
-    // 👇 Esta es la función que te da la fecha formateada
+    // 👇 This is the function that gives you the formatted date
     getCurrentDate() {
       const now = new Date()
-      return now.toLocaleDateString('es-AR', {
+      return now.toLocaleDateString('en-US', {
         year: 'numeric',
         month: 'long',
         day: 'numeric'
@@ -584,7 +556,7 @@ export default {
     if (this.filters.keyword) params.append('keyword', this.filters.keyword);
 
     const url = `/api/tasks/report?${params.toString()}`;
-    console.log("🧾 Abriendo PDF en:", url); // Debug
+    console.log("🧾 Opening PDF at:", url); // Debug
     window.open(url, '_blank');
   },
 
@@ -638,9 +610,9 @@ export default {
     },
     async saveTask() {
       try {
-        // Verifica que haya un proyecto asignado
+        // Verify that there is an assigned project
         if (!this.projects.length || !this.projects[0].id) {
-          throw new Error('No hay proyecto asignado');
+          throw new Error('No project assigned');
         }
 
         const taskData = {
@@ -659,10 +631,10 @@ export default {
         if (this.isEditing) {
           response = await axios.put(`/api/tasks/${this.taskForm.id}`, taskData);
         } else {
-          // 1. Primero creamos la tarea
+          // 1. First we create the task
           response = await axios.post('/api/tasks', taskData);
 
-          // 2. Si hay un usuario para asignar, lo hacemos después
+          // 2. If there is a user to assign, we do it after
           if (this.taskForm.assignedUserIdentifier) {
             try {
               await axios.post('/api/tasks/assign-task', {
@@ -671,10 +643,10 @@ export default {
                 role: 'COLLAB'
               });
 
-              console.log("Usuario asignado correctamente");
+              console.log("User assigned successfully");
             } catch (assignError) {
-              console.error('Error asignando usuario:', assignError);
-              alert('Tarea creada pero falló la asignación del usuario');
+              console.error('Error assigning user:', assignError);
+              alert('Task created but user assignment failed');
             }
           }
         }
@@ -683,17 +655,17 @@ export default {
         this.closeModal();
       } catch (error) {
         console.error('Error saving task:', error);
-        alert(error.response?.data?.message || 'Error al guardar la tarea');
+        alert(error.response?.data?.message || 'Error saving task');
       }
     },
     async deleteTask(taskId) {
-    if (confirm('¿Estás seguro de eliminar esta tarea?')) {
+    if (confirm('Are you sure you want to delete this task?')) {
               try {
                 await axios.delete(`/api/tasks/${taskId}`)
                 await this.loadTasks()
               } catch (error) {
                 console.error('Error deleting task:', error)
-                alert('Error al eliminar la tarea')
+                alert('Error deleting task')
               }
             }
             }
@@ -719,7 +691,7 @@ export default {
           formatDate(dateString) {
             if (!dateString) return '-'
             const date = new Date(dateString)
-            return date.toLocaleDateString('es-ES', {
+            return date.toLocaleDateString('en-US', {
               year: 'numeric',
               month: 'short',
               day: 'numeric'
@@ -747,11 +719,11 @@ export default {
           },
           getStatusDisplay(status) {
             const statuses = {
-              'PENDING': 'Pendiente',
-              'IN_PROGRESS': 'En Progreso',
-              'IN_REVIEW': 'En Revisión',
-              'COMPLETED': 'Completada',
-              'CANCELLED': 'Cancelada'
+              'PENDING': 'Pending',
+              'IN_PROGRESS': 'In Progress',
+              'IN_REVIEW': 'In Review',
+              'COMPLETED': 'Completed',
+              'CANCELLED': 'Cancelled'
             }
             return statuses[status] || status
           },
@@ -766,10 +738,10 @@ export default {
           },
           getPriorityDisplay(priority) {
             const priorities = {
-              'LOW': 'Baja',
-              'MEDIUM': 'Media',
-              'HIGH': 'Alta',
-              'URGENT': 'Urgente'
+              'LOW': 'Low',
+              'MEDIUM': 'Medium',
+              'HIGH': 'High',
+              'URGENT': 'Urgent'
             }
             return priorities[priority] || priority
           }
