@@ -1,305 +1,320 @@
 <template>
-  <div class="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-300">
-    <!-- Header with glass effect -->
-    <div class="bg-white/80 dark:bg-gray-800/80 backdrop-blur-lg shadow-sm border-b border-gray-200 dark:border-gray-700">
-      <div class="max-w-7xl mx-auto px-4 py-6">
-        <div class="flex items-center justify-between">
-          <div>
-            <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Task Dashboard</h1>
-            <p class="text-gray-600 dark:text-gray-300">Manage and update your assigned tasks</p>
-          </div>
-          <button @click="toggleTheme" class="p-2 rounded-full bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors">
-            <svg v-if="darkMode" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"></path>
-            </svg>
-            <svg v-else class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path>
-            </svg>
-          </button>
-        </div>
-      </div>
-    </div>
-
-    <div class="max-w-7xl mx-auto px-4 py-8">
-      <!-- Filters with elevation effect -->
-      <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm hover:shadow-md transition-shadow duration-300 p-6 mb-8 border border-gray-200 dark:border-gray-700">
-        <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Filters</h2>
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Status</label>
-            <select 
-              v-model="filters.status" 
-              @change="filterTasks" 
-              class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white transition-all duration-200 hover:border-gray-400 dark:hover:border-gray-500"
-            >
-              <option value="">All statuses</option>
-              <option value="PENDING">Pending</option>
-              <option value="IN_PROGRESS">In Progress</option>
-              <option value="COMPLETED">Completed</option>
-              <option value="CANCELLED">Cancelled</option>
-              <option value="OVERDUE">Overdue</option>
-            </select>
-          </div>
-          <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Priority</label>
-            <select 
-              v-model="filters.priority" 
-              @change="filterTasks" 
-              class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white transition-all duration-200 hover:border-gray-400 dark:hover:border-gray-500"
-            >
-              <option value="">All priorities</option>
-              <option value="LOW">Low</option>
-              <option value="MEDIUM">Medium</option>
-              <option value="HIGH">High</option>
-              <option value="URGENT">Urgent</option>
-            </select>
-          </div>
-          <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Search</label>
-            <div class="relative">
-              <input 
-                type="text" 
-                v-model="filters.keyword" 
-                @input="filterTasks" 
-                placeholder="Search tasks..." 
-                class="w-full px-3 py-2 pr-10 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white transition-all duration-200 hover:border-gray-400 dark:hover:border-gray-500"
-              >
-              <svg class="absolute right-3 top-2.5 h-5 w-5 text-gray-400 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
-              </svg>
-            </div>
-          </div>
-        </div>
-        <button 
-          @click="clearFilters" 
-          class="mt-4 px-4 py-2 text-sm text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white underline transition-colors duration-200"
-        >
-          Clear filters
-        </button>
-      </div>
-
-      <!-- Task list with interactive cards effect -->
-      <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm hover:shadow-md transition-shadow duration-300 overflow-hidden border border-gray-200 dark:border-gray-700">
-        <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
-          <div class="flex items-center justify-between">
-            <h2 class="text-lg font-semibold text-gray-900 dark:text-white">Assigned Tasks</h2>
-            <span class="bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 px-3 py-1 rounded-full text-sm">
-              {{ filteredTasks.length }} {{ filteredTasks.length === 1 ? 'task' : 'tasks' }}
-            </span>
-          </div>
-        </div>
-
-        <!-- Empty state with animation -->
-        <div v-if="filteredTasks.length === 0" class="text-center py-16">
-          <div class="animate-bounce mx-auto h-12 w-12 text-gray-400 mb-4">
-            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path>
-            </svg>
-          </div>
-          <p class="text-gray-500 dark:text-gray-400 text-lg mb-4">No tasks found</p>
+  <div class="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-300 font-sans">
+    <div class="w-full px-4 sm:px-6 py-6">
+      
+      <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 p-6 mb-6 transition-all duration-300">
+        <div class="flex items-center justify-between mb-4">
+          <h2 class="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+            <svg class="w-5 h-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"></path></svg>
+            Filters & Search
+          </h2>
           <button 
+            v-if="hasActiveFilters"
             @click="clearFilters" 
-            class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors duration-200 shadow-md hover:shadow-lg transform hover:-translate-y-0.5"
+            class="text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 px-3 py-1 rounded-lg transition-colors duration-200 flex items-center gap-1"
           >
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
             Clear filters
           </button>
         </div>
 
-        <!-- Task list with animations -->
-        <div v-else class="divide-y divide-gray-200 dark:divide-gray-700">
-          <TransitionGroup name="task-list">
-            <div 
-              v-for="task in filteredTasks" 
-              :key="task.id" 
-              class="p-6 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-all duration-300 group"
-              @mouseenter="hoveredTask = task.id"
-              @mouseleave="hoveredTask = null"
-            >
-              <div class="flex items-start justify-between">
-                <div class="flex-1">
-                  <div class="flex items-start justify-between mb-2">
-                    <h3 class="text-lg font-semibold text-gray-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors duration-200">
-                      {{ task.name }}
-                    </h3>
-                    <div class="flex items-center space-x-2 ml-4">
-                      <span 
-                        :class="getPriorityClass(task.priority)" 
-                        class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium transition-all duration-200 group-hover:scale-105"
-                      >
-                        <svg :class="getPriorityIcon(task.priority)" class="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
-                          <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-8.293l-3-3a1 1 0 00-1.414 0l-3 3a1 1 0 001.414 1.414L9 9.414V13a1 1 0 102 0V9.414l1.293 1.293a1 1 0 001.414-1.414z" clip-rule="evenodd"></path>
-                        </svg>
-                        {{ getPriorityDisplay(task.priority) }}
-                      </span>
-                    </div>
-                  </div>
-                  
-                  <p class="text-gray-600 dark:text-gray-300 mb-3 transition-colors duration-200 group-hover:text-gray-700 dark:group-hover:text-gray-200">
-                    {{ task.description || 'No description' }}
-                  </p>
-                  
-                  <div class="flex items-center space-x-4 text-sm text-gray-500 dark:text-gray-400">
-                    <div class="flex items-center space-x-1">
-                      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
-                      </svg>
-                      <span>{{ formatDate(task.endDate) || 'No due date' }}</span>
-                    </div>
-                    <div v-if="isTaskOverdue(task)" class="flex items-center space-x-1 text-red-500 dark:text-red-400 animate-pulse">
-                      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                      </svg>
-                      <span class="font-medium">Overdue</span>
-                    </div>
-                  </div>
-                </div>
-                
-                <!-- Quick action button that appears on hover -->
-                <Transition name="fade">
-                  <button 
-                    v-if="hoveredTask === task.id"
-                    @click="openTaskDetails(task)"
-                    class="ml-4 p-2 rounded-full bg-blue-100 dark:bg-blue-900/50 text-blue-600 dark:text-blue-400 hover:bg-blue-200 dark:hover:bg-blue-800 transition-colors duration-200 shadow-sm"
-                  >
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
-                    </svg>
-                  </button>
-                </Transition>
-              </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div class="col-span-1 md:col-span-2 lg:col-span-1">
+            <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5 uppercase tracking-wider">Search</label>
+            <div class="relative group">
+              <input 
+                type="text" 
+                v-model="filters.keyword" 
+                @input="filterTasks" 
+                placeholder="Search by name..." 
+                class="w-full pl-10 pr-4 py-2.5 bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 outline-none transition-all text-gray-900 dark:text-white placeholder-gray-400 group-hover:bg-white dark:group-hover:bg-gray-700"
+              >
+              <svg class="absolute left-3 top-3 h-5 w-5 text-gray-400 group-focus-within:text-blue-500 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+              </svg>
+            </div>
+          </div>
 
-              <!-- Enhanced status section with animations -->
-              <div class="mt-6 bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-700/50 dark:to-gray-800/50 rounded-xl p-4 border border-gray-200 dark:border-gray-700 transition-all duration-300 group-hover:shadow-sm">
-                <div class="flex items-center justify-between">
-                  <div class="flex items-center space-x-3">
-                    <div class="flex items-center space-x-2">
-                      <svg class="w-5 h-5 text-gray-400 dark:text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                      </svg>
-                      <span class="text-sm font-medium text-gray-700 dark:text-gray-300">Current status:</span>
-                    </div>
-                    <div class="relative">
-                      <span 
-                        :class="[getStatusClass(task.status), 'transform transition-all duration-300 group-hover:scale-105']" 
-                        class="inline-flex items-center px-3 py-1.5 rounded-full text-sm font-medium shadow-sm"
-                      >
-                        <div class="w-2 h-2 rounded-full bg-current opacity-70 mr-2 animate-pulse"></div>
-                        {{ getStatusDisplay(task.status) }}
-                      </span>
-                    </div>
-                  </div>
-                  
-                  <div class="flex items-center space-x-3">
-                    <div class="flex items-center space-x-2">
-                      <svg class="w-5 h-5 text-blue-500 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"></path>
-                      </svg>
-                      <span class="text-sm font-medium text-gray-700 dark:text-gray-300">Change to:</span>
-                    </div>
-                    
-                    <div class="relative">
-                      <select 
-                        :value="task.status" 
-                        @change="changeTaskStatus(task.id, $event.target.value)"
-                        :disabled="updatingTasks.includes(task.id)"
-                        class="appearance-none bg-white dark:bg-gray-700 border-2 border-gray-300 dark:border-gray-600 rounded-lg px-4 py-2 pr-10 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 hover:border-gray-400 dark:hover:border-gray-500 hover:shadow-sm text-gray-900 dark:text-white"
-                      >
-                        <option value="PENDING">Pending</option>
-                        <option value="IN_PROGRESS">In Progress</option>
-                        <option value="COMPLETED">Completed</option>
-                        <option value="CANCELLED">Cancelled</option>
-                      </select>
-                      <div class="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none">
-                        <svg class="w-4 h-4 text-gray-400 dark:text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
-                        </svg>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                
-                <!-- Enhanced loading indicator with animation -->
-                <Transition name="slide-fade">
-                  <div v-if="updatingTasks.includes(task.id)" class="mt-4 flex items-center justify-center space-x-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg p-3 border border-blue-200 dark:border-blue-800">
-                    <div class="relative">
-                      <div class="w-6 h-6 border-2 border-blue-200 dark:border-blue-700 rounded-full"></div>
-                      <div class="absolute top-0 left-0 w-6 h-6 border-2 border-blue-600 dark:border-blue-400 rounded-full animate-spin border-t-transparent"></div>
-                    </div>
-                    <div class="flex flex-col">
-                      <span class="text-sm font-medium text-blue-700 dark:text-blue-400">Updating status...</span>
-                      <div class="w-32 h-1 bg-blue-200 dark:bg-blue-800 rounded-full mt-1 overflow-hidden">
-                        <div class="h-full bg-gradient-to-r from-blue-500 to-blue-600 dark:from-blue-400 dark:to-blue-500 rounded-full animate-pulse"></div>
-                      </div>
-                    </div>
-                  </div>
-                </Transition>
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5 uppercase tracking-wider">Status</label>
+              <select 
+                v-model="filters.status" 
+                @change="filterTasks" 
+                class="w-full px-3 py-2.5 bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 outline-none transition-all text-gray-900 dark:text-white cursor-pointer hover:bg-white dark:hover:bg-gray-700"
+              >
+                <option value="">All</option>
+                <option value="PENDING">Pending</option>
+                <option value="IN_PROGRESS">In Progress</option>
+                <option value="COMPLETED">Completed</option>
+                <option value="CANCELLED">Cancelled</option>
+                <option value="OVERDUE">Overdue</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5 uppercase tracking-wider">Priority</label>
+              <select 
+                v-model="filters.priority" 
+                @change="filterTasks" 
+                class="w-full px-3 py-2.5 bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 outline-none transition-all text-gray-900 dark:text-white cursor-pointer hover:bg-white dark:hover:bg-gray-700"
+              >
+                <option value="">All</option>
+                <option value="LOW">Low</option>
+                <option value="MEDIUM">Medium</option>
+                <option value="HIGH">High</option>
+                <option value="URGENT">Urgent</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="col-span-1 md:col-span-2 lg:col-span-2">
+            <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5 uppercase tracking-wider">Date Range (Due Date)</label>
+            <div class="flex items-center gap-2">
+              <div class="relative flex-1">
+                <input 
+                  type="date" 
+                  v-model="filters.startDate" 
+                  @change="filterTasks"
+                  class="w-full px-3 py-2.5 bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 outline-none text-gray-900 dark:text-white text-sm"
+                >
+                <span class="absolute right-8 top-2.5 text-xs text-gray-400 pointer-events-none hidden sm:block">From</span>
+              </div>
+              <span class="text-gray-400">-</span>
+              <div class="relative flex-1">
+                <input 
+                  type="date" 
+                  v-model="filters.endDate" 
+                  @change="filterTasks"
+                  class="w-full px-3 py-2.5 bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 outline-none text-gray-900 dark:text-white text-sm"
+                >
+                <span class="absolute right-8 top-2.5 text-xs text-gray-400 pointer-events-none hidden sm:block">To</span>
               </div>
             </div>
-          </TransitionGroup>
+          </div>
         </div>
+      </div>
+
+      <div class="flex items-center justify-between mb-6 px-2">
+        <h2 class="text-xl font-bold text-gray-800 dark:text-white flex items-center gap-2">
+          Task List
+          <span class="bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 px-3 py-1 rounded-full text-sm font-medium">
+            {{ filteredTasks.length }}
+          </span>
+        </h2>
+      </div>
+
+      <div v-if="filteredTasks.length === 0" class="bg-white dark:bg-gray-800 rounded-2xl p-12 text-center shadow-sm border border-gray-200 dark:border-gray-700">
+        <div class="animate-bounce mx-auto h-16 w-16 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center mb-4">
+          <svg class="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+          </svg>
+        </div>
+        <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-2">No tasks found</h3>
+        <p class="text-gray-500 dark:text-gray-400 mb-6">Try adjusting your search or date filters.</p>
+        <button 
+          @click="clearFilters" 
+          class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2.5 rounded-xl font-medium transition-all duration-200 shadow-lg shadow-blue-500/30 hover:-translate-y-0.5"
+        >
+          Clear all filters
+        </button>
+      </div>
+
+      <div v-else class="grid grid-cols-1 gap-4">
+        <TransitionGroup name="task-list">
+          <div 
+            v-for="task in filteredTasks" 
+            :key="task.id" 
+            class="group bg-white dark:bg-gray-800 rounded-xl p-5 shadow-sm hover:shadow-md border border-gray-200 dark:border-gray-700 transition-all duration-200 relative overflow-hidden"
+          >
+            <div 
+              class="absolute left-0 top-0 bottom-0 w-1.5"
+              :class="getPriorityColorClass(task.priority)"
+            ></div>
+
+            <div class="pl-3 flex flex-col md:flex-row md:items-center justify-between gap-4">
+              
+              <div class="flex-1 min-w-0">
+                <div class="flex items-center gap-3 mb-1">
+                  <h3 class="text-lg font-bold text-gray-900 dark:text-white truncate group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+                    {{ task.name }}
+                  </h3>
+                  <span 
+                    :class="getPriorityBadgeClass(task.priority)" 
+                    class="hidden sm:inline-flex items-center px-2 py-0.5 rounded text-xs font-bold uppercase tracking-wide border"
+                  >
+                    {{ getPriorityDisplay(task.priority) }}
+                  </span>
+                </div>
+                
+                <p class="text-gray-600 dark:text-gray-300 text-sm line-clamp-2 mb-3">
+                  {{ task.description || 'No description available.' }}
+                </p>
+                
+                <div class="flex flex-wrap items-center gap-4 text-sm text-gray-500 dark:text-gray-400">
+                  <div class="flex items-center gap-1.5" :class="{'text-red-500 font-medium': isTaskOverdue(task)}">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                    <span>{{ formatDate(task.endDate) || 'No due date' }}</span>
+                  </div>
+                  <div v-if="isTaskOverdue(task)" class="flex items-center gap-1 text-red-500 bg-red-50 dark:bg-red-900/20 px-2 py-0.5 rounded text-xs font-bold">
+                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+                    OVERDUE
+                  </div>
+                </div>
+              </div>
+
+              <div class="flex items-center gap-4 md:border-l md:pl-6 md:border-gray-100 dark:md:border-gray-700">
+                <div class="flex flex-col items-end gap-2 w-full md:w-auto">
+                  <div class="relative w-full md:w-40">
+                    <select 
+                      :value="task.status" 
+                      @change="changeTaskStatus(task.id, $event.target.value)"
+                      :disabled="updatingTasks.includes(task.id)"
+                      class="appearance-none w-full pl-3 pr-8 py-1.5 text-sm font-medium rounded-lg border-2 cursor-pointer focus:outline-none transition-colors"
+                      :class="getStatusSelectClass(task.status)"
+                    >
+                      <option value="PENDING">Pending</option>
+                      <option value="IN_PROGRESS">In Progress</option>
+                      <option value="COMPLETED">Completed</option>
+                      <option value="CANCELLED">Cancelled</option>
+                    </select>
+                    <div class="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none text-gray-500">
+                      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                    </div>
+                  </div>
+                  
+                  <button 
+                    @click="openTaskDetails(task)"
+                    class="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 font-medium hover:underline flex items-center gap-1"
+                  >
+                    View details
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"></path></svg>
+                  </button>
+                </div>
+              </div>
+
+            </div>
+
+            <div v-if="updatingTasks.includes(task.id)" class="absolute inset-0 bg-white/80 dark:bg-gray-800/80 flex items-center justify-center z-10 backdrop-blur-sm">
+              <div class="flex items-center gap-2 text-blue-600 font-medium">
+                <svg class="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                  <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                Updating...
+              </div>
+            </div>
+          </div>
+        </TransitionGroup>
       </div>
     </div>
 
-    <!-- Enhanced notification toast with animation -->
-    <Transition
-      enter-active-class="transition-all duration-300 ease-out"
-      enter-from-class="transform translate-y-2 opacity-0 scale-95"
-      enter-to-class="transform translate-y-0 opacity-100 scale-100"
-      leave-active-class="transition-all duration-200 ease-in"
-      leave-from-class="transform translate-y-0 opacity-100 scale-100"
-      leave-to-class="transform translate-y-2 opacity-0 scale-95"
-    >
-      <div v-if="showToast" class="fixed bottom-6 right-6 bg-gradient-to-r from-green-500 to-green-600 text-white px-6 py-4 rounded-xl shadow-2xl z-50 max-w-sm">
-        <div class="flex items-center space-x-3">
-          <div class="flex-shrink-0">
-            <div class="w-6 h-6 bg-white bg-opacity-20 rounded-full flex items-center justify-center animate-pulse">
-              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
-              </svg>
+    <Teleport to="body">
+      <Transition name="fade">
+        <div v-if="selectedTask" class="fixed inset-0 z-[60] flex items-center justify-center p-4">
+          <div class="absolute inset-0 bg-black/50 backdrop-blur-sm" @click="closeTaskDetails"></div>
+          
+          <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto relative z-10 animate-scale-up">
+            
+            <div class="p-6 border-b border-gray-100 dark:border-gray-700 flex justify-between items-start sticky top-0 bg-white dark:bg-gray-800 z-10">
+              <div>
+                <h3 class="text-2xl font-bold text-gray-900 dark:text-white leading-tight mb-2">{{ selectedTask.name }}</h3>
+                <div class="flex items-center gap-3">
+                  <span 
+                    :class="getStatusSelectClass(selectedTask.status)" 
+                    class="px-3 py-1 rounded-full text-xs font-bold border"
+                  >
+                    {{ getStatusDisplay(selectedTask.status) }}
+                  </span>
+                  <span 
+                    :class="getPriorityBadgeClass(selectedTask.priority)" 
+                    class="px-3 py-1 rounded-full text-xs font-bold border uppercase"
+                  >
+                    {{ getPriorityDisplay(selectedTask.priority) }} Priority
+                  </span>
+                </div>
+              </div>
+              <button @click="closeTaskDetails" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 p-1 bg-gray-100 dark:bg-gray-700 rounded-full transition-colors">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+              </button>
             </div>
-          </div>
-          <div class="flex-1">
-            <p class="font-medium">{{ toastMessage }}</p>
-          </div>
-          <button @click="showToast = false" class="flex-shrink-0 text-white hover:text-gray-200 transition-colors">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-            </svg>
-          </button>
-        </div>
-      </div>
-    </Transition>
 
-    <!-- Enhanced error toast with animation -->
-    <Transition
-      enter-active-class="transition-all duration-300 ease-out"
-      enter-from-class="transform translate-y-2 opacity-0 scale-95"
-      enter-to-class="transform translate-y-0 opacity-100 scale-100"
-      leave-active-class="transition-all duration-200 ease-in"
-      leave-from-class="transform translate-y-0 opacity-100 scale-100"
-      leave-to-class="transform translate-y-2 opacity-0 scale-95"
-    >
-      <div v-if="showErrorToast" class="fixed bottom-6 right-6 bg-gradient-to-r from-red-500 to-red-600 text-white px-6 py-4 rounded-xl shadow-2xl z-50 max-w-sm">
-        <div class="flex items-center space-x-3">
-          <div class="flex-shrink-0">
-            <div class="w-6 h-6 bg-white bg-opacity-20 rounded-full flex items-center justify-center animate-pulse">
-              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-              </svg>
+            <div class="p-8 space-y-8">
+              <div>
+                <h4 class="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-3">Description</h4>
+                <div class="bg-gray-50 dark:bg-gray-700/30 rounded-xl p-4 text-gray-700 dark:text-gray-200 leading-relaxed border border-gray-100 dark:border-gray-700/50">
+                  {{ selectedTask.description || 'No description provided for this task.' }}
+                </div>
+              </div>
+
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                <div>
+                  <h4 class="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-2">Timeline</h4>
+                  <div class="space-y-3">
+                    <div class="flex items-center gap-3">
+                      <div class="w-8 h-8 rounded-lg bg-blue-50 dark:bg-blue-900/20 flex items-center justify-center text-blue-500">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                      </div>
+                      <div>
+                        <p class="text-xs text-gray-500 dark:text-gray-400">Due Date</p>
+                        <p class="font-medium text-gray-900 dark:text-white">{{ formatDate(selectedTask.endDate) || 'Not set' }}</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div>
+                   <h4 class="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-2">Assignment</h4>
+                   <div class="flex items-center gap-3">
+                      <div class="w-8 h-8 rounded-lg bg-purple-50 dark:bg-purple-900/20 flex items-center justify-center text-purple-500">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
+                      </div>
+                      <div>
+                        <p class="text-xs text-gray-500 dark:text-gray-400">Assigned To</p>
+                        <p class="font-medium text-gray-900 dark:text-white">{{ authStore.user?.email || 'Current User' }}</p>
+                      </div>
+                   </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="p-6 bg-gray-50 dark:bg-gray-800/50 border-t border-gray-100 dark:border-gray-700 flex justify-end gap-3 rounded-b-2xl">
+              <button 
+                @click="closeTaskDetails"
+                class="px-5 py-2.5 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-600 font-medium transition-colors"
+              >
+                Close
+              </button>
             </div>
           </div>
-          <div class="flex-1">
-            <p class="font-medium">{{ errorMessage }}</p>
-          </div>
-          <button @click="showErrorToast = false" class="flex-shrink-0 text-white hover:text-gray-200 transition-colors">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-            </svg>
-          </button>
         </div>
-      </div>
-    </Transition>
+      </Transition>
+    </Teleport>
+
+    <Teleport to="body">
+      <Transition name="toast">
+        <div v-if="showToast || showErrorToast" class="fixed bottom-6 right-6 z-[70] flex flex-col gap-2">
+          <div v-if="showToast" class="bg-white dark:bg-gray-800 border-l-4 border-green-500 shadow-xl rounded-lg p-4 flex items-center gap-3 min-w-[300px] animate-slide-up">
+            <div class="text-green-500">
+              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+            </div>
+            <div>
+              <h4 class="font-bold text-gray-900 dark:text-white text-sm">Success</h4>
+              <p class="text-gray-600 dark:text-gray-300 text-sm">{{ toastMessage }}</p>
+            </div>
+          </div>
+          
+          <div v-if="showErrorToast" class="bg-white dark:bg-gray-800 border-l-4 border-red-500 shadow-xl rounded-lg p-4 flex items-center gap-3 min-w-[300px] animate-slide-up">
+            <div class="text-red-500">
+              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+            </div>
+            <div>
+              <h4 class="font-bold text-gray-900 dark:text-white text-sm">Error</h4>
+              <p class="text-gray-600 dark:text-gray-300 text-sm">{{ errorMessage }}</p>
+            </div>
+          </div>
+        </div>
+      </Transition>
+    </Teleport>
   </div>
 </template>
 
@@ -317,33 +332,45 @@ export default {
     const tasks = ref([])
     const filteredTasks = ref([])
     const updatingTasks = ref([])
+    
+    // Toast state
     const showToast = ref(false)
     const showErrorToast = ref(false)
     const toastMessage = ref('')
     const errorMessage = ref('')
-    const hoveredTask = ref(null)
+    
+    // Modal state
+    const selectedTask = ref(null)
+    
     const darkMode = ref(false)
     
     const filters = ref({
       status: '',
       priority: '',
-      keyword: ''
+      keyword: '',
+      startDate: '',
+      endDate: ''
     })
 
-    // Check system theme preference
+    const hasActiveFilters = computed(() => {
+      return filters.value.status || 
+             filters.value.priority || 
+             filters.value.keyword || 
+             filters.value.startDate || 
+             filters.value.endDate
+    })
+
     const checkSystemTheme = () => {
       darkMode.value = window.matchMedia('(prefers-color-scheme: dark)').matches
       updateThemeClass()
     }
 
-    // Toggle light/dark theme
     const toggleTheme = () => {
       darkMode.value = !darkMode.value
       updateThemeClass()
       localStorage.setItem('darkMode', darkMode.value)
     }
 
-    // Update theme class on document
     const updateThemeClass = () => {
       if (darkMode.value) {
         document.documentElement.classList.add('dark')
@@ -352,7 +379,6 @@ export default {
       }
     }
 
-    // Load tasks
     const loadTasks = async () => {
       try {
         loading.value = true
@@ -361,7 +387,7 @@ export default {
 
         const response = await axios.get(`/api/tasks/assigned-tasks/${usernameOrEmail}`)
         tasks.value = response.data.assignedTasks || []
-        filteredTasks.value = [...tasks.value]
+        filterTasks() 
       } catch (err) {
         error.value = 'Error loading tasks: ' + err.message
         showError('Error loading tasks')
@@ -370,241 +396,243 @@ export default {
       }
     }
 
-    // Change task status
     const changeTaskStatus = async (taskId, newStatus) => {
       if (updatingTasks.value.includes(taskId)) return
-      
       updatingTasks.value.push(taskId)
       
       try {
-        const response = await axios.put(`/api/tasks/${taskId}/status`, null, {
+        await axios.put(`/api/tasks/${taskId}/status`, null, {
           params: { status: newStatus }
         })
         
-        // Update task in local state
         const taskIndex = tasks.value.findIndex(t => t.id === taskId)
         if (taskIndex !== -1) {
           tasks.value[taskIndex].status = newStatus
+          
+          // Also update the selected task if it's currently open in the modal
+          if (selectedTask.value && selectedTask.value.id === taskId) {
+            selectedTask.value.status = newStatus
+          }
         }
         
-        // Re-filter tasks
         filterTasks()
-        
-        showSuccess(`Status changed to ${getStatusDisplay(newStatus)}`)
-        
+        showSuccess(`Status updated to ${getStatusDisplay(newStatus)}`)
       } catch (err) {
         console.error('Error changing status:', err)
-        showError('Error changing task status')
+        showError('Error changing status')
       } finally {
         updatingTasks.value = updatingTasks.value.filter(id => id !== taskId)
       }
     }
 
-    // Filter tasks
     const filterTasks = () => {
       filteredTasks.value = tasks.value.filter(task => {
+        // 1. Status Filter
         const statusMatch = !filters.value.status || 
                           (filters.value.status === 'OVERDUE' 
                             ? isTaskOverdue(task)
                             : task.status === filters.value.status)
+        
+        // 2. Priority Filter
         const priorityMatch = !filters.value.priority || task.priority === filters.value.priority
+        
+        // 3. Keyword Filter
         const keywordMatch = !filters.value.keyword ||
           task.name.toLowerCase().includes(filters.value.keyword.toLowerCase()) ||
           (task.description && task.description.toLowerCase().includes(filters.value.keyword.toLowerCase()))
-        return statusMatch && priorityMatch && keywordMatch
+
+        // 4. Date Range Filter
+        let dateMatch = true
+        if (filters.value.startDate || filters.value.endDate) {
+          if (!task.endDate) {
+            dateMatch = false 
+          } else {
+            const taskDate = new Date(task.endDate).setHours(0,0,0,0)
+            const startDate = filters.value.startDate ? new Date(filters.value.startDate).setHours(0,0,0,0) : null
+            const endDate = filters.value.endDate ? new Date(filters.value.endDate).setHours(0,0,0,0) : null
+
+            if (startDate && taskDate < startDate) dateMatch = false
+            if (endDate && taskDate > endDate) dateMatch = false
+          }
+        }
+
+        return statusMatch && priorityMatch && keywordMatch && dateMatch
       })
     }
 
-    // Clear filters
     const clearFilters = () => {
       filters.value = {
         status: '',
         priority: '',
-        keyword: ''
+        keyword: '',
+        startDate: '',
+        endDate: ''
       }
       filterTasks()
     }
 
-    // Check if task is overdue
     const isTaskOverdue = (task) => {
       return task.endDate && new Date(task.endDate) < new Date() && task.status !== 'COMPLETED'
     }
 
-    // Open task details (simulated)
+    // Modal Logic
     const openTaskDetails = (task) => {
-      showSuccess(`Opening details for "${task.name}"`)
-      // Here you could implement a modal or navigation to the details view
+      selectedTask.value = { ...task } // Create a copy to avoid direct mutation issues
     }
 
-    // Show status text
+    const closeTaskDetails = () => {
+      selectedTask.value = null
+    }
+
+    // UI Helpers
     const getStatusDisplay = (status) => {
-      const statusMap = {
+      const map = {
         'PENDING': 'Pending',
         'IN_PROGRESS': 'In Progress',
         'COMPLETED': 'Completed',
         'CANCELLED': 'Cancelled'
       }
-      return statusMap[status] || status
+      return map[status] || status
     }
 
-    // Get CSS class for status
-    const getStatusClass = (status) => {
-      const statusClasses = {
-        'PENDING': 'bg-yellow-100 text-yellow-800 border-yellow-300 dark:bg-yellow-900/50 dark:text-yellow-200 dark:border-yellow-700',
-        'IN_PROGRESS': 'bg-blue-100 text-blue-800 border-blue-300 dark:bg-blue-900/50 dark:text-blue-200 dark:border-blue-700',
-        'COMPLETED': 'bg-green-100 text-green-800 border-green-300 dark:bg-green-900/50 dark:text-green-200 dark:border-green-700',
-        'CANCELLED': 'bg-red-100 text-red-800 border-red-300 dark:bg-red-900/50 dark:text-red-200 dark:border-red-700'
-      }
-      return statusClasses[status] || 'bg-gray-100 text-gray-800 border-gray-300 dark:bg-gray-700 dark:text-gray-200 dark:border-gray-600'
-    }
-
-    // Show priority text
     const getPriorityDisplay = (priority) => {
-      const priorityMap = {
+      const map = {
         'LOW': 'Low',
         'MEDIUM': 'Medium',
         'HIGH': 'High',
         'URGENT': 'Urgent'
       }
-      return priorityMap[priority] || priority
+      return map[priority] || priority
     }
 
-    // Get CSS class for priority
-    const getPriorityClass = (priority) => {
-      const priorityClasses = {
-        'LOW': 'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-200',
-        'MEDIUM': 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/50 dark:text-yellow-200',
-        'HIGH': 'bg-orange-100 text-orange-800 dark:bg-orange-900/50 dark:text-orange-200',
-        'URGENT': 'bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-200'
+    const getPriorityColorClass = (priority) => {
+      const classes = {
+        'LOW': 'bg-green-500',
+        'MEDIUM': 'bg-yellow-500',
+        'HIGH': 'bg-orange-500',
+        'URGENT': 'bg-red-500'
       }
-      return priorityClasses[priority] || 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200'
+      return classes[priority] || 'bg-gray-300'
     }
 
-    // Get icon for priority
-    const getPriorityIcon = (priority) => {
-      const icons = {
-        'LOW': 'text-green-500 dark:text-green-400',
-        'MEDIUM': 'text-yellow-500 dark:text-yellow-400',
-        'HIGH': 'text-orange-500 dark:text-orange-400',
-        'URGENT': 'text-red-500 dark:text-red-400'
+    const getPriorityBadgeClass = (priority) => {
+       const classes = {
+        'LOW': 'bg-green-50 text-green-700 border-green-200 dark:bg-green-900/30 dark:text-green-300 dark:border-green-800',
+        'MEDIUM': 'bg-yellow-50 text-yellow-700 border-yellow-200 dark:bg-yellow-900/30 dark:text-yellow-300 dark:border-yellow-800',
+        'HIGH': 'bg-orange-50 text-orange-700 border-orange-200 dark:bg-orange-900/30 dark:text-orange-300 dark:border-orange-800',
+        'URGENT': 'bg-red-50 text-red-700 border-red-200 dark:bg-red-900/30 dark:text-red-300 dark:border-red-800'
       }
-      return icons[priority] || 'text-gray-500 dark:text-gray-400'
+      return classes[priority] || 'bg-gray-100 text-gray-700'
     }
 
-    // Format date
+    const getStatusSelectClass = (status) => {
+       const classes = {
+        'PENDING': 'bg-yellow-50 border-yellow-200 text-yellow-800 dark:bg-yellow-900/20 dark:border-yellow-800 dark:text-yellow-200',
+        'IN_PROGRESS': 'bg-blue-50 border-blue-200 text-blue-800 dark:bg-blue-900/20 dark:border-blue-800 dark:text-blue-200',
+        'COMPLETED': 'bg-green-50 border-green-200 text-green-800 dark:bg-green-900/20 dark:border-green-800 dark:text-green-200',
+        'CANCELLED': 'bg-red-50 border-red-200 text-red-800 dark:bg-red-900/20 dark:border-red-800 dark:text-red-200'
+      }
+      return classes[status] || 'bg-gray-50 border-gray-200'
+    }
+
     const formatDate = (dateString) => {
       if (!dateString) return ''
       return new Date(dateString).toLocaleDateString('en-US', {
-        day: 'numeric',
+        day: '2-digit',
         month: 'short',
         year: 'numeric'
       })
     }
 
-    // Show success notification
     const showSuccess = (message) => {
       toastMessage.value = message
       showToast.value = true
-      setTimeout(() => {
-        showToast.value = false
-      }, 4000)
+      setTimeout(() => showToast.value = false, 4000)
     }
 
-    // Show error notification
     const showError = (message) => {
       errorMessage.value = message
       showErrorToast.value = true
-      setTimeout(() => {
-        showErrorToast.value = false
-      }, 4000)
+      setTimeout(() => showErrorToast.value = false, 4000)
     }
 
-    // Initialize component
     onMounted(async () => {
-      // Check theme saved in localStorage
       const savedMode = localStorage.getItem('darkMode')
-      if (savedMode !== null) {
-        darkMode.value = savedMode === 'true'
-      } else {
-        checkSystemTheme()
-      }
+      if (savedMode !== null) darkMode.value = savedMode === 'true'
+      else checkSystemTheme()
       updateThemeClass()
       
       await loadTasks()
     })
 
     return {
-      loading,
-      error,
-      tasks,
-      filteredTasks,
-      updatingTasks,
-      showToast,
-      showErrorToast,
-      toastMessage,
-      errorMessage,
-      filters,
-      hoveredTask,
-      darkMode,
-      loadTasks,
-      changeTaskStatus,
-      filterTasks,
-      clearFilters,
-      isTaskOverdue,
-      openTaskDetails,
-      getStatusDisplay,
-      getStatusClass,
-      getPriorityDisplay,
-      getPriorityClass,
-      getPriorityIcon,
-      formatDate,
-      showSuccess,
-      showError,
-      toggleTheme
+      // State
+      loading, tasks, filteredTasks, updatingTasks, filters, darkMode, authStore,
+      showToast, showErrorToast, toastMessage, errorMessage, hasActiveFilters,
+      selectedTask,
+      
+      // Actions
+      loadTasks, changeTaskStatus, filterTasks, clearFilters, isTaskOverdue, 
+      openTaskDetails, closeTaskDetails, toggleTheme,
+      
+      // UI Helpers
+      getStatusDisplay, getPriorityDisplay, getPriorityColorClass, 
+      getPriorityBadgeClass, getStatusSelectClass, formatDate
     }
   }
 }
 </script>
 
-<style>
-/* Custom animations */
-.task-list-move, /* apply transition to moving elements */
+<style scoped>
+/* List Transitions */
 .task-list-enter-active,
 .task-list-leave-active {
-  transition: all 0.5s ease;
+  transition: all 0.4s cubic-bezier(0.25, 1, 0.5, 1);
 }
 
 .task-list-enter-from,
 .task-list-leave-to {
   opacity: 0;
-  transform: translateX(30px);
+  transform: translateY(20px);
 }
 
-.task-list-leave-active {
-  position: absolute;
+.task-list-move {
+  transition: transform 0.4s ease;
 }
 
+/* Toast Animation */
+.toast-enter-active,
+.toast-leave-active {
+  transition: all 0.3s ease;
+}
+.toast-enter-from,
+.toast-leave-to {
+  opacity: 0;
+  transform: translateY(20px);
+}
+
+/* Modal Animations */
 .fade-enter-active,
 .fade-leave-active {
   transition: opacity 0.3s ease;
 }
-
 .fade-enter-from,
 .fade-leave-to {
   opacity: 0;
 }
 
-.slide-fade-enter-active {
-  transition: all 0.3s ease-out;
+.animate-scale-up {
+  animation: scaleUp 0.3s ease-out forwards;
 }
 
-.slide-fade-leave-active {
-  transition: all 0.2s cubic-bezier(1, 0.5, 0.8, 1);
-}
-
-.slide-fade-enter-from,
-.slide-fade-leave-to {
-  transform: translateY(10px);
-  opacity: 0;
+@keyframes scaleUp {
+  from {
+    opacity: 0;
+    transform: scale(0.95) translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
 }
 </style>
