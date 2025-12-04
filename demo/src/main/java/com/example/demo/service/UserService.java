@@ -1,6 +1,8 @@
 package com.example.demo.service;
 
 import com.example.demo.entity.UserEntity;
+import com.example.demo.exception.BusinessException;
+import com.example.demo.exception.ResourceNotFoundException;
 import com.example.demo.repository.UserRepository;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -108,5 +110,34 @@ public class UserService {
         return false;
         
     }
+
+/**
+     * Buscar usuario por ID
+     */
+    public UserEntity findById(Long id) {
+        return userRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Usuario no encontrado con ID: " + id));
+    }
+
+    /**
+     * Actualizar información de perfil del usuario
+     */
+    public UserEntity updateUser(Long id, UserEntity userUpdates) {
+        UserEntity existingUser = findById(id);
+
+        // Validar que el nuevo username no esté en uso por otra persona
+        if (!existingUser.getUsername().equals(userUpdates.getUsername())) {
+            UserEntity userWithSameName = findByUsername(userUpdates.getUsername());
+            if (userWithSameName != null) {
+                throw new BusinessException("El nombre de usuario ya está en uso");
+            }
+            existingUser.setUsername(userUpdates.getUsername());
+        }
+
+        // Actualizar solo campos permitidos (No tocar password ni rol aquí)
+        existingUser.setName(userUpdates.getName());
+
+        return userRepository.save(existingUser);
+    }   
     
 }

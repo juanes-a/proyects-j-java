@@ -1,23 +1,29 @@
 <template>
-  <!-- Container principal optimizado para sidebar -->
-  <div class="w-full min-h-screen">
-    <div class="max-w-none space-y-4 sm:space-y-6">
-      <!-- Welcome Banner -->
-      <div class="bg-gradient-to-r from-blue-600 to-purple-700 rounded-xl p-4 sm:p-6 text-white">
-        <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+  <div class="w-full min-h-screen animate-fade-in-up">
+    <div class="max-w-none space-y-6">
+      
+      <div class="relative overflow-hidden bg-gradient-to-br from-orange-600 via-orange-500 to-red-600 rounded-2xl p-6 sm:p-8 text-white shadow-xl shadow-orange-500/20">
+        <div class="absolute top-0 right-0 -mt-4 -mr-4 w-32 h-32 bg-white/20 rounded-full blur-2xl"></div>
+        <div class="absolute bottom-0 left-0 -mb-4 -ml-4 w-24 h-24 bg-black/10 rounded-full blur-xl"></div>
+        
+        <div class="relative flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6 z-10">
           <div class="flex-1 min-w-0">
-            <h2 class="text-2xl sm:text-3xl font-bold mb-2">Welcome back! 👋</h2>
-            <p class="text-blue-100 text-sm sm:text-base">Here's what's happening with your departments today.</p>
+            <h2 class="text-3xl sm:text-4xl font-extrabold mb-2 tracking-tight">
+              Dashboard Global
+            </h2>
+            <p class="text-orange-50 text-sm sm:text-base font-medium max-w-xl">
+              Bienvenido al centro de mando. Aquí tienes el resumen financiero y operativo de toda la organización en tiempo real.
+            </p>
           </div>
+          
           <div class="hidden md:block flex-shrink-0">
-            <div class="w-20 h-20 lg:w-24 lg:h-24 bg-white/10 rounded-full flex items-center justify-center">
-              <TrendingUp class="w-10 h-10 lg:w-12 lg:h-12 text-white/80" />
+            <div class="w-20 h-20 bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl flex items-center justify-center shadow-inner transform rotate-3 hover:rotate-6 transition-transform duration-300">
+              <LayoutDashboard class="w-10 h-10 text-white" />
             </div>
           </div>
         </div>
       </div>
 
-      <!-- Stats Cards -->
       <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 lg:gap-6">
         <StatsCard
           v-for="stat in stats"
@@ -32,74 +38,114 @@
         />
       </div>
 
-      <!-- Charts Section -->
-      <div class="grid grid-cols-1 xl:grid-cols-2 gap-6">
-        <!-- Budget Chart -->
-        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4 sm:p-6 card-hover min-w-0">
+      <div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
+        
+        <div class="xl:col-span-2 bg-white dark:bg-zinc-900 border border-gray-100 dark:border-zinc-800 rounded-2xl shadow-sm p-6 transition-all duration-300 hover:shadow-md">
           <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 gap-4">
-            <h3 class="text-lg font-semibold text-gray-800 dark:text-white flex-shrink-0">
-              Budget by Department
-            </h3>
-            <div class="flex space-x-2 flex-shrink-0">
+            <div>
+              <h3 class="text-xl font-bold text-gray-800 dark:text-white flex items-center gap-2">
+                <PieChart class="w-5 h-5 text-orange-500" />
+                Presupuesto por Departamento
+              </h3>
+              <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Distribución financiera anual</p>
+            </div>
+            
+            <div class="flex bg-gray-100 dark:bg-zinc-800 p-1 rounded-xl">
               <button
                 @click="changeChartType('bar')"
-                :class="chartType === 'bar' ? 'bg-blue-500 text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400'"
-                class="px-3 py-1 rounded-md text-sm transition-colors duration-200 whitespace-nowrap"
+                :class="[
+                  'px-4 py-1.5 rounded-lg text-sm font-medium transition-all duration-200',
+                  chartType === 'bar' 
+                    ? 'bg-white dark:bg-zinc-700 text-orange-600 dark:text-orange-400 shadow-sm' 
+                    : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'
+                ]"
               >
-                Bar
+                Barras
               </button>
               <button
                 @click="changeChartType('pie')"
-                :class="chartType === 'pie' ? 'bg-blue-500 text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400'"
-                class="px-3 py-1 rounded-md text-sm transition-colors duration-200 whitespace-nowrap"
+                :class="[
+                  'px-4 py-1.5 rounded-lg text-sm font-medium transition-all duration-200',
+                  chartType === 'pie' 
+                    ? 'bg-white dark:bg-zinc-700 text-orange-600 dark:text-orange-400 shadow-sm' 
+                    : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'
+                ]"
               >
-                Pie
+                Circular
               </button>
             </div>
           </div>
-          <div class="h-64 sm:h-80 w-full">
-            <canvas ref="budgetChart" class="max-w-full max-h-full"></canvas>
+          
+          <div class="h-80 w-full relative">
+            <canvas ref="budgetChart"></canvas>
+            <div v-if="loading" class="absolute inset-0 flex items-center justify-center bg-white/50 dark:bg-zinc-900/50 backdrop-blur-sm">
+                <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500"></div>
+             </div>
           </div>
         </div>
 
-        <!-- Recent Activity -->
-        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4 sm:p-6 card-hover min-w-0">
-          <h3 class="text-lg font-semibold text-gray-800 dark:text-white mb-6">Recent Activity</h3>
-          <div class="space-y-4 overflow-hidden">
+        <div class="bg-white dark:bg-zinc-900 border border-gray-100 dark:border-zinc-800 rounded-2xl shadow-sm p-6 flex flex-col h-full">
+          <h3 class="text-xl font-bold text-gray-800 dark:text-white mb-6 flex items-center gap-2">
+            <History class="w-5 h-5 text-orange-500" />
+            Actividad Reciente
+          </h3>
+          
+          <div class="space-y-6 overflow-y-auto max-h-[400px] custom-scrollbar pr-2">
             <div
               v-for="activity in recentActivities"
               :key="activity.id"
-              class="flex items-start space-x-3 p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors duration-200 min-w-0"
+              class="relative pl-6 pb-2 border-l border-gray-200 dark:border-zinc-700 last:border-0 group"
             >
-              <div :class="activity.iconBg" class="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0">
-                <component :is="activity.icon" class="w-4 h-4 text-white" />
+              <div :class="[
+                'absolute -left-1.5 top-1 w-3 h-3 rounded-full border-2 border-white dark:border-zinc-900 transition-colors',
+                activity.dotColor || 'bg-gray-400'
+              ]"></div>
+
+              <div class="flex flex-col min-w-0">
+                <p class="text-sm font-semibold text-gray-800 dark:text-gray-200 group-hover:text-orange-500 transition-colors">
+                  {{ activity.title }}
+                </p>
+                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1 flex items-center gap-1">
+                  <Clock class="w-3 h-3" />
+                  {{ activity.time }}
+                </p>
               </div>
-              <div class="flex-1 min-w-0">
-                <p class="text-sm font-medium text-gray-800 dark:text-white truncate">{{ activity.title }}</p>
-                <p class="text-xs text-gray-500 dark:text-gray-400">{{ activity.time }}</p>
-              </div>
+            </div>
+
+            <div v-if="recentActivities.length === 0 && !loading" class="text-center text-gray-500 py-4">
+              No hay actividad reciente.
             </div>
           </div>
         </div>
       </div>
 
-      <!-- Quick Actions -->
-      <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4 sm:p-6 card-hover">
-        <h3 class="text-lg font-semibold text-gray-800 dark:text-white mb-6">Quick Actions</h3>
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+      <div class="bg-white dark:bg-zinc-900 border border-gray-100 dark:border-zinc-800 rounded-2xl shadow-sm p-6">
+        <h3 class="text-xl font-bold text-gray-800 dark:text-white mb-6">Acciones Rápidas</h3>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <button
             v-for="action in quickActions"
             :key="action.title"
             @click="action.action"
-            class="flex items-center space-x-3 p-4 rounded-lg border-2 border-dashed border-gray-200 dark:border-gray-600 hover:border-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-all duration-200 group min-w-0"
+            class="group relative flex items-center p-4 rounded-xl border border-gray-200 dark:border-zinc-700 bg-gray-50 dark:bg-zinc-800/50 hover:bg-white dark:hover:bg-zinc-800 hover:border-orange-500 dark:hover:border-orange-500 hover:shadow-lg hover:shadow-orange-500/10 transition-all duration-300 text-left"
           >
-            <div :class="action.iconBg" class="w-10 h-10 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform duration-200 flex-shrink-0">
-              <component :is="action.icon" class="w-5 h-5 text-white" />
+            <div :class="[
+              'w-12 h-12 rounded-lg flex items-center justify-center transition-transform duration-300 group-hover:scale-110 text-white shadow-md',
+              action.iconBg
+            ]">
+              <component :is="action.icon" class="w-6 h-6" />
             </div>
-            <div class="text-left min-w-0 flex-1">
-              <p class="font-medium text-gray-800 dark:text-white truncate">{{ action.title }}</p>
-              <p class="text-sm text-gray-500 dark:text-gray-400 truncate">{{ action.description }}</p>
+            
+            <div class="ml-4 flex-1">
+              <p class="font-bold text-gray-800 dark:text-white group-hover:text-orange-600 dark:group-hover:text-orange-400 transition-colors">
+                {{ action.title }}
+              </p>
+              <p class="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
+                {{ action.description }}
+              </p>
             </div>
+
+            <ChevronRight class="w-5 h-5 text-gray-300 group-hover:text-orange-500 transform group-hover:translate-x-1 transition-all" />
           </button>
         </div>
       </div>
@@ -115,15 +161,18 @@ import {
   Building2, 
   FolderOpen, 
   Users, 
-  Plus, 
   Edit, 
-  Eye 
+  Eye,
+  LayoutDashboard,
+  PieChart,
+  History,
+  Clock,
+  ChevronRight
 } from 'lucide-vue-next'
 import Chart from 'chart.js/auto'
 import api from '../../api'
 import StatsCard from '../../components/StatsCard.vue'
 import { useToastStore } from '../../stores/toast'
-
 
 const router = useRouter()
 const toastStore = useToastStore()
@@ -134,89 +183,93 @@ const chartType = ref('bar')
 const budgetChart = ref(null)
 let chartInstance = null
 
-
 const props = defineProps({
-  sidebarOpen: {
-    type: Boolean,
-    default: true
-  },
-  sidebarMobile: {
-    type: Boolean,
-    default: false
-  }
+  sidebarOpen: { type: Boolean, default: true },
+  sidebarMobile: { type: Boolean, default: false }
 })
 
-// Datos iniciales - usar markRaw para componentes que se pasan a component :is
+// Datos iniciales (Colores actualizados al tema Naranja/Dark)
 const stats = ref([
   { 
-    title: 'Total Departments', 
+    title: 'Departamentos', 
     value: '0', 
-    change: 'Loading...', 
+    change: 'Cargando...', 
     icon: markRaw(Building2),
-    color: 'blue' 
+    color: 'orange' // Principal
   },
   { 
-    title: 'Active Projects', 
+    title: 'Proyectos Activos', 
     value: '0', 
-    change: 'Loading...', 
+    change: 'Cargando...', 
     icon: markRaw(FolderOpen),
-    color: 'green' 
+    color: 'emerald' // Contraste verde
   },
   { 
-    title: 'Total Budget', 
+    title: 'Presupuesto Total', 
     value: '$0', 
-    change: 'Loading...', 
+    change: 'Cargando...', 
     icon: markRaw(TrendingUp),
-    color: 'purple' 
+    color: 'red' // Acento fuerte
   },
   { 
-    title: 'Team Members', 
+    title: 'Total Personal', 
     value: '0', 
-    change: 'Loading...', 
+    change: 'Cargando...', 
     icon: markRaw(Users),
-    color: 'orange' 
+    color: 'zinc' // Neutro oscuro
   }
 ])
 
 const recentActivities = ref([])
 
-// Para quickActions, usa markRaw si los vas a usar en component :is
+// Quick Actions filtrados (Solo Deptos y Proyectos)
 const quickActions = [
   {
-    title: 'Add Department',
-    description: 'Create a new department',
+    title: 'Nuevo Departamento',
+    description: 'Registrar un nuevo departamento en la organización',
     icon: markRaw(Building2),
-    iconBg: 'bg-blue-500',
+    iconBg: 'bg-gradient-to-br from-orange-400 to-orange-600',
     action: () => router.push('/departments?action=create')
   },
   {
-    title: 'New Project',
-    description: 'Start a new project',
+    title: 'Nuevo Proyecto',
+    description: 'Iniciar un nuevo proyecto global',
     icon: markRaw(FolderOpen),
-    iconBg: 'bg-green-500',
+    iconBg: 'bg-gradient-to-br from-zinc-600 to-zinc-800', // Elegante
     action: () => router.push('/projects?action=create')
-  },
-  {
-    title: 'Add Team Member',
-    description: 'Invite new team member',
-    icon: markRaw(Users),
-    iconBg: 'bg-purple-500',
-    action: () => router.push('/team?action=invite')
   }
+  // Eliminado "Add Team Member" como solicitaste
 ]
+
+// Configuración de colores del Chart para el tema
+const chartColors = {
+  background: [
+    'rgba(249, 115, 22, 0.8)', // Orange 500
+    'rgba(220, 38, 38, 0.8)',  // Red 600
+    'rgba(245, 158, 11, 0.8)', // Amber 500
+    'rgba(82, 82, 91, 0.8)',   // Zinc 600
+    'rgba(234, 88, 12, 0.8)',  // Orange 600
+    'rgba(0, 0, 0, 0.7)'       // Black
+  ],
+  border: [
+    'rgba(249, 115, 22, 1)',
+    'rgba(220, 38, 38, 1)',
+    'rgba(245, 158, 11, 1)',
+    'rgba(82, 82, 91, 1)',
+    'rgba(234, 88, 12, 1)',
+    'rgba(0, 0, 0, 1)'
+  ]
+}
 
 const chartData = ref({
   labels: [],
   datasets: [{
-    label: 'Budget',
+    label: 'Presupuesto',
     data: [],
-    backgroundColor: [
-      '#3B82F6', '#10B981', '#8B5CF6', '#F59E0B', '#EF4444', '#06B6D4'
-    ],
-    borderColor: [
-      '#2563EB', '#059669', '#7C3AED', '#D97706', '#DC2626', '#0891B2'
-    ],
-    borderWidth: 2
+    backgroundColor: chartColors.background,
+    borderColor: chartColors.border,
+    borderWidth: 1,
+    borderRadius: 4
   }]
 })
 
@@ -225,7 +278,7 @@ const fetchDashboardData = async () => {
   try {
     loading.value = true
     
-    // 1. Cargar estadísticas principales desde DepartmentController
+    // 1. Stats
     const statsResponse = await api.get('/departments/stats')
     const statsData = statsResponse.data
     
@@ -233,54 +286,44 @@ const fetchDashboardData = async () => {
       { 
         ...stats.value[0],
         value: statsData.totalDepartments?.toString() || '0',
-        change: statsData.departmentsChange || '0%'
+        change: statsData.departmentsChange || '+0%'
       },
       { 
         ...stats.value[1],
         value: statsData.activeProjects?.toString() || '0',
-        change: statsData.projectsChange || '0%'
+        change: statsData.projectsChange || '+0%'
       },
       { 
         ...stats.value[2],
         value: `$${(statsData.totalBudget || 0).toLocaleString()}`,
-        change: statsData.budgetChange || '0%'
+        change: statsData.budgetChange || '+0%'
       },
       { 
         ...stats.value[3],
         value: statsData.teamMembers?.toString() || '0',
-        change: statsData.teamChange || '0%'
+        change: statsData.teamChange || '+0%'
       }
     ]
     
-    // 2. Cargar datos para el gráfico
+    // 2. Chart Data
     const departmentsResponse = await api.get('/departments')
     const departments = departmentsResponse.data
     
     chartData.value.labels = departments.map(dept => dept.name)
     chartData.value.datasets[0].data = departments.map(dept => dept.budget || 0)
     
-    // 3. Cargar actividades recientes con manejo de errores
+    // 3. Recent Activities (Mockeado o real)
     try {
       const activitiesResponse = await api.get('/activities/recent')
       recentActivities.value = (activitiesResponse.data || []).map(act => ({
         id: act.id,
-        title: act.description || 'Activity',
+        title: act.description || 'Actividad registrada',
         time: formatTimeAgo(act.createdAt || new Date().toISOString()),
-        icon: getActivityIcon(act.type),
-        iconBg: getActivityBg(act.type)
+        dotColor: getActivityDotColor(act.type)
       }))
     } catch (error) {
-      console.error('Error loading activities:', error)
-      // Mostrar actividades de ejemplo si hay error
-      recentActivities.value = [
-        {
-          id: 1,
-          title: 'Sample activity',
-          time: 'Just now',
-          icon: markRaw(Eye),
-          iconBg: 'bg-gray-500'
-        }
-      ]
+      console.warn('Activities endpoint failed, using fallback')
+      recentActivities.value = []
     }
     
     await nextTick()
@@ -288,7 +331,7 @@ const fetchDashboardData = async () => {
     
   } catch (error) {
     console.error('Error fetching dashboard data:', error)
-    toastStore.showToast('Error loading dashboard data', 'error')
+    toastStore.showToast('Error cargando datos del dashboard', 'error')
   } finally {
     loading.value = false
   }
@@ -302,6 +345,11 @@ const createChart = () => {
   const ctx = budgetChart.value?.getContext('2d')
   if (!ctx) return
   
+  // Detectar si es dark mode para ajustar color de texto del chart
+  const isDark = document.documentElement.classList.contains('dark')
+  const textColor = isDark ? '#e4e4e7' : '#374151'
+  const gridColor = isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)'
+
   chartInstance = new Chart(ctx, {
     type: chartType.value,
     data: chartData.value,
@@ -311,17 +359,30 @@ const createChart = () => {
       plugins: {
         legend: {
           display: chartType.value === 'pie',
-          position: 'bottom'
+          position: 'right',
+          labels: { color: textColor }
+        },
+        tooltip: {
+          backgroundColor: isDark ? '#18181b' : '#ffffff',
+          titleColor: isDark ? '#ffffff' : '#000000',
+          bodyColor: isDark ? '#a1a1aa' : '#4b5563',
+          borderColor: '#f97316',
+          borderWidth: 1,
+          padding: 10
         }
       },
       scales: chartType.value === 'bar' ? {
         y: {
           beginAtZero: true,
+          grid: { color: gridColor },
           ticks: {
-            callback: function(value) {
-              return '$' + value.toLocaleString()
-            }
+            color: textColor,
+            callback: (value) => '$' + value.toLocaleString()
           }
+        },
+        x: {
+          grid: { display: false },
+          ticks: { color: textColor }
         }
       } : {}
     }
@@ -333,25 +394,15 @@ const changeChartType = (type) => {
   createChart()
 }
 
-// Helpers
-const getActivityIcon = (type) => {
-  const iconMap = {
-    'DEPARTMENT_CREATED': markRaw(Building2),
-    'PROJECT_UPDATED': markRaw(Edit),
-    'TEAM_MEMBER_ADDED': markRaw(Users),
-    'REPORT_GENERATED': markRaw(Eye)
-  }
-  return iconMap[type] || markRaw(Eye)
-}
-
-const getActivityBg = (type) => {
-  const colorMap = {
-    'DEPARTMENT_CREATED': 'bg-blue-500',
+// Helpers visuales
+const getActivityDotColor = (type) => {
+  const map = {
+    'DEPARTMENT_CREATED': 'bg-orange-500',
     'PROJECT_UPDATED': 'bg-green-500',
-    'TEAM_MEMBER_ADDED': 'bg-purple-500',
-    'REPORT_GENERATED': 'bg-orange-500'
+    'TEAM_MEMBER_ADDED': 'bg-blue-500',
+    'REPORT_GENERATED': 'bg-purple-500'
   }
-  return colorMap[type] || 'bg-gray-500'
+  return map[type] || 'bg-gray-400'
 }
 
 const formatTimeAgo = (dateString) => {
@@ -360,30 +411,52 @@ const formatTimeAgo = (dateString) => {
   const diff = now - date
   const minutes = Math.floor(diff / 60000)
   
-  if (minutes < 1) return 'Just now'
-  if (minutes < 60) return `${minutes} min ago`
-  if (minutes < 1440) return `${Math.floor(minutes / 60)} hours ago`
-  return `${Math.floor(minutes / 1440)} days ago`
+  if (minutes < 1) return 'Ahora mismo'
+  if (minutes < 60) return `Hace ${minutes} min`
+  if (minutes < 1440) return `Hace ${Math.floor(minutes / 60)} horas`
+  return `Hace ${Math.floor(minutes / 1440)} días`
 }
 
-// Inicialización
 onMounted(() => {
   fetchDashboardData()
+  
+  // Escuchar cambio de tema para repintar el gráfico
+  const observer = new MutationObserver(() => {
+    createChart()
+  })
+  observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] })
 })
 </script>
 
 <style scoped>
-.card-hover {
-  transition-property: all;
-  transition-duration: 200ms;
-}
-.card-hover:hover {
-  box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -2px rgba(0,0,0,0.1);
+/* Animación de entrada suave */
+.animate-fade-in-up {
+  animation: fadeInUp 0.5s ease-out forwards;
 }
 
-/* Asegurar que el canvas se adapte correctamente */
-canvas {
-  max-width: 100% !important;
-  height: auto !important;
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Scrollbar personalizado delgado para la lista de actividades */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 4px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background-color: #d1d5db;
+  border-radius: 20px;
+}
+.dark .custom-scrollbar::-webkit-scrollbar-thumb {
+  background-color: #52525b;
 }
 </style>

@@ -1,175 +1,151 @@
 <template>
-  <div class="space-y-6">
-    <!-- Department Header Banner -->
-    <div class="bg-gradient-to-r from-indigo-600 to-purple-700 rounded-xl p-6 text-white relative overflow-hidden">
-      <div class="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -translate-y-16 translate-x-16"></div>
-      <div class="absolute bottom-0 left-0 w-24 h-24 bg-white/10 rounded-full translate-y-12 -translate-x-12"></div>
-      <div class="relative z-10">
-        <div class="flex items-center justify-between">
-          <div>
-            <div class="flex items-center space-x-3 mb-2">
-              <div class="w-12 h-12 bg-white/20 rounded-lg flex items-center justify-center">
-                <Building2 class="w-6 h-6 text-white" />
-              </div>
-              <div>
-                <h1 class="text-2xl font-bold">{{ departmentInfo.name || 'My Department' }}</h1>
-                <p class="text-indigo-100">Department Dashboard</p>
-              </div>
+  <div class="w-full min-h-screen animate-fade-in-up">
+    <div class="max-w-none space-y-6">
+      
+      <div class="relative overflow-hidden bg-gradient-to-br from-blue-700 via-blue-600 to-cyan-500 rounded-2xl p-6 sm:p-8 text-white shadow-xl shadow-cyan-500/20">
+        <div class="absolute top-0 right-0 -mt-8 -mr-8 w-40 h-40 bg-cyan-400/20 rounded-full blur-3xl"></div>
+        <div class="absolute bottom-0 left-0 -mb-8 -ml-8 w-32 h-32 bg-blue-900/40 rounded-full blur-2xl"></div>
+        
+        <div class="relative flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6 z-10">
+          <div class="flex items-center space-x-4">
+             <div class="hidden sm:flex w-16 h-16 bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl items-center justify-center shadow-inner">
+              <Building2 class="w-8 h-8 text-cyan-50" />
+            </div>
+            
+            <div class="min-w-0">
+              <h2 class="text-3xl sm:text-4xl font-extrabold tracking-tight truncate">
+                {{ departmentInfo.name || 'Loading...' }}
+              </h2>
+              <p class="text-blue-100 text-sm sm:text-base font-medium flex items-center gap-2 mt-1">
+                <span :class="['w-2 h-2 rounded-full animate-pulse', departmentInfo.id ? 'bg-cyan-400' : 'bg-gray-400']"></span>
+                Department Dashboard
+              </p>
             </div>
           </div>
+
           <div class="hidden md:block">
-            <div class="flex items-center space-x-2">
-              <div class="text-right">
-                <p class="text-sm text-indigo-200">Productivity</p>
+            <div class="flex items-center space-x-2 bg-white/10 backdrop-blur-sm rounded-xl p-3 border border-white/10">
+              <div class="text-right mr-2">
+                <p class="text-xs text-cyan-200 font-medium uppercase tracking-wider">Productivity</p>
                 <p class="text-xl font-bold">{{ departmentInfo.productivity || 0 }}%</p>
               </div>
-              <div class="w-16 h-16 bg-white/10 rounded-full flex items-center justify-center">
-                <TrendingUp class="w-6 h-6 text-white/80" />
+              <div class="w-10 h-10 bg-gradient-to-br from-cyan-400 to-blue-500 rounded-full flex items-center justify-center shadow-lg">
+                <TrendingUp class="w-5 h-5 text-white" />
               </div>
             </div>
           </div>
         </div>
       </div>
-    </div>
 
-    <!-- Stats Cards Grid -->
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-      <!-- Total Projects Card -->
-      <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6">
-        <div class="flex items-center space-x-4">
-          <div class="w-12 h-12 bg-indigo-100 dark:bg-indigo-900/50 rounded-lg flex items-center justify-center">
-            <FolderOpen class="w-6 h-6 text-indigo-600 dark:text-indigo-400" />
+      <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 lg:gap-6">
+        
+        <StatsCard
+          title="Total Projects"
+          :value="departmentStats.totalProjects"
+          :change="`${Math.abs(projectChange)}% from last month`"
+          :changeType="projectChange >= 0 ? 'positive' : 'negative'"
+          :icon="markRaw(FolderOpen)"
+          color="cyan"
+          :loading="loading"
+        />
+        
+        <StatsCard
+          title="Completed"
+          :value="departmentStats.completedProjects"
+          :change="`${completionRate}% Completion Rate`"
+          :icon="markRaw(CheckCircle)"
+          color="emerald"
+          :loading="loading"
+        />
+
+        <StatsCard
+          title="Active Projects"
+          :value="departmentStats.activeProjects"
+          :change="`${activePercentage}% of total`"
+          :icon="markRaw(Activity)"
+          color="blue"
+          :loading="loading"
+        />
+
+        <StatsCard
+          title="Total Budget"
+          :value="formatCurrency(departmentStats.totalBudget)"
+          :change="`${budgetUsage}% Utilized`"
+          :icon="markRaw(DollarSign)"
+          color="indigo"
+          :loading="loading"
+        />
+      </div>
+
+      <div class="grid grid-cols-1 xl:grid-cols-2 gap-6">
+        
+        <div class="bg-white dark:bg-zinc-900 border border-gray-100 dark:border-zinc-800 rounded-2xl shadow-sm p-6">
+          <h3 class="text-xl font-bold text-gray-800 dark:text-white mb-6 flex items-center gap-2">
+            <PieChartIcon class="w-5 h-5 text-cyan-500" /> Projects Status
+          </h3>
+          <div class="h-64 relative">
+             <PieChart 
+                v-if="!loading"
+                :data="projectsStatusData"
+                :options="pieChartOptions"
+              />
+             <div v-else class="absolute inset-0 flex items-center justify-center">
+                <Loader2 class="w-8 h-8 text-cyan-500 animate-spin" />
+             </div>
           </div>
-          <div>
-            <p class="text-sm text-gray-500 dark:text-gray-400">Total Projects</p>
-            <p class="text-2xl font-bold text-gray-800 dark:text-white">
-              {{ loading ? '...' : departmentStats.totalProjects }}
-            </p>
-            <p class="text-xs mt-1" :class="projectChange >= 0 ? 'text-green-500' : 'text-red-500'">
-              {{ projectChange >= 0 ? '↑' : '↓' }} {{ Math.abs(projectChange) }}% from last month
-            </p>
+        </div>
+
+        <div class="bg-white dark:bg-zinc-900 border border-gray-100 dark:border-zinc-800 rounded-2xl shadow-sm p-6">
+          <h3 class="text-xl font-bold text-gray-800 dark:text-white mb-6 flex items-center gap-2">
+            <BarChartIcon class="w-5 h-5 text-blue-500" />
+            Budget Allocation
+          </h3>
+          <div class="h-64 relative">
+            <BarChart
+              v-if="!loading"
+              :data="budgetAllocationData"
+              :options="barChartOptions"
+            />
+            <div v-else class="absolute inset-0 flex items-center justify-center">
+                <Loader2 class="w-8 h-8 text-blue-500 animate-spin" />
+             </div>
           </div>
         </div>
       </div>
 
-      <!-- Completed Projects Card -->
-      <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6">
-        <div class="flex items-center space-x-4">
-          <div class="w-12 h-12 bg-green-100 dark:bg-green-900/50 rounded-lg flex items-center justify-center">
-            <CheckCircle class="w-6 h-6 text-green-600 dark:text-green-400" />
-          </div>
-          <div>
-            <p class="text-sm text-gray-500 dark:text-gray-400">Completed</p>
-            <p class="text-2xl font-bold text-gray-800 dark:text-white">
-              {{ loading ? '...' : departmentStats.completedProjects }}
-            </p>
-            <p class="text-xs text-gray-400 dark:text-gray-500 mt-1">
-              {{ completionRate }}% completion rate
-            </p>
-          </div>
-        </div>
-      </div>
-
-      <!-- Active Projects Card -->
-      <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6">
-        <div class="flex items-center space-x-4">
-          <div class="w-12 h-12 bg-amber-100 dark:bg-amber-900/50 rounded-lg flex items-center justify-center">
-            <Activity class="w-6 h-6 text-amber-600 dark:text-amber-400" />
-          </div>
-          <div>
-            <p class="text-sm text-gray-500 dark:text-gray-400">Active</p>
-            <p class="text-2xl font-bold text-gray-800 dark:text-white">
-              {{ loading ? '...' : departmentStats.activeProjects }}
-            </p>
-            <p class="text-xs text-gray-400 dark:text-gray-500 mt-1">
-              {{ activePercentage }}% of total
-            </p>
+      <div class="bg-white dark:bg-zinc-900 border border-gray-100 dark:border-zinc-800 rounded-2xl shadow-sm p-6">
+          <h3 class="text-xl font-bold text-gray-800 dark:text-white mb-6 flex items-center gap-2">
+            <Clock class="w-5 h-5 text-cyan-500" />
+            Recent Activities
+          </h3>
+          
+          <div class="space-y-4">
+             <div v-for="(activity, index) in recentActivities" :key="index" class="flex items-start space-x-3 p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-zinc-800/50 transition-colors">
+               <div class="flex-shrink-0 mt-1">
+                 <div class="w-8 h-8 rounded-full flex items-center justify-center shadow-sm" 
+                      :class="activityColors[activity.type]">
+                   <component :is="activityIcons[activity.type]" class="w-4 h-4 text-white" />
+                 </div>
+               </div>
+               <div class="flex-1 min-w-0">
+                 <p class="text-sm font-semibold text-gray-900 dark:text-white">{{ activity.title }}</p>
+                 <p class="text-sm text-gray-500 dark:text-gray-400">{{ activity.description }}</p>
+                 <p class="text-xs text-gray-400 dark:text-gray-500 mt-1 font-mono">{{ formatDate(activity.date) }}</p>
+               </div>
+             </div>
+             
+             <div v-if="recentActivities.length === 0" class="text-center py-8">
+               <p class="text-gray-500 dark:text-gray-400">No recent activities</p>
+             </div>
           </div>
         </div>
-      </div>
-
-      <!-- Department Budget Card -->
-      <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6">
-        <div class="flex items-center space-x-4">
-          <div class="w-12 h-12 bg-blue-100 dark:bg-blue-900/50 rounded-lg flex items-center justify-center">
-            <DollarSign class="w-6 h-6 text-blue-600 dark:text-blue-400" />
-          </div>
-          <div>
-            <p class="text-sm text-gray-500 dark:text-gray-400">Budget</p>
-            <p class="text-2xl font-bold text-gray-800 dark:text-white">
-              {{ loading ? '...' : formatCurrency(departmentStats.totalBudget) }}
-            </p>
-            <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-1.5 mt-2">
-              <div class="bg-blue-600 h-1.5 rounded-full" :style="{ width: budgetUsage + '%' }"></div>
-            </div>
-            <p class="text-xs text-gray-400 dark:text-gray-500 mt-1">
-              {{ budgetUsage }}% utilized
-            </p>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Charts Section -->
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-      <!-- Projects Status Chart -->
-      <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6">
-        <h3 class="text-lg font-semibold text-gray-800 dark:text-white mb-4">Projects Status</h3>
-        <div class="h-64">
-          <PieChart 
-            v-if="!loading"
-            :data="projectsStatusData"
-            :options="pieChartOptions"
-          />
-          <div v-else class="h-full flex items-center justify-center">
-            <Loader2 class="w-8 h-8 text-indigo-500 animate-spin" />
-          </div>
-        </div>
-      </div>
-
-      <!-- Budget Allocation Chart -->
-      <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6">
-        <h3 class="text-lg font-semibold text-gray-800 dark:text-white mb-4">Budget Allocation</h3>
-        <div class="h-64">
-          <BarChart
-            v-if="!loading"
-            :data="budgetAllocationData"
-            :options="barChartOptions"
-          />
-          <div v-else class="h-full flex items-center justify-center">
-            <Loader2 class="w-8 h-8 text-indigo-500 animate-spin" />
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Recent Activities -->
-    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6">
-      <h3 class="text-lg font-semibold text-gray-800 dark:text-white mb-4">Recent Activities</h3>
-      <div class="space-y-4">
-        <div v-for="(activity, index) in recentActivities" :key="index" class="flex items-start space-x-3">
-          <div class="flex-shrink-0 mt-1">
-            <div class="w-8 h-8 rounded-full flex items-center justify-center" 
-                 :class="activityColors[activity.type]">
-              <component :is="activityIcons[activity.type]" class="w-4 h-4 text-white" />
-            </div>
-          </div>
-          <div class="flex-1 min-w-0">
-            <p class="text-sm font-medium text-gray-900 dark:text-white">{{ activity.title }}</p>
-            <p class="text-sm text-gray-500 dark:text-gray-400">{{ activity.description }}</p>
-            <p class="text-xs text-gray-400 dark:text-gray-500 mt-1">{{ formatDate(activity.date) }}</p>
-          </div>
-        </div>
-        <div v-if="recentActivities.length === 0" class="text-center py-4">
-          <p class="text-gray-500 dark:text-gray-400">No recent activities</p>
-        </div>
-      </div>
+      
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, markRaw } from 'vue'
 import { 
   Building2, 
   FolderOpen, 
@@ -181,14 +157,18 @@ import {
   Loader2,
   AlertCircle,
   FileText,
-  Users  
+  Users,
+  PieChart as PieChartIcon,
+  BarChart as BarChartIcon
 } from 'lucide-vue-next'
 import api from '../../api/index'
 import { useToastStore } from '../../stores/toast'
 import { useAuthStore } from '../../stores/auth'
 import { useRouter } from 'vue-router'
+// Usamos TUS componentes de gráficos
 import PieChart from '../../components/charts/PieChart.vue'
 import BarChart from '../../components/charts/BarChart.vue'
+import StatsCard from '../../components/StatsCard.vue' // Importamos el componente StatsCard
 
 const router = useRouter()
 const toastStore = useToastStore()
@@ -215,24 +195,24 @@ const departmentStats = ref({
   lastMonthProjects: 0
 })
 
-// Recent activities mock data (replace with real data)
+// Recent activities mock data (adaptado al nuevo tema)
 const recentActivities = ref([
   {
     type: 'project',
     title: 'New project started',
-    description: 'Project "Website Redesign" has been initiated',
+    description: 'Project "Cyber Infrastructure" has been initiated',
     date: new Date(Date.now() - 3600000 * 2)
   },
   {
     type: 'task',
-    title: 'Task completed',
-    description: 'Task "Homepage layout" marked as done by John Doe',
+    title: 'Milestone reached',
+    description: 'Phase 1 completed ahead of schedule',
     date: new Date(Date.now() - 3600000 * 5)
   },
   {
     type: 'budget',
-    title: 'Budget updated',
-    description: 'Additional $5,000 allocated to marketing',
+    title: 'Budget increased',
+    description: 'Quarterly budget review approved',
     date: new Date(Date.now() - 3600000 * 24)
   }
 ])
@@ -245,15 +225,16 @@ const activityIcons = {
   alert: AlertCircle
 }
 
+// Colores actualizados al tema Cyber Blue
 const activityColors = {
-  project: 'bg-indigo-500',
-  task: 'bg-green-500',
+  project: 'bg-cyan-500',
+  task: 'bg-emerald-500',
   budget: 'bg-blue-500',
-  team: 'bg-purple-500',
+  team: 'bg-indigo-500',
   alert: 'bg-amber-500'
 }
 
-// Computed properties
+// Computed properties (Lógica original intacta)
 const completionRate = computed(() => {
   if (departmentStats.value.totalProjects === 0) return 0
   return Math.round((departmentStats.value.completedProjects / departmentStats.value.totalProjects) * 100)
@@ -276,7 +257,7 @@ const projectChange = computed(() => {
   return Math.round(change)
 })
 
-// Chart data
+// Chart data (Con colores del tema Cyber Blue)
 const projectsStatusData = computed(() => ({
   labels: ['Completed', 'Active', 'Planned', 'Cancelled'],
   datasets: [{
@@ -287,11 +268,12 @@ const projectsStatusData = computed(() => ({
       departmentStats.value.cancelledProjects
     ],
     backgroundColor: [
-      '#10B981', // green
-      '#3B82F6', // blue
-      '#F59E0B', // amber
-      '#EF4444'  // red
-    ]
+      '#10B981', // Emerald (Completed)
+      '#06B6D4', // Cyan (Active)
+      '#6366F1', // Indigo (Planned)
+      '#EF4444'  // Red (Cancelled)
+    ],
+    borderWidth: 0
   }]
 }))
 
@@ -304,9 +286,10 @@ const budgetAllocationData = computed(() => ({
       departmentStats.value.totalBudget - departmentStats.value.usedBudget
     ],
     backgroundColor: [
-      '#3B82F6', // blue
-      '#E5E7EB'  // gray
-    ]
+      '#3B82F6', // Blue 500
+      '#E4E4E7'  // Zinc 200 (Gray)
+    ],
+    borderRadius: 5
   }]
 }))
 
@@ -316,7 +299,12 @@ const pieChartOptions = {
   maintainAspectRatio: false,
   plugins: {
     legend: {
-      position: 'bottom'
+      position: 'right',
+      labels: {
+        usePointStyle: true,
+        padding: 20,
+        color: document.documentElement.classList.contains('dark') ? '#fff' : '#333'
+      }
     }
   }
 }
@@ -326,16 +314,21 @@ const barChartOptions = {
   maintainAspectRatio: false,
   scales: {
     y: {
-      beginAtZero: true
+      beginAtZero: true,
+      grid: {
+         color: document.documentElement.classList.contains('dark') ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)'
+      }
+    },
+    x: {
+      grid: { display: false }
     }
   },
   plugins: {
-    legend: {
-      display: false
-    }
+    legend: { display: false }
   }
 }
 
+// Data Fetching Logic (EXACTAMENTE como en tu archivo funcional)
 const fetchDepartmentData = async () => {
   try {
     loading.value = true
@@ -382,10 +375,6 @@ const fetchDepartmentData = async () => {
       lastMonthProjects: stats.lastMonthProjects || 0
     }
 
-    // 5. Get recent activities (si tu API tiene este endpoint)
-    // const activitiesResponse = await api.get(`/departments/${department.id}/activities`)
-    // recentActivities.value = activitiesResponse.data || []
-
   } catch (error) {
     console.error('Error loading department data:', error)
     
@@ -411,7 +400,8 @@ const formatCurrency = (amount) => {
   if (!amount) return '$0'
   return new Intl.NumberFormat('en-US', {
     style: 'currency',
-    currency: 'USD'
+    currency: 'USD',
+    maximumFractionDigits: 0
   }).format(amount)
 }
 
@@ -428,3 +418,13 @@ onMounted(() => {
   fetchDepartmentData()
 })
 </script>
+
+<style scoped>
+.animate-fade-in-up {
+  animation: fadeInUp 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+}
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+</style>

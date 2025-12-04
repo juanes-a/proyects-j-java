@@ -15,6 +15,7 @@ import DepartmentStats from '../views/adminD/DepartmentStats.vue';
 
 // (opcional) Vista para acceso denegado
 import UnauthorizedView from '../views/Unauthorized.vue';
+import SettingsView from '../views/SettingsView.vue';
 
 const routes = [
   {
@@ -35,6 +36,17 @@ const routes = [
   {
     path: '/unauthorized',
     component: UnauthorizedView,
+  },
+  {
+    path: '/settings',
+    name: 'settings',
+    component: SettingsView,
+    meta: { 
+      requiresAuth: true, 
+      // Si dejas 'roles' vacío o lo omites, asegúrate que tu lógica en beforeEach lo permita.
+      // Si tu lógica requiere explícitamente roles, agrégalos todos:
+      roles: ['ADMIN_GLOBAL', 'ADMIN_DEPT', 'ADMIN_COLLAB', 'COLLAB']
+    }
   },
 
   // Admin Global

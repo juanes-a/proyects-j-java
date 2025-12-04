@@ -21,13 +21,15 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.web.bind.annotation.*;
-
+import com.example.demo.dto.request.auth.ChangePasswordRequest;
+import jakarta.validation.Valid;
 import java.util.Map;
 import java.util.Set;
 
@@ -153,4 +155,27 @@ public class AuthController {
         );
     }
 
+    // --- AGREGAR ESTE NUEVO ENDPOINT ---
+@PostMapping("/change-password")
+    public ResponseEntity<?> changePassword(@Valid @RequestBody ChangePasswordRequest request) {
+        // Obtener el usuario autenticado
+        String username = SecurityContextHolder.getContext().getAuthentication().getName();
+        
+        if (username == null) {
+             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("error", "Usuario no autenticado"));
+        }
+
+        // Usar los getters del DTO
+        boolean success = userService.changePassword(
+            username, 
+            request.getCurrentPassword(), 
+            request.getNewPassword()
+        );
+
+        if (success) {
+            return ResponseEntity.ok(Map.of("message", "Contraseña actualizada correctamente"));
+        } else {
+            return ResponseEntity.badRequest().body(Map.of("message", "La contraseña actual es incorrecta"));
+        }
+    }
 }

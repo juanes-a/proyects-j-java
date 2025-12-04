@@ -1,39 +1,51 @@
 <template>
-  <header class="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700 transition-colors duration-300">
+  <header 
+    class="bg-white dark:bg-zinc-900 shadow-sm border-b border-gray-100 dark:border-zinc-800 transition-colors duration-300"
+  >
     <div class="flex items-center justify-between px-6 py-4">
-      <!-- Page Title -->
       <div>
-        <h1 class="text-2xl font-semibold text-gray-800 dark:text-white">
+        <h1 class="text-2xl font-bold text-gray-800 dark:text-white tracking-tight">
           {{ pageTitle }}
         </h1>
-        <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">
+        <p class="text-sm font-medium text-orange-500 mt-1">
           {{ pageDescription }}
         </p>
       </div>
       
-      <!-- Right Section -->
       <div class="flex items-center space-x-4">
-        <!-- Theme Toggle -->
         <button
           @click="toggleTheme"
-          class="p-2 rounded-lg bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors duration-200"
+          class="p-2.5 rounded-xl bg-gray-50 dark:bg-zinc-800 text-gray-600 dark:text-gray-300 hover:bg-orange-50 dark:hover:bg-zinc-700 hover:text-orange-500 dark:hover:text-orange-400 transition-all duration-200 border border-transparent hover:border-orange-200 dark:hover:border-zinc-600"
+          title="Cambiar tema"
         >
-          <Sun v-if="isDark" class="w-5 h-5 text-yellow-500" />
-          <Moon v-else class="w-5 h-5 text-gray-600" />
+          <Sun v-if="isDark" class="w-5 h-5" />
+          <Moon v-else class="w-5 h-5" />
         </button>
         
-        <!-- Notifications -->
-        <button class="relative p-2 rounded-lg bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors duration-200">
-          <Bell class="w-5 h-5 text-gray-600 dark:text-gray-400" />
-          <span class="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full"></span>
+        <button 
+          class="relative p-2.5 rounded-xl bg-gray-50 dark:bg-zinc-800 text-gray-600 dark:text-gray-300 hover:bg-orange-50 dark:hover:bg-zinc-700 hover:text-orange-500 dark:hover:text-orange-400 transition-all duration-200 border border-transparent hover:border-orange-200 dark:hover:border-zinc-600"
+        >
+          <Bell class="w-5 h-5" />
+          <span class="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full border-2 border-white dark:border-zinc-800"></span>
         </button>
-        
-        <!-- User Profile -->
-        <div class="flex items-center space-x-3">
-          <div class="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
-            <User class="w-4 h-4 text-white" />
+
+        <div class="h-8 w-px bg-gray-200 dark:bg-zinc-700 mx-2"></div>
+
+        <div class="flex items-center space-x-3 pl-2">
+          <div 
+            class="w-9 h-9 rounded-xl bg-gradient-to-br from-orange-400 to-orange-600 flex items-center justify-center text-white font-bold shadow-lg shadow-orange-500/20"
+          >
+            {{ userInitial }}
           </div>
-          <span class="text-sm font-medium text-gray-700 dark:text-gray-300">Admin User</span>
+          
+          <div class="hidden md:block text-left">
+            <p class="text-sm font-bold text-gray-700 dark:text-gray-200 leading-none">
+              {{ userName }}
+            </p>
+            <p class="text-xs text-gray-400 dark:text-gray-500 mt-1 font-medium">
+              {{ userRole }}
+            </p>
+          </div>
         </div>
       </div>
     </div>
@@ -43,47 +55,56 @@
 <script setup>
 import { computed } from 'vue'
 import { useRoute } from 'vue-router'
-import { Sun, Moon, Bell, User } from 'lucide-vue-next'
+import { Sun, Moon, Bell } from 'lucide-vue-next'
 import { useThemeStore } from '../stores/theme'
+import { useAuthStore } from '../stores/auth' // <--- Importamos el store de Auth
 
 const themeStore = useThemeStore()
-
-// Cambiar a un tema específico
-themeStore.setTheme('dark') // o 'light', 'system'
-
-// Alternar entre claro/oscuro (manteniendo la lógica de sistema)
-themeStore.toggleTheme()
-
-// Acceder al estado actual
-console.log(themeStore.isDark) // true/false
-console.log(themeStore.theme)
-
+const authStore = useAuthStore() // <--- Inicializamos el store
 const route = useRoute()
-const isDark = computed(() => themeStore.isDark)
 
+// Lógica del Tema
+const isDark = computed(() => themeStore.isDark)
+const toggleTheme = () => themeStore.toggleTheme()
+
+// Lógica de Usuario Dinámico
+const userName = computed(() => authStore.user?.name || 'Usuario')
+const userInitial = computed(() => (authStore.user?.name?.charAt(0) || 'U').toUpperCase())
+
+// Formatear el rol para que se vea bonito (opcional, igual que en sidebar)
+const userRole = computed(() => {
+  const role = authStore.user?.role || ''
+  const roleMap = {
+    'ADMIN_GLOBAL': 'Global Admin',
+    'ADMIN_DEPT': 'Manager',
+    'ADMIN_COLLAB': 'Líder',
+    'COLLAB': 'Colaborador'
+  }
+  return roleMap[role] || 'Miembro'
+})
+
+// Títulos y descripciones de página
 const pageTitle = computed(() => {
   const titles = {
     '/': 'Dashboard',
-    '/departments': 'Departments Management',
-    '/projects': 'Projects',
-    '/team': 'Team Management',
-    '/settings': 'Settings'
+    '/homeDepartaments': 'Panel Global',
+    '/departments': 'Gestión de Departamentos',
+    '/projects': 'Proyectos Activos',
+    '/team': 'Equipo de Trabajo',
+    '/settings': 'Configuración'
   }
-  return titles[route.path] || 'Dashboard'
+  return titles[route.path] || 'Panel de Control'
 })
 
 const pageDescription = computed(() => {
   const descriptions = {
-    '/': 'Overview of your departments and projects',
-    '/departments': 'Manage your organization departments',
-    '/projects': 'Track and manage ongoing projects',
-    '/team': 'Manage team members and roles',
-    '/settings': 'Application settings and preferences'
+    '/': 'Resumen general de actividad',
+    '/homeDepartaments': 'Vista general de toda la organización',
+    '/departments': 'Administra las áreas de tu empresa',
+    '/projects': 'Seguimiento y control de iniciativas',
+    '/team': 'Gestión de talento humano',
+    '/settings': 'Preferencias de la aplicación'
   }
-  return descriptions[route.path] || 'Welcome to DeptManager'
+  return descriptions[route.path] || 'Bienvenido de nuevo'
 })
-
-const toggleTheme = () => {
-  themeStore.toggleTheme()
-}
 </script>
