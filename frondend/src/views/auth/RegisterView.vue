@@ -229,6 +229,7 @@ import { ref, reactive, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '../../stores/auth'
 import PasswordStrengthMeter from '../../components/auth/PasswordStrengthMeter.vue'
+import api from '../../api'
 
 const router = useRouter()
 const authStore = useAuthStore()
@@ -365,7 +366,7 @@ const handleRegister = async () => {
   errorMessage.value = ''
 
   try {
-    const response = await fetch('http://localhost:8081/api/auth/register', {
+    const response = await api.post('/auth/register', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({

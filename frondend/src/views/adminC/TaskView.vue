@@ -413,6 +413,7 @@
 <script>
 import axios from 'axios'
 import { useAuthStore } from '../../stores/auth'
+import api from '../../api'
 
 const authStore = useAuthStore()
 
@@ -496,7 +497,7 @@ export default {
          throw new Error('User email not available');
        }
 
-       const response = await axios.get(`http://localhost:8081/api/projects/assing-project/${userEmail}`);
+       const response = await api.get(`/projects/assing-project/${userEmail}`);
 
        console.log('📦 Complete backend response:', response);
        console.log('📊 Data received:', response.data);
@@ -506,7 +507,7 @@ export default {
        this.filteredTasks = [...this.tasks];
 
        if (response.data.projectName === 'All projects') {
-         const allProjectsResponse = await axios.get('http://localhost:8081/api/projects');
+         const allProjectsResponse = await api.get('/projects');
 
          this.projects = [
            { id: null, name: 'All projects' },

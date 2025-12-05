@@ -381,7 +381,7 @@ const generatePdf = async () => {
 
     console.log('📤 Enviando parámetros al PDF:', params);
 
-    const response = await axios.get('http://localhost:8081/api/projects/report/pdf', {
+    const response = await api.get('/projects/report/pdf', {
       params,
       responseType: 'blob'
     });

@@ -398,6 +398,7 @@ import ProjectViewModal from '../components/projects/ProjectViewModal.vue'
 import CancelProjectModal from '../components/projects/CancelProjectModal.vue'
 import ProjectListModal from '../components/projects/ProjectListModal.vue'
 import { useToastStore } from '../stores/toast'
+import api from '../../api'
 
 const route = useRoute()
 const router = useRouter()
@@ -441,7 +442,7 @@ const generatePdf = async () => {
     }
 
     // Construir la URL con los parámetros
-    const url = `http://localhost:8081/api/projects/report/pdf${params.toString() ? '?' + params.toString() : ''}`;
+    const url = `${api.defaults.baseURL}/projects/report/pdf${params.toString() ? '?' + params.toString() : ''}`;
 
     console.log('📄 Generando PDF con URL:', url);
     console.log('📊 Filtros aplicados:', {
