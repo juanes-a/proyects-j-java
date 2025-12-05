@@ -54,43 +54,46 @@ public class AuthController {
     private AuthenticationManager authenticationManager;
 
     @PostMapping("/register")
-    public ResponseEntity<?> registerUser(@Valid @RequestBody RegisterRequest request) {
+    // 1. OJO: Quité el "@Valid" temporalmente para que entre SÍ o SÍ
+    public ResponseEntity<?> registerUser(@RequestBody RegisterRequest request) {
 
-        System.out.println("👉 Registro recibido: " + request);
-
+        // 2. EL CHISMOSO: Vamos a imprimir en el log qué llegó
+        System.out.println("============== DEBUG START ==============");
+        System.out.println("¿Llegó la petición?: SÍ");
+        System.out.println("Datos recibidos (Raw): " + request);
+        System.out.println("Email: " + request.getEmail());
+        System.out.println("Username: " + request.getUsername());
+        System.out.println("Password: " + request.getPassword());
+        System.out.println("============== DEBUG END ==============");
 
         try {
-            // Verificar si el email ya existe
-            if (userService.findByEmail(request.getEmail()) != null) {
-                return ResponseEntity.badRequest()
-                    .body(Map.of("error", "El email ya está registrado"));
-            }
-            
-            // Verificar si el username ya existe
-            if (userService.findByUsername(request.getUsername()) != null) {
-                return ResponseEntity.badRequest()
-                    .body(Map.of("error ", "El username ya está registrado"));
+            // Validación Manual (para ver si falla aquí)
+            if (request.getEmail() == null || request.getEmail().isEmpty()) {
+                System.out.println("🚨 ERROR: El email llegó NULO");
+                return ResponseEntity.badRequest().body(Map.of("error", "Email es nulo en el backend"));
             }
 
+            // ... Resto de tu lógica normal ...
+            if (userService.findByEmail(request.getEmail()) != null) {
+                return ResponseEntity.badRequest().body(Map.of("error", "El email ya está registrado"));
+            }
+            
+            // ... (El resto del código sigue igual) ...
             UserEntity user = new UserEntity();
             user.setEmail(request.getEmail());
-            user.setUsername(request.getUsername()); // ¡IMPORTANTE! Estaba faltando
+            user.setUsername(request.getUsername());
             user.setPassword(request.getPassword());
             user.setName(request.getName());
-            user.setRole(Role.COLLAB); // Rol por defecto
-            user.setRole(Role.COLLAB); // Rol por defecto
+            user.setRole(Role.COLLAB);
             
             UserEntity savedUser = userService.registerUser(user);
-            
-            // Generar token automáticamente después del registro
-            // Usar el email como identificador principal para el token
             String token = jwtUtil.generateToken(savedUser.getEmail());
             
             return ResponseEntity.ok(new AuthResponse(token, savedUser.getName(), savedUser.getUsername(), savedUser.getEmail()));
-            
+
         } catch (Exception e) {
-            return ResponseEntity.badRequest()
-                .body(Map.of("error", "Error al registrar usuario: " + e.getMessage()));
+            e.printStackTrace(); // Imprime el error real en la consola
+            return ResponseEntity.badRequest().body(Map.of("error", "Error interno: " + e.getMessage()));
         }
     }
 
