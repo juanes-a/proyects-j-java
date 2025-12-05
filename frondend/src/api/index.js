@@ -5,8 +5,10 @@ import router from '../router'
 let authStore = null
 
 // Configuración base de Axios
+// http://localhost:8081/api localhost url de desarrollo
+
 const api = axios.create({
-  baseURL: 'http://localhost:8081/api',
+  baseURL: 'https://proyects-j-java-production.up.railway.app/api',
   timeout: 10000,
   headers: {
     'Content-Type': 'application/json',

@@ -46,7 +46,7 @@ import org.slf4j.LoggerFactory;
 
 @RestController
 @RequestMapping("/api/departments")
-@CrossOrigin(origins = "http://localhost:5173")
+
 public class DepartmentController {
 
 

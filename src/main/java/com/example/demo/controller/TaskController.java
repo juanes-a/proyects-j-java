@@ -39,7 +39,7 @@ import java.util.Optional;
 @RequestMapping("/api/tasks")      // Ruta base: todas las rutas empiezan con /api/tasks
 @RequiredArgsConstructor          // Lombok: genera constructor automático para inyección
 @Slf4j                           // Lombok: genera logger automático
-@CrossOrigin(origins = "*")      // Permite CORS desde cualquier origen (para frontend)
+    // Permite CORS desde cualquier origen (para frontend)
 public class TaskController {
 
     // Inyección automática del servicio
