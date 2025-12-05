@@ -1,4 +1,4 @@
-package main.java.com.example.demo.dto.request.project;
+package com.example.demo.dto.request.project;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;

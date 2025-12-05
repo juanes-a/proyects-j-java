@@ -1,4 +1,4 @@
-package main.java.com.example.demo.dto.request.task;
+package com.example.demo.dto.request.task;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;

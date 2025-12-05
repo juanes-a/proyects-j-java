@@ -1,4 +1,4 @@
-package main.java.com.example.demo.util;
+package com.example.demo.util;
 
 import com.example.demo.entity.Project;
 import com.example.demo.entity.TaskEntity;
