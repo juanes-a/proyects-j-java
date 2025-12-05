@@ -36,6 +36,8 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 import lombok.extern.slf4j.Slf4j;
+import main.java.com.example.demo.util.CsvHelper;
+
 import org.modelmapper.ModelMapper;
 
 import org.slf4j.Logger;
@@ -443,7 +445,28 @@ public class ProjectService {
         return usersAsignationRepository.findTopByUserAndProjectIsNotNullOrderByDateAsignDateTimeDesc(user);
     }
 
+    public void saveProjectsFromCsv(MultipartFile file) {
+        try {
+            // 1. Usar el parser modificado para obtener una lista de DTOs o usar lógica manual aquí
+            // Supongamos que lees línea por línea o usas un DTO intermedio que tiene el ID del departamento
+            List<ProjectCsvDTO> dtos = CsvHelper.parseProjectsDto(file); // Implementa esto en tu helper
 
+            for (ProjectCsvDTO dto : dtos) {
+                Department dept = departmentRepository.findById(dto.getDepartmentId())
+                    .orElseThrow(() -> new RuntimeException("Departamento no encontrado ID: " + dto.getDepartmentId()));
+
+                Project project = new Project();
+                project.setName(dto.getName());
+                project.setDepartment(dept); // Relación crítica
+                project.setPriority(dto.getPriority());
+                // ... setear resto de campos
+                
+                projectRepository.save(project);
+            }
+        } catch (Exception e) {
+            throw new RuntimeException("Fallo al guardar datos CSV: " + e.getMessage());
+        }
+    }
 
 
 }

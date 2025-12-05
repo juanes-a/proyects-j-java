@@ -49,6 +49,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import main.java.com.example.demo.util.CsvHelper;
 
 import java.io.ByteArrayInputStream;
 import java.math.BigDecimal;
@@ -517,7 +518,18 @@ public class ProjectController {
         }
     }
 
-
+    @PostMapping("/upload")
+    public ResponseEntity<String> uploadProjects(@RequestParam("file") MultipartFile file) {
+        if (CsvHelper.hasCSVFormat(file)) { // Valida que sea CSV
+            try {
+                projectService.saveProjectsFromCsv(file);
+                return ResponseEntity.ok("Archivos subidos y base de datos actualizada exitosamente.");
+            } catch (Exception e) {
+                return ResponseEntity.status(HttpStatus.EXPECTATION_FAILED).body("No se pudieron subir los archivos: " + e.getMessage());
+            }
+        }
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Por favor suba un archivo CSV válido.");
+    }
 
 
 }

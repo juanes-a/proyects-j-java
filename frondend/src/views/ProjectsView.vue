@@ -152,9 +152,7 @@
           Generar PDF
         </button>
       </div>
-
     </div>
-
 
     <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm">
       <div class="p-6 border-b border-gray-200 dark:border-gray-700">
@@ -164,13 +162,25 @@
             <p class="text-sm text-gray-600 dark:text-gray-400">Manage your organization projects</p>
           </div>
 
-          <button
-            @click="openCreateModal"
-            class="flex items-center space-x-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors duration-200"
-          >
-            <Plus class="w-4 h-4" />
-            <span>Add Project</span>
-          </button>
+          <div class="flex items-center gap-2">
+            <button 
+                @click="showUploadModal = true"
+                class="flex items-center space-x-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors duration-200"
+            >
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                </svg>
+                <span>Carga Masiva</span>
+            </button>
+
+            <button
+              @click="openCreateModal"
+              class="flex items-center space-x-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors duration-200"
+            >
+              <Plus class="w-4 h-4" />
+              <span>Add Project</span>
+            </button>
+          </div>
         </div>
       </div>
 
@@ -337,14 +347,14 @@
     </transition>
 
     <transition name="fade">
-    <ProjectModal
-      v-if="showModal"
-      :project="selectedProject"
-      :is-editing="isEditing"
-      :departments="departments"
-      @close="closeModal"
-      @save="handleSave"
-    />
+      <ProjectModal
+        v-if="showModal"
+        :project="selectedProject"
+        :is-editing="isEditing"
+        :departments="departments"
+        @close="closeModal"
+        @save="handleSave"
+      />
     </transition>
 
     <CancelProjectModal
@@ -360,6 +370,14 @@
       :title="modalTitle"
       @close="closeListModal"
     />
+
+    <BulkUploadModal
+        :is-open="showUploadModal"
+        title="Carga Masiva de Proyectos"
+        :upload-service-function="projectService.uploadCsv"
+        @close="showUploadModal = false"
+        @success="handleUploadSuccess"
+    />
   </div>
 </template>
 
@@ -370,22 +388,24 @@ import {
   FolderOpen, Users, DollarSign, TrendingUp, CheckCircle, Search, Plus, Eye, Edit,
   Play, XCircle, Trash2, AlertTriangle, Zap, Calendar, Circle, AlertCircle
 } from 'lucide-vue-next'
-// ⚠️ CORRECCIÓN: Usamos 'api' en lugar de 'axios' para conectar con Railway correctamente
 import api from '@/api' 
 import ProjectModal from '../components/projects/ProjectModal.vue'
 import ProjectViewModal from '../components/projects/ProjectViewModal.vue'
 import CancelProjectModal from '../components/projects/CancelProjectModal.vue'
 import ProjectListModal from '../components/projects/ProjectListModal.vue'
 import { useToastStore } from '../stores/toast'
+// Importaciones para carga masiva
+import projectService from '@/services/projectService';
+import BulkUploadModal from '@/components/common/BulkUploadModal.vue';
 
 const route = useRoute()
 const router = useRouter()
 const toastStore = useToastStore()
 
+// ... [El método generatePdf se mantiene igual que en tu código original] ...
 const generatePdf = async () => {
   try {
     const params = new URLSearchParams();
-
     if (filters.value.name && filters.value.name.trim()) params.append('name', filters.value.name.trim());
     if (filters.value.departmentId && filters.value.departmentId !== '') params.append('departmentId', filters.value.departmentId);
     if (filters.value.status && filters.value.status !== '') params.append('status', filters.value.status);
@@ -395,32 +415,23 @@ const generatePdf = async () => {
     if (filters.value.minBudget !== null && filters.value.minBudget !== '') params.append('minBudget', filters.value.minBudget);
     if (filters.value.maxBudget !== null && filters.value.maxBudget !== '') params.append('maxBudget', filters.value.maxBudget);
 
-    // ⚠️ CORRECCIÓN: Usamos api.defaults.baseURL para construir la URL correctamente en producción
     const baseUrl = api.defaults.baseURL || '/api';
-    // Si baseURL ya incluye /api, no lo duplicamos. 
-    // Como api.js define baseURL con /api, aquí lo usamos directo.
     const url = `${baseUrl}/projects/report/pdf${params.toString() ? '?' + params.toString() : ''}`;
 
     console.log('📄 Generando PDF con URL:', url);
-
-    const response = await api.get(url, {
-      responseType: 'blob' // Importante para archivos binarios
-    });
+    const response = await api.get(url, { responseType: 'blob' });
 
     const blob = new Blob([response.data], { type: 'application/pdf' });
     const downloadUrl = window.URL.createObjectURL(blob);
-
     const link = document.createElement('a');
     link.href = downloadUrl;
     link.setAttribute('download', 'projects-report.pdf');
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-
     window.URL.revokeObjectURL(downloadUrl);
 
     toastStore.showToast('PDF generado exitosamente', 'success');
-
   } catch (error) {
     console.error('Error generating PDF:', error);
     toastStore.showToast('Error al generar el PDF', 'error');
@@ -441,6 +452,9 @@ const showViewModal = ref(false)
 const showEditModal = ref(false)
 const showCancelModal = ref(false)
 const showListModal = ref(false)
+// ESTADO NUEVO: Carga Masiva
+const showUploadModal = ref(false)
+
 const selectedProject = ref(null)
 const isEditing = ref(false)
 const modalProjects = ref([])
@@ -474,7 +488,6 @@ const headerStats = ref([
 // Computed
 const filteredProjects = computed(() => {
   let filtered = projects.value
-
   if (filters.value.name) {
     filtered = filtered.filter(project =>
       project.name.toLowerCase().includes(filters.value.name.toLowerCase())
@@ -501,7 +514,6 @@ const filteredProjects = computed(() => {
   if (filters.value.maxBudget !== null && filters.value.maxBudget !== '') {
     filtered = filtered.filter(project => (project.budget || 0) <= filters.value.maxBudget)
   }
-
   return filtered
 })
 
@@ -509,13 +521,10 @@ const filteredProjects = computed(() => {
 const fetchProjects = async () => {
   try {
     loading.value = true
-    let url = '/projects' // api.js ya agrega /api base
-
+    let url = '/projects' 
     if (route.query.department) {
       url += `?departmentId=${route.query.department}`
     }
-
-    // ⚠️ CORRECCIÓN: Usamos api.get en lugar de axios.get
     const response = await api.get(url)
     projects.value = response.data
     updateStats()
@@ -528,7 +537,6 @@ const fetchProjects = async () => {
 
 const fetchDepartments = async () => {
   try {
-    // ⚠️ CORRECCIÓN: Usamos api.get
     const response = await api.get('/departments')
     departments.value = response.data
   } catch (error) {
@@ -538,7 +546,6 @@ const fetchDepartments = async () => {
 
 const fetchSpecialProjects = async () => {
   try {
-    // ⚠️ CORRECCIÓN: Usamos api.get en todas las llamadas
     const [overdueRes, urgentRes, endingRes] = await Promise.all([
       api.get('/projects/overdue'),
       api.get('/projects/urgent'),
@@ -551,6 +558,13 @@ const fetchSpecialProjects = async () => {
   } catch (error) {
     handleError(error, 'Error loading project data')
   }
+};
+
+// NUEVO MÉTODO: Manejar éxito de carga masiva
+const handleUploadSuccess = async () => {
+    showUploadModal.value = false;
+    await fetchProjects();
+    await fetchSpecialProjects();
 };
 
 const updateStats = () => {
@@ -684,14 +698,10 @@ const handleSave = async (projectData) => {
       }
     })
 
-    console.log('Sending cleaned project data:', cleanedData)
-
     if (isEditing.value) {
-      // ⚠️ CORRECCIÓN: Usamos api.put
       await api.put(`/projects/${selectedProject.value.id}`, cleanedData)
       toastStore.showToast('Project updated successfully', 'success')
     } else {
-      // ⚠️ CORRECCIÓN: Usamos api.post
       await api.post('/projects', cleanedData)
       toastStore.showToast('Project created successfully', 'success')
     }
@@ -702,7 +712,6 @@ const handleSave = async (projectData) => {
   } catch (error) {
     console.error('Error saving project:', error)
     if (error.response) {
-      console.error('Error response:', error.response.data)
       const errorMessage = error.response.data?.message || error.response.data?.error || 'Error saving project'
       toastStore.showToast(errorMessage, 'error')
     } else {
@@ -714,7 +723,6 @@ const handleSave = async (projectData) => {
 const deleteProject = async (project) => {
   if (!confirm(`Are you sure you want to delete "${project.name}"?`)) return
   try {
-    // ⚠️ CORRECCIÓN: Usamos api.delete
     await api.delete(`/projects/${project.id}`)
     projects.value = projects.value.filter(p => p.id !== project.id)
     updateStats()
@@ -743,7 +751,6 @@ const startProject = async (project) => {
   if (project.priority === 'CRITICAL' && !window.confirm(`Are you sure you want to start the critical project "${project.name}"?`)) return
 
   try {
-    // ⚠️ CORRECCIÓN: Usamos api.post
     await api.post(`/projects/${project.id}/start`)
     const projectIndex = projects.value.findIndex(p => p.id === project.id)
     if (projectIndex !== -1) projects.value[projectIndex].status = 'IN_PROGRESS'
@@ -763,7 +770,6 @@ const completeProject = async (project) => {
   if (!confirm(`Are you sure you want to mark "${project.name}" as completed?`)) return
 
   try {
-    // ⚠️ CORRECCIÓN: Usamos api.post
     await api.post(`/projects/${project.id}/complete`)
     const projectIndex = projects.value.findIndex(p => p.id === project.id)
     if (projectIndex !== -1) projects.value[projectIndex].status = 'COMPLETED'
@@ -782,7 +788,6 @@ const cancelProject = (project) => {
 
 const handleCancelProject = async (reason) => {
   try {
-    // ⚠️ CORRECCIÓN: Usamos api.post
     await api.post(`/projects/${selectedProject.value.id}/cancel`, { reason })
     selectedProject.value.status = 'CANCELLED'
     updateStats()

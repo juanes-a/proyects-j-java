@@ -15,6 +15,8 @@ import com.example.demo.repository.UsersAsignationRepository;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import main.java.com.example.demo.util.CsvHelper;
+
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -363,4 +365,27 @@ public class TaskService {
             throw new RuntimeException("Usuario no encontrado con ID: " + userId);
         }
     }
+
+    public void saveTasksFromCsv(MultipartFile file) {
+        try {
+            List<TaskCsvDTO> dtos = CsvHelper.parseTasksDto(file); // Similar al de proyectos
+
+            for (TaskCsvDTO dto : dtos) {
+                Project project = projectRepository.findById(dto.getProjectId())
+                    .orElseThrow(() -> new RuntimeException("Proyecto no encontrado ID: " + dto.getProjectId()));
+
+                TaskEntity task = new TaskEntity();
+                task.setName(dto.getName());
+                task.setProject(project); // Relación crítica
+                // ... setear resto de campos y Enums
+                
+                taskRepository.save(task);
+            }
+        } catch (Exception e) {
+            throw new RuntimeException("Fallo al guardar tareas CSV: " + e.getMessage());
+        }
+    }
+
+
+
 }
