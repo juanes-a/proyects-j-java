@@ -1,224 +1,160 @@
 <template>
-  <div class="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
-    <!-- Encabezado con animación -->
-    <div class="sm:mx-auto sm:w-full sm:max-w-md text-center transform transition-all duration-500 hover:scale-105">
-      <div class="flex justify-center mb-4">
-        <div class="bg-white p-3 rounded-full shadow-lg animate-bounce">
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="#4f46e5" class="w-12 h-12">
-            <path d="M3 3v18h18V3H3zm16 16H5V5h14v14z"/>
-            <path d="M7 7h4v4H7zm6 0h4v4h-4zm-6 6h4v4H7zm6 0h4v4h-4z"/>
-          </svg>
-        </div>
-      </div>
-      <h2 class="mt-6 text-center text-3xl font-extrabold text-gray-900 font-sans">
-        Únete a <span class="text-indigo-600">ProyectS-J</span>
-      </h2>
-      <p class="mt-2 text-center text-sm text-gray-600">
-        Donde los proyectos cobran vida
-        <span class="inline-block animate-pulse">✨</span>
-      </p>
+  <div class="min-h-screen flex items-center justify-center bg-[#0f172a] relative overflow-hidden">
+    <div class="absolute top-0 left-0 w-full h-full overflow-hidden z-0">
+      <div class="absolute -top-[20%] -left-[10%] w-[50%] h-[50%] rounded-full bg-purple-600/20 blur-[120px] animate-pulse-slow"></div>
+      <div class="absolute top-[40%] -right-[10%] w-[40%] h-[40%] rounded-full bg-blue-600/20 blur-[120px] animate-pulse-slow delay-1000"></div>
+      <div class="absolute -bottom-[10%] left-[20%] w-[30%] h-[30%] rounded-full bg-indigo-600/20 blur-[100px] animate-pulse-slow delay-2000"></div>
     </div>
 
-    <!-- Tarjeta de formulario -->
-    <div class="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
-      <div class="bg-white/90 backdrop-blur-sm py-8 px-6 shadow-xl rounded-2xl border border-white/20 relative overflow-hidden">
-        <!-- Efecto de decoración abstracta -->
-        <div class="absolute -top-20 -right-20 w-40 h-40 bg-indigo-200 rounded-full mix-blend-multiply filter blur-xl opacity-30"></div>
-        <div class="absolute -bottom-20 -left-20 w-40 h-40 bg-blue-200 rounded-full mix-blend-multiply filter blur-xl opacity-30"></div>
+    <div class="w-full max-w-md z-10 p-4">
+      <div class="bg-white/10 backdrop-blur-xl border border-white/20 rounded-2xl shadow-2xl overflow-hidden transform transition-all duration-300">
         
-        <div class="relative">
-          <!-- Pestaña única de Registro -->
-          <div class="flex mb-6 border-b border-gray-200">
-            <div class="w-full py-2 text-center font-medium text-indigo-600 border-b-2 border-indigo-600">
-              Registrarse
-            </div>
+        <div class="px-8 pt-8 pb-6 text-center">
+          <div class="inline-flex items-center justify-center p-3 bg-gradient-to-tr from-indigo-500 to-purple-500 rounded-xl shadow-lg mb-4 transform hover:rotate-12 transition-transform duration-300">
+            <LayoutDashboard class="w-8 h-8 text-white" />
           </div>
+          <h2 class="text-3xl font-bold text-white tracking-tight">
+            Únete a <span class="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-purple-400">ProjectS-J</span>
+          </h2>
+          <p class="text-slate-400 mt-2 text-sm">Gestiona tus proyectos al siguiente nivel 🚀</p>
+        </div>
 
-          <!-- Mensaje de error -->
-          <div v-if="errorMessage" class="mb-4 bg-red-50 border-l-4 border-red-500 p-4 rounded-lg animate-shake">
-            <div class="flex items-center">
-              <svg class="h-5 w-5 text-red-500 flex-shrink-0" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
-              </svg>
-              <p class="ml-3 text-sm text-red-700">{{ errorMessage }}</p>
+        <div class="px-8 pb-8">
+          
+          <transition name="fade">
+            <div v-if="errorMessage" class="mb-5 p-3 rounded-lg bg-red-500/10 border border-red-500/20 flex items-center gap-3">
+              <AlertCircle class="w-5 h-5 text-red-400 flex-shrink-0" />
+              <span class="text-sm text-red-300">{{ errorMessage }}</span>
             </div>
-          </div>
+          </transition>
 
-          <form class="space-y-5" @submit.prevent="handleRegister">
-            <!-- Grupo de campos -->
-            <div class="space-y-4">
-              <!-- Nombre completo -->
-              <div>
-                <label for="fullName" class="block text-sm font-medium text-gray-700 mb-1 flex items-center">
-                  <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1 text-indigo-500" viewBox="0 0 20 20" fill="currentColor">
-                    <path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd" />
-                  </svg>
-                  Nombre completo
-                </label>
-                <div class="mt-1 relative rounded-lg shadow-sm transition-all duration-300 focus-within:ring-2 focus-within:ring-indigo-500 focus-within:border-indigo-500">
-                  <input id="fullName" v-model="registerForm.fullName" @blur="validateFullName" type="text" autocomplete="name" required
-                    class="block w-full pl-3 pr-3 py-3 border border-gray-300 rounded-lg placeholder-gray-400 focus:outline-none focus:ring-0 sm:text-sm"
-                    :class="{'border-red-300': errors.fullName, 'border-green-300': registerForm.fullName && !errors.fullName}"
-                    placeholder="Ej. María González"
-                  />
-                </div>
-                <p v-if="errors.fullName" class="mt-1 text-xs text-red-600 animate-fade-in">{{ errors.fullName }}</p>
-              </div>
-
-              <!-- Username -->
-              <div>
-                <label for="username" class="block text-sm font-medium text-gray-700 mb-1 flex items-center">
-                  <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1 text-indigo-500" viewBox="0 0 20 20" fill="currentColor">
-                    <path d="M5 4a1 1 0 00-2 0v7.268a2 2 0 000 3.464V16a1 1 0 102 0v-1.268a2 2 0 000-3.464V4zM11 4a1 1 0 10-2 0v1.268a2 2 0 000 3.464V16a1 1 0 102 0V8.732a2 2 0 000-3.464V4zM16 3a1 1 0 011 1v7.268a2 2 0 010 3.464V16a1 1 0 11-2 0v-1.268a2 2 0 010-3.464V4a1 1 0 011-1z" />
-                  </svg>
-                  Nombre de usuario
-                </label>
-                <div class="mt-1 relative rounded-lg shadow-sm transition-all duration-300 focus-within:ring-2 focus-within:ring-indigo-500 focus-within:border-indigo-500">
-                  <input id="username" v-model="registerForm.username" @blur="validateUsername" type="text" autocomplete="username" required
-                    class="block w-full pl-3 pr-3 py-3 border border-gray-300 rounded-lg placeholder-gray-400 focus:outline-none focus:ring-0 sm:text-sm"
-                    :class="{'border-red-300': errors.username, 'border-green-300': registerForm.username && !errors.username}"
-                    placeholder="Ej. mgonzalez2023"
-                  />
-                </div>
-                <p v-if="errors.username" class="mt-1 text-xs text-red-600 animate-fade-in">{{ errors.username }}</p>
-                <p class="mt-1 text-xs text-gray-500">Entre 4-20 caracteres, solo letras, números y guiones bajos</p>
-              </div>
-
-              <!-- Email -->
-              <div>
-                <label for="email" class="block text-sm font-medium text-gray-700 mb-1 flex items-center">
-                  <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1 text-indigo-500" viewBox="0 0 20 20" fill="currentColor">
-                    <path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z" />
-                    <path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z" />
-                  </svg>
-                  Correo corporativo
-                </label>
-                <div class="mt-1 relative rounded-lg shadow-sm transition-all duration-300 focus-within:ring-2 focus-within:ring-indigo-500 focus-within:border-indigo-500">
-                  <input id="email" v-model="registerForm.email" @blur="validateEmail" type="email" autocomplete="email" required
-                    class="block w-full pl-3 pr-3 py-3 border border-gray-300 rounded-lg placeholder-gray-400 focus:outline-none focus:ring-0 sm:text-sm"
-                    :class="{'border-red-300': errors.email, 'border-green-300': registerForm.email && !errors.email}"
-                    placeholder="tu@empresa.com"
-                  />
-                </div>
-                <p v-if="errors.email" class="mt-1 text-xs text-red-600 animate-fade-in">{{ errors.email }}</p>
-              </div>
-
-              <!-- Contraseña -->
-              <div>
-                <label for="password" class="block text-sm font-medium text-gray-700 mb-1 flex items-center">
-                  <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1 text-indigo-500" viewBox="0 0 20 20" fill="currentColor">
-                    <path fill-rule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clip-rule="evenodd" />
-                  </svg>
-                  Crea tu contraseña
-                </label>
-                <div class="mt-1 relative rounded-lg shadow-sm transition-all duration-300 focus-within:ring-2 focus-within:ring-indigo-500 focus-within:border-indigo-500">
-                  <input id="password" v-model="registerForm.password" @input="validatePassword" :type="showPassword ? 'text' : 'password'" autocomplete="new-password" required
-                    class="block w-full pl-3 pr-10 py-3 border border-gray-300 rounded-lg placeholder-gray-400 focus:outline-none focus:ring-0 sm:text-sm"
-                    :class="{'border-red-300': errors.password, 'border-green-300': registerForm.password && !errors.password}"
-                    placeholder="••••••••"
-                  />
-                  <button type="button" @click="togglePasswordVisibility" class="absolute inset-y-0 right-0 pr-3 flex items-center">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-400 hover:text-indigo-500 transition-colors" viewBox="0 0 20 20" fill="currentColor">
-                      <path v-if="showPassword" d="M10 12a2 2 0 100-4 2 2 0 000 4z" />
-                      <path fill-rule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clip-rule="evenodd" />
-                    </svg>
-                  </button>
-                </div>
-                <PasswordStrengthMeter :password="registerForm.password" class="mt-2" />
-                <p v-if="errors.password" class="mt-1 text-xs text-red-600 animate-fade-in">{{ errors.password }}</p>
-              </div>
-
-              <!-- Confirmar Contraseña -->
-              <div>
-                <label for="confirmPassword" class="block text-sm font-medium text-gray-700 mb-1 flex items-center">
-                  <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1 text-indigo-500" viewBox="0 0 20 20" fill="currentColor">
-                    <path fill-rule="evenodd" d="M2.166 4.999A11.954 11.954 0 0010 1.944 11.954 11.954 0 0017.834 5c.11.65.166 1.32.166 2.001 0 5.225-3.34 9.67-8 11.317C5.34 16.67 2 12.225 2 7c0-.682.057-1.35.166-2.001zm11.541 3.708a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
-                  </svg>
-                  Confirmar contraseña
-                </label>
-                <div class="mt-1 relative rounded-lg shadow-sm transition-all duration-300 focus-within:ring-2 focus-within:ring-indigo-500 focus-within:border-indigo-500">
-                  <input id="confirmPassword" v-model="registerForm.confirmPassword" @blur="validateConfirmPassword" :type="showPassword ? 'text' : 'password'" autocomplete="new-password" required
-                    class="block w-full pl-3 pr-3 py-3 border border-gray-300 rounded-lg placeholder-gray-400 focus:outline-none focus:ring-0 sm:text-sm"
-                    :class="{'border-red-300': errors.confirmPassword, 'border-green-300': registerForm.confirmPassword && !errors.confirmPassword && registerForm.password === registerForm.confirmPassword}"
-                    placeholder="••••••••"
-                  />
-                </div>
-                <p v-if="errors.confirmPassword" class="mt-1 text-xs text-red-600 animate-fade-in">{{ errors.confirmPassword }}</p>
-              </div>
-            </div>
-
-            <!-- Términos y condiciones -->
-            <div class="flex items-start">
-              <div class="flex items-center h-5">
-                <input id="terms" v-model="registerForm.acceptedTerms" type="checkbox" required
-                  class="focus:ring-indigo-500 h-4 w-4 text-indigo-600 border-gray-300 rounded"
+          <form @submit.prevent="handleRegister" class="space-y-5">
+            
+            <div class="group">
+              <label class="block text-xs font-medium text-slate-400 mb-1 ml-1 uppercase tracking-wider">Nombre Completo</label>
+              <div class="relative">
+                <User class="absolute left-3 top-3.5 w-5 h-5 text-slate-500 transition-colors group-focus-within:text-indigo-400" />
+                <input 
+                  v-model="registerForm.fullName" 
+                  @blur="validateFullName"
+                  type="text" 
+                  placeholder="Ej. Juan Pérez"
+                  class="w-full bg-slate-800/50 text-white border border-slate-700 rounded-xl py-3 pl-10 pr-4 outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all placeholder:text-slate-600"
+                  :class="{'!border-red-500/50 focus:!ring-red-500/50': errors.fullName}"
                 />
               </div>
-              <div class="ml-3 text-sm">
-                <label for="terms" class="font-medium text-gray-700">Acepto los términos y condiciones</label>
-                <p class="text-gray-500">Al registrarte, aceptas nuestras <a href="#" class="text-indigo-600 hover:text-indigo-500">Condiciones de Servicio</a> y <a href="#" class="text-indigo-600 hover:text-indigo-500">Política de Privacidad</a>.</p>
-              </div>
+              <p v-if="errors.fullName" class="text-xs text-red-400 mt-1 ml-1">{{ errors.fullName }}</p>
             </div>
-            <p v-if="errors.terms" class="mt-1 text-sm text-red-600">{{ errors.terms }}</p>
 
-            <!-- Botón de registro -->
-            <div>
-              <button type="submit" :disabled="loading || !isFormValid"
-                class="w-full flex justify-center items-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-gradient-to-r from-indigo-600 to-blue-500 hover:from-indigo-700 hover:to-blue-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-all duration-300 transform hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
-              >
-                <span v-if="loading" class="flex items-center">
-                  <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                  </svg>
-                  Creando cuenta...
-                </span>
-                <span v-else class="flex items-center">
-                  <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
-                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-11a1 1 0 10-2 0v2H7a1 1 0 100 2h2v2a1 1 0 102 0v-2h2a1 1 0 100-2h-2V7z" clip-rule="evenodd" />
-                  </svg>
-                  Crear mi cuenta
-                </span>
-              </button>
+            <div class="group">
+              <label class="block text-xs font-medium text-slate-400 mb-1 ml-1 uppercase tracking-wider">Usuario</label>
+              <div class="relative">
+                <AtSign class="absolute left-3 top-3.5 w-5 h-5 text-slate-500 transition-colors group-focus-within:text-indigo-400" />
+                <input 
+                  v-model="registerForm.username" 
+                  @blur="validateUsername"
+                  type="text" 
+                  placeholder="usuario_pro"
+                  class="w-full bg-slate-800/50 text-white border border-slate-700 rounded-xl py-3 pl-10 pr-4 outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all placeholder:text-slate-600"
+                  :class="{'!border-red-500/50 focus:!ring-red-500/50': errors.username}"
+                />
+              </div>
+              <p v-if="errors.username" class="text-xs text-red-400 mt-1 ml-1">{{ errors.username }}</p>
             </div>
+
+            <div class="group">
+              <label class="block text-xs font-medium text-slate-400 mb-1 ml-1 uppercase tracking-wider">Correo Electrónico</label>
+              <div class="relative">
+                <Mail class="absolute left-3 top-3.5 w-5 h-5 text-slate-500 transition-colors group-focus-within:text-indigo-400" />
+                <input 
+                  v-model="registerForm.email" 
+                  @blur="validateEmail"
+                  type="email" 
+                  placeholder="nombre@empresa.com"
+                  class="w-full bg-slate-800/50 text-white border border-slate-700 rounded-xl py-3 pl-10 pr-4 outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all placeholder:text-slate-600"
+                  :class="{'!border-red-500/50 focus:!ring-red-500/50': errors.email}"
+                />
+              </div>
+              <p v-if="errors.email" class="text-xs text-red-400 mt-1 ml-1">{{ errors.email }}</p>
+            </div>
+
+            <div class="group">
+              <label class="block text-xs font-medium text-slate-400 mb-1 ml-1 uppercase tracking-wider">Contraseña</label>
+              <div class="relative">
+                <Lock class="absolute left-3 top-3.5 w-5 h-5 text-slate-500 transition-colors group-focus-within:text-indigo-400" />
+                <input 
+                  v-model="registerForm.password" 
+                  @input="validatePassword"
+                  :type="showPassword ? 'text' : 'password'" 
+                  placeholder="••••••••"
+                  class="w-full bg-slate-800/50 text-white border border-slate-700 rounded-xl py-3 pl-10 pr-10 outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all placeholder:text-slate-600"
+                  :class="{'!border-red-500/50 focus:!ring-red-500/50': errors.password}"
+                />
+                <button type="button" @click="showPassword = !showPassword" class="absolute right-3 top-3.5 text-slate-500 hover:text-white transition-colors">
+                  <Eye v-if="showPassword" class="w-5 h-5" />
+                  <EyeOff v-else class="w-5 h-5" />
+                </button>
+              </div>
+              <div class="mt-2">
+                 <PasswordStrengthMeter :password="registerForm.password" />
+              </div>
+              <p v-if="errors.password" class="text-xs text-red-400 mt-1 ml-1">{{ errors.password }}</p>
+            </div>
+
+            <div class="group">
+              <label class="block text-xs font-medium text-slate-400 mb-1 ml-1 uppercase tracking-wider">Confirmar Contraseña</label>
+              <div class="relative">
+                <CheckCircle2 class="absolute left-3 top-3.5 w-5 h-5 text-slate-500 transition-colors group-focus-within:text-indigo-400" />
+                <input 
+                  v-model="registerForm.confirmPassword" 
+                  @blur="validateConfirmPassword"
+                  :type="showPassword ? 'text' : 'password'" 
+                  placeholder="••••••••"
+                  class="w-full bg-slate-800/50 text-white border border-slate-700 rounded-xl py-3 pl-10 pr-4 outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all placeholder:text-slate-600"
+                  :class="{'!border-red-500/50 focus:!ring-red-500/50': errors.confirmPassword}"
+                />
+              </div>
+              <p v-if="errors.confirmPassword" class="text-xs text-red-400 mt-1 ml-1">{{ errors.confirmPassword }}</p>
+            </div>
+
+            <div class="flex items-center gap-3 pt-2">
+              <div class="relative flex items-center">
+                <input 
+                  id="terms" 
+                  v-model="registerForm.acceptedTerms" 
+                  type="checkbox" 
+                  class="peer h-5 w-5 cursor-pointer appearance-none rounded-md border border-slate-600 bg-slate-800 transition-all checked:border-indigo-500 checked:bg-indigo-500 hover:border-indigo-400"
+                />
+                <Check class="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-3.5 h-3.5 text-white opacity-0 peer-checked:opacity-100 transition-opacity" />
+              </div>
+              <label for="terms" class="text-sm text-slate-300 cursor-pointer select-none">
+                Acepto los <span class="text-indigo-400 hover:text-indigo-300 underline">Términos y Condiciones</span>
+              </label>
+            </div>
+            <p v-if="errors.terms" class="text-xs text-red-400 ml-1">{{ errors.terms }}</p>
+
+            <button 
+              type="submit" 
+              :disabled="loading || !isFormValid"
+              class="w-full py-3.5 px-4 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-bold rounded-xl shadow-lg shadow-indigo-500/30 transform transition-all duration-200 hover:-translate-y-0.5 active:translate-y-0 disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none flex items-center justify-center gap-2"
+            >
+              <Loader2 v-if="loading" class="w-5 h-5 animate-spin" />
+              <span v-else>Crear Cuenta</span>
+              <ArrowRight v-if="!loading" class="w-5 h-5" />
+            </button>
+
           </form>
 
-          <!-- Redes sociales -->
-          <div class="mt-6">
-            <div class="relative">
-              <div class="absolute inset-0 flex items-center">
-                <div class="w-full border-t border-gray-300"></div>
-              </div>
-              <div class="relative flex justify-center text-sm">
-                <span class="px-2 bg-white text-gray-500">o regístrate con</span>
-              </div>
-            </div>
-
-            <div class="mt-6 grid grid-cols-2 gap-3">
-              <button type="button" @click="loginWithGoogle"
-                class="w-full inline-flex justify-center py-2 px-4 border border-gray-300 rounded-lg shadow-sm bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors duration-300"
-              >
-                <svg class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M12.545 10.239v3.821h5.445c-0.712 2.315-2.647 3.972-5.445 3.972-3.332 0-6.033-2.701-6.033-6.032s2.701-6.032 6.033-6.032c1.498 0 2.866 0.549 3.921 1.453l2.814-2.814c-1.786-1.667-4.167-2.698-6.735-2.698-5.522 0-10 4.477-10 10s4.478 10 10 10c8.396 0 10-7.524 10-10 0-0.67-0.069-1.325-0.189-1.955h-9.811z"/>
-                </svg>
-                <span class="ml-2">Google</span>
-              </button>
-
-              <button type="button" @click="loginWithMicrosoft"
-                class="w-full inline-flex justify-center py-2 px-4 border border-gray-300 rounded-lg shadow-sm bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors duration-300"
-              >
-                <svg class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M3 3h8v8H3zm0 10h8v8H3zm10-10h8v8h-8zm0 10h8v8h-8z"/>
-                </svg>
-                <span class="ml-2">Microsoft</span>
-              </button>
-            </div>
+          <div class="mt-8 text-center border-t border-slate-700/50 pt-6">
+            <p class="text-slate-400 text-sm">
+              ¿Ya tienes cuenta? 
+              <router-link to="/login" class="text-indigo-400 font-semibold hover:text-indigo-300 transition-colors inline-flex items-center gap-1">
+                Inicia sesión aquí
+              </router-link>
+            </p>
           </div>
-        </div>
-      </div>
 
-      <div class="mt-6 text-center text-sm text-gray-600">
-        <p>¿Ya tienes una cuenta? <router-link to="/login" class="font-medium text-indigo-600 hover:text-indigo-500 transition-colors">Inicia sesión aquí</router-link></p>
+        </div>
       </div>
     </div>
   </div>
@@ -228,8 +164,13 @@
 import { ref, reactive, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '../../stores/auth'
+import api from '@/api' // ✅ Importación corregida (Axios inteligente)
 import PasswordStrengthMeter from '../../components/auth/PasswordStrengthMeter.vue'
-import api from '../../api'
+// Iconos modernos de Lucide (usando la librería que ya tienes)
+import { 
+  LayoutDashboard, User, AtSign, Mail, Lock, Eye, EyeOff, 
+  CheckCircle2, Check, ArrowRight, Loader2, AlertCircle 
+} from 'lucide-vue-next'
 
 const router = useRouter()
 const authStore = useAuthStore()
@@ -256,116 +197,68 @@ const showPassword = ref(false)
 const loading = ref(false)
 const errorMessage = ref('')
 
-const togglePasswordVisibility = () => {
-  showPassword.value = !showPassword.value
-}
-
+// Validaciones
 const validateFullName = () => {
-  if (!registerForm.fullName.trim()) {
-    errors.fullName = 'Por favor ingresa tu nombre completo'
-  } else if (registerForm.fullName.trim().length < 3) {
-    errors.fullName = 'El nombre debe tener al menos 3 caracteres'
-  } else {
-    errors.fullName = ''
-  }
+  if (!registerForm.fullName.trim()) errors.fullName = 'El nombre es obligatorio'
+  else if (registerForm.fullName.trim().length < 3) errors.fullName = 'Mínimo 3 caracteres'
+  else errors.fullName = ''
 }
 
 const validateUsername = () => {
   const usernameRegex = /^[a-zA-Z0-9_]{4,20}$/
-  if (!registerForm.username.trim()) {
-    errors.username = 'Por favor ingresa un nombre de usuario'
-  } else if (!usernameRegex.test(registerForm.username)) {
-    errors.username = 'Solo letras, números y guiones bajos (4-20 caracteres)'
-  } else {
-    errors.username = ''
-  }
+  if (!registerForm.username.trim()) errors.username = 'El usuario es obligatorio'
+  else if (!usernameRegex.test(registerForm.username)) errors.username = '4-20 caracteres (letras, números, _)'
+  else errors.username = ''
 }
 
 const validateEmail = () => {
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-  if (!registerForm.email.trim()) {
-    errors.email = 'Por favor ingresa tu correo electrónico'
-  } else if (!emailRegex.test(registerForm.email)) {
-    errors.email = 'Por favor ingresa un correo electrónico válido'
-  } else {
-    errors.email = ''
-  }
+  if (!registerForm.email.trim()) errors.email = 'El correo es obligatorio'
+  else if (!emailRegex.test(registerForm.email)) errors.email = 'Correo inválido'
+  else errors.email = ''
 }
 
 const validatePassword = () => {
-  if (!registerForm.password) {
-    errors.password = 'Por favor ingresa una contraseña'
-  } else if (registerForm.password.length < 8) {
-    errors.password = 'La contraseña debe tener al menos 8 caracteres'
-  } else {
-    errors.password = ''
-  }
-
-  if (registerForm.confirmPassword) {
-    validateConfirmPassword()
-  }
+  if (!registerForm.password) errors.password = 'La contraseña es obligatoria'
+  else if (registerForm.password.length < 8) errors.password = 'Mínimo 8 caracteres'
+  else errors.password = ''
+  
+  if (registerForm.confirmPassword) validateConfirmPassword()
 }
 
 const validateConfirmPassword = () => {
-  if (!registerForm.confirmPassword) {
-    errors.confirmPassword = 'Por favor confirma tu contraseña'
-  } else if (registerForm.password !== registerForm.confirmPassword) {
-    errors.confirmPassword = 'Las contraseñas no coinciden'
-  } else {
-    errors.confirmPassword = ''
-  }
-}
-
-const validateTerms = () => {
-  if (!registerForm.acceptedTerms) {
-    errors.terms = 'Debes aceptar los términos y condiciones'
-  } else {
-    errors.terms = ''
-  }
+  if (!registerForm.confirmPassword) errors.confirmPassword = 'Confirma tu contraseña'
+  else if (registerForm.password !== registerForm.confirmPassword) errors.confirmPassword = 'Las contraseñas no coinciden'
+  else errors.confirmPassword = ''
 }
 
 const isFormValid = computed(() => {
   return (
-    registerForm.fullName &&
-    registerForm.username &&
-    registerForm.email &&
-    registerForm.password &&
-    registerForm.confirmPassword &&
-    registerForm.acceptedTerms &&
-    !errors.fullName &&
-    !errors.username &&
-    !errors.email &&
-    !errors.password &&
-    !errors.confirmPassword &&
-    !errors.terms
+    registerForm.fullName && registerForm.username && registerForm.email && 
+    registerForm.password && registerForm.confirmPassword && registerForm.acceptedTerms &&
+    !errors.fullName && !errors.username && !errors.email && 
+    !errors.password && !errors.confirmPassword
   )
 })
 
-const loginWithGoogle = () => {
-  errorMessage.value = 'Registro con Google estará disponible pronto'
-}
-
-const loginWithMicrosoft = () => {
-  errorMessage.value = 'Registro con Microsoft estará disponible pronto'
-}
-
 const handleRegister = async () => {
-  validateFullName()
-  validateUsername()
-  validateEmail()
-  validatePassword()
-  validateConfirmPassword()
-  validateTerms()
+  validateFullName(); validateUsername(); validateEmail(); 
+  validatePassword(); validateConfirmPassword();
 
-  if (!isFormValid.value) {
-    errorMessage.value = 'Por favor completa todos los campos correctamente'
+  if (!registerForm.acceptedTerms) {
+    errors.terms = 'Debes aceptar los términos'
     return
+  } else {
+    errors.terms = ''
   }
+
+  if (!isFormValid.value) return
 
   loading.value = true
   errorMessage.value = ''
 
   try {
+    // ✅ CORRECCIÓN TÉCNICA: Usamos api.post sin .json()
     const response = await api.post('/auth/register', {
         name: registerForm.fullName,
         username: registerForm.username,
@@ -373,12 +266,10 @@ const handleRegister = async () => {
         password: registerForm.password
     })
 
-    const data = await response.json()
+    // Con axios, la respuesta ya está en .data
+    const data = response.data 
 
-    if (!response.ok) {
-      throw new Error(data.error || 'Error al registrarse')
-    }
-
+    // Guardar sesión y estado
     localStorage.setItem('authToken', data.token)
     localStorage.setItem('user', JSON.stringify({
       name: data.name,
@@ -395,38 +286,36 @@ const handleRegister = async () => {
     })
 
     router.push('/dashboard')
+
   } catch (error) {
-    console.error('Error en el registro:', error)
-    errorMessage.value = error.message || 'Ocurrió un error al registrar la cuenta'
+    console.error('Error registro:', error)
     
-    if (error.message.includes('username')) {
-      errors.username = 'Este nombre de usuario ya está en uso'
-    } else if (error.message.includes('email')) {
-      errors.email = 'Este correo electrónico ya está registrado'
-    }
+    // Manejo de errores seguro para Axios
+    const backendMsg = error.response?.data?.error || error.response?.data?.message || 'Error de conexión'
+    errorMessage.value = backendMsg
+
+    if (backendMsg.toLowerCase().includes('username')) errors.username = backendMsg
+    if (backendMsg.toLowerCase().includes('email')) errors.email = backendMsg
   } finally {
     loading.value = false
   }
 }
 </script>
 
-<style>
-@keyframes shake {
-  0%, 100% { transform: translateX(0); }
-  20%, 60% { transform: translateX(-5px); }
-  40%, 80% { transform: translateX(5px); }
+<style scoped>
+/* Animación suave para el fondo */
+@keyframes pulse-slow {
+  0%, 100% { transform: scale(1); opacity: 0.3; }
+  50% { transform: scale(1.1); opacity: 0.5; }
+}
+.animate-pulse-slow {
+  animation: pulse-slow 8s infinite ease-in-out;
 }
 
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(-5px); }
-  to { opacity: 1; transform: translateY(0); }
+.fade-enter-active, .fade-leave-active {
+  transition: opacity 0.3s ease;
 }
-
-.animate-shake {
-  animation: shake 0.5s cubic-bezier(.36,.07,.19,.97) both;
-}
-
-.animate-fade-in {
-  animation: fadeIn 0.3s ease-out forwards;
+.fade-enter-from, .fade-leave-to {
+  opacity: 0;
 }
 </style>
