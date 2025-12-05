@@ -91,7 +91,7 @@ public class SecurityConfig {
 
     public void addCorsMappings(CorsRegistry registry) {
             registry.addMapping("api/**")
-                    .allowedOrigins("https://proyects-j-java.vercel.app/", "http://localhost:5173")
+                    .allowedOrigins("https://proyects-j-java.vercel.app", "http://localhost:5173")
                     .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
                     .allowedHeaders("*")
                     .allowCredentials(true)
@@ -101,7 +101,7 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(List.of("https://proyects-j-java.vercel.app/", "http://localhost:5173"));
+        configuration.setAllowedOrigins(List.of("https://proyects-j-java.vercel.app", "http://localhost:5173"));
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
         configuration.setAllowedHeaders(List.of("*"));
         configuration.setAllowCredentials(true);
