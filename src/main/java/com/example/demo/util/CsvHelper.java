@@ -10,7 +10,8 @@ import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVParser;
 import org.apache.commons.csv.CSVRecord;
 import org.springframework.web.multipart.MultipartFile;
-
+import com.example.demo.dto.request.task.TaskCsvDTO;
+import com.example.demo.dto.request.project.ProjectCsvDTO;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.math.BigDecimal;
@@ -22,29 +23,25 @@ import java.util.List;
 
 public class CsvHelper {
 
-    public static List<Project> csvToProjects(MultipartFile file) {
+// Método para Proyectos
+    public static List<ProjectCsvDTO> parseProjectsDto(MultipartFile file) {
         try (BufferedReader fileReader = new BufferedReader(new InputStreamReader(file.getInputStream(), StandardCharsets.UTF_8));
              CSVParser csvParser = new CSVParser(fileReader, CSVFormat.DEFAULT.withFirstRecordAsHeader().withIgnoreHeaderCase().withTrim())) {
 
-            List<Project> projects = new ArrayList<>();
-            Iterable<CSVRecord> csvRecords = csvParser.getRecords();
-
-            for (CSVRecord csvRecord : csvRecords) {
-                Project project = new Project();
-                project.setName(csvRecord.get("name"));
-                project.setDescription(csvRecord.get("description"));
-                project.setObjectives(csvRecord.get("objectives"));
-                project.setPriority(ProjectPriority.valueOf(csvRecord.get("priority").toUpperCase()));
-                project.setStatus(ProjectStatus.valueOf(csvRecord.get("status").toUpperCase()));
-                project.setStartDate(LocalDate.parse(csvRecord.get("startDate"))); // Formato YYYY-MM-DD
-                project.setEndDate(LocalDate.parse(csvRecord.get("endDate")));
-                project.setBudget(new BigDecimal(csvRecord.get("budget")));
-                
-                // Nota: Asignaremos el Department ID temporalmente o lo manejaremos en el servicio
-                // Aquí solo devolvemos la estructura básica. Necesitas un DTO intermedio si quieres pasar el ID limpio.
-                // Para este ejemplo, asumiremos que tienes un DTO o manejas la lógica de ID en el servicio.
-                
-                projects.add(project);
+            List<ProjectCsvDTO> projects = new ArrayList<>();
+            for (CSVRecord csvRecord : csvParser) {
+                ProjectCsvDTO dto = ProjectCsvDTO.builder()
+                        .name(csvRecord.get("name"))
+                        .description(csvRecord.get("description"))
+                        .objectives(csvRecord.get("objectives"))
+                        .priority(csvRecord.get("priority"))
+                        .status(csvRecord.get("status"))
+                        .startDate(csvRecord.get("startDate"))
+                        .endDate(csvRecord.get("endDate"))
+                        .budget(new BigDecimal(csvRecord.get("budget")))
+                        .departmentId(Long.parseLong(csvRecord.get("departmentId"))) // Importante
+                        .build();
+                projects.add(dto);
             }
             return projects;
         } catch (Exception e) {
@@ -52,34 +49,36 @@ public class CsvHelper {
         }
     }
 
-    public static List<TaskEntity> csvToTasks(MultipartFile file) {
+// Método para Tareas
+    public static List<TaskCsvDTO> parseTasksDto(MultipartFile file) {
         try (BufferedReader fileReader = new BufferedReader(new InputStreamReader(file.getInputStream(), StandardCharsets.UTF_8));
              CSVParser csvParser = new CSVParser(fileReader, CSVFormat.DEFAULT.withFirstRecordAsHeader().withIgnoreHeaderCase().withTrim())) {
 
-            List<TaskEntity> tasks = new ArrayList<>();
-            Iterable<CSVRecord> csvRecords = csvParser.getRecords();
-
-            for (CSVRecord csvRecord : csvRecords) {
-                TaskEntity task = new TaskEntity();
-                task.setName(csvRecord.get("name"));
-                task.setDescription(csvRecord.get("description"));
-                task.setStatus(TaskStatus.valueOf(csvRecord.get("status").toUpperCase()));
-                task.setPriority(TaskPriority.valueOf(csvRecord.get("priority").toUpperCase()));
-                
-                // Las tareas usan LocalDateTime
-                if(csvRecord.isMapped("startDate") && !csvRecord.get("startDate").isEmpty())
-                    task.setStartDate(LocalDateTime.parse(csvRecord.get("startDate"))); 
-                
-                if(csvRecord.isMapped("endDate") && !csvRecord.get("endDate").isEmpty())
-                    task.setEndDate(LocalDateTime.parse(csvRecord.get("endDate")));
-
-                task.setEstimatedHours(Integer.parseInt(csvRecord.get("estimatedHours")));
-                
-                tasks.add(task);
+            List<TaskCsvDTO> tasks = new ArrayList<>();
+            for (CSVRecord csvRecord : csvParser) {
+                TaskCsvDTO dto = TaskCsvDTO.builder()
+                        .name(csvRecord.get("name"))
+                        .description(csvRecord.get("description"))
+                        .status(csvRecord.get("status"))
+                        .priority(csvRecord.get("priority"))
+                        .startDate(csvRecord.isMapped("startDate") ? csvRecord.get("startDate") : null)
+                        .endDate(csvRecord.isMapped("endDate") ? csvRecord.get("endDate") : null)
+                        .estimatedHours(Integer.parseInt(csvRecord.get("estimatedHours")))
+                        .projectId(Long.parseLong(csvRecord.get("projectId"))) // Importante
+                        .build();
+                tasks.add(dto);
             }
             return tasks;
         } catch (Exception e) {
             throw new RuntimeException("Error al parsear CSV de tareas: " + e.getMessage());
         }
     }
+
+    public static boolean hasCSVFormat(MultipartFile file) {
+        return "text/csv".equals(file.getContentType()) || "application/vnd.ms-excel".equals(file.getContentType());
+    }
+
+
+
+
 }
