@@ -367,14 +367,10 @@ const handleRegister = async () => {
 
   try {
     const response = await api.post('/auth/register', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
         name: registerForm.fullName,
         username: registerForm.username,
         email: registerForm.email,
         password: registerForm.password
-      })
     })
 
     const data = await response.json()
