@@ -54,48 +54,44 @@ public class AuthController {
     private AuthenticationManager authenticationManager;
 
     @PostMapping("/register")
-    // 1. OJO: Quité el "@Valid" temporalmente para que entre SÍ o SÍ
-    public ResponseEntity<?> registerUser(@RequestBody RegisterRequest request) {
+public ResponseEntity<?> registerUser(@RequestBody Map<String, Object> requestMap) {
+    
+    // DEBUG: Ver qué llega realmente en bruto
+    System.out.println("============== MAP TEST START ==============");
+    System.out.println("Datos brutos recibidos: " + requestMap);
+    
+    String email = (String) requestMap.get("email");
+    String username = (String) requestMap.get("username");
+    String password = (String) requestMap.get("password");
+    String name = (String) requestMap.get("name");
 
-        // 2. EL CHISMOSO: Vamos a imprimir en el log qué llegó
-        System.out.println("============== DEBUG START ==============");
-        System.out.println("¿Llegó la petición?: SÍ");
-        System.out.println("Datos recibidos (Raw): " + request);
-        System.out.println("Email: " + request.getEmail());
-        System.out.println("Username: " + request.getUsername());
-        System.out.println("Password: " + request.getPassword());
-        System.out.println("============== DEBUG END ==============");
-
-        try {
-            // Validación Manual (para ver si falla aquí)
-            if (request.getEmail() == null || request.getEmail().isEmpty()) {
-                System.out.println("🚨 ERROR: El email llegó NULO");
-                return ResponseEntity.badRequest().body(Map.of("error", "Email es nulo en el backend"));
-            }
-
-            // ... Resto de tu lógica normal ...
-            if (userService.findByEmail(request.getEmail()) != null) {
-                return ResponseEntity.badRequest().body(Map.of("error", "El email ya está registrado"));
-            }
-            
-            // ... (El resto del código sigue igual) ...
-            UserEntity user = new UserEntity();
-            user.setEmail(request.getEmail());
-            user.setUsername(request.getUsername());
-            user.setPassword(request.getPassword());
-            user.setName(request.getName());
-            user.setRole(Role.COLLAB);
-            
-            UserEntity savedUser = userService.registerUser(user);
-            String token = jwtUtil.generateToken(savedUser.getEmail());
-            
-            return ResponseEntity.ok(new AuthResponse(token, savedUser.getName(), savedUser.getUsername(), savedUser.getEmail()));
-
-        } catch (Exception e) {
-            e.printStackTrace(); // Imprime el error real en la consola
-            return ResponseEntity.badRequest().body(Map.of("error", "Error interno: " + e.getMessage()));
-        }
+    if (email == null) {
+        System.out.println("🚨 El email sigue siendo NULL en el Mapa");
+        return ResponseEntity.badRequest().body(Map.of("error", "Email no recibido"));
     }
+
+    try {
+        if (userService.findByEmail(email) != null) {
+            return ResponseEntity.badRequest().body(Map.of("error", "El email ya está registrado"));
+        }
+        
+        UserEntity user = new UserEntity();
+        user.setEmail(email);
+        user.setUsername(username);
+        user.setPassword(password);
+        user.setName(name);
+        user.setRole(Role.COLLAB);
+        
+        UserEntity savedUser = userService.registerUser(user);
+        String token = jwtUtil.generateToken(savedUser.getEmail());
+        
+        return ResponseEntity.ok(new AuthResponse(token, savedUser.getName(), savedUser.getUsername(), savedUser.getEmail()));
+
+    } catch (Exception e) {
+        e.printStackTrace();
+        return ResponseEntity.badRequest().body(Map.of("error", "Error interno: " + e.getMessage()));
+    }
+}
 
     @PostMapping("/login")
     public ResponseEntity<?> loginUser(@Valid @RequestBody LoginRequest loginRequest) {
