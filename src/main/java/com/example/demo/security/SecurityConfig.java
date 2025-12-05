@@ -1,7 +1,6 @@
 package com.example.demo.security;
 
 import com.example.demo.service.CustomUserDetailsService;
-
 import org.modelmapper.ModelMapper;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -19,8 +18,6 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
-import org.springframework.web.servlet.config.annotation.CorsRegistry;
-import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 import java.util.List;
 
@@ -40,7 +37,8 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         return http
-                .cors(cors -> cors.configurationSource(corsConfigurationSource())) // ✅ CORS habilitado correctamente
+                // ✅ CORS habilitado correctamente usando el bean corsConfigurationSource de abajo
+                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .csrf(AbstractHttpConfigurer::disable)
                 .sessionManagement(session -> session
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
@@ -51,7 +49,7 @@ public class SecurityConfig {
                                 "/h2-console/**",
                                 "/v3/api-docs/**",
                                 "/api/departments/**",
-                               "/api/departments/3/deactivate",
+                                "/api/departments/3/deactivate",
                                 "/api/report/pdf",
                                 "/api/users/**",
                                 "/api/tasks/**",
@@ -89,32 +87,28 @@ public class SecurityConfig {
         return config.getAuthenticationManager();
     }
 
-    public void addCorsMappings(CorsRegistry registry) {
-            registry.addMapping("api/**")
-                    .allowedOrigins("https://proyects-j-java.vercel.app", "http://localhost:5173")
-                    .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
-                    .allowedHeaders("*")
-                    .allowCredentials(true)
-                    .maxAge(3600);
-    }
-
+    // ✅ CONFIGURACIÓN CORS CORREGIDA (Sin barra al final en la URL de Vercel)
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(List.of("https://proyects-j-java.vercel.app", "http://localhost:5173"));
+        
+        configuration.setAllowedOrigins(List.of(
+            "https://proyects-j-java.vercel.app", 
+            "http://localhost:5173"
+        ));
+        
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
         configuration.setAllowedHeaders(List.of("*"));
         configuration.setAllowCredentials(true);
         configuration.setMaxAge(3600L);
+        
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);
         return source;
     }
 
-
-        @Bean
+    @Bean
     public ModelMapper modelMapper() {
         return new ModelMapper();
     }
-    
 }
