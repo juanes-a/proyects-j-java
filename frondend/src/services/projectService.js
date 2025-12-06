@@ -2,6 +2,10 @@ import api from '@/api'; // Usamos la instancia de axios configurada en tu proye
 
 export default {
     // ... otros métodos existentes ...
+    // Obtener todos los proyectos
+    getAllProjects() {
+        return api.get('/projects');
+    },
     
     uploadCsv(file) {
         const formData = new FormData();

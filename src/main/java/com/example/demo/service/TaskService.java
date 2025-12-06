@@ -15,6 +15,8 @@ import com.example.demo.repository.UsersAsignationRepository;
 import org.springframework.web.multipart.MultipartFile;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import main.java.com.example.demo.util.ExcelHelper;
+
 import com.example.demo.util.CsvHelper;
 import com.example.demo.dto.request.task.TaskCsvDTO;
 import org.springframework.stereotype.Service;
@@ -366,24 +368,43 @@ public class TaskService {
     }
 
     public void saveTasksFromCsv(MultipartFile file) {
-        try {
-            List<TaskCsvDTO> dtos = CsvHelper.parseTasksDto(file); // Similar al de proyectos
+            try {
+                List<com.example.demo.dto.request.task.TaskCsvDTO> dtos = CsvHelper.parseTasksDto(file);
+                processTaskDtos(dtos); // Llama a un método auxiliar para no repetir código
+            } catch (Exception e) {
+                throw new RuntimeException("Fallo al guardar tareas CSV: " + e.getMessage());
+            }
+        }
 
-            for (TaskCsvDTO dto : dtos) {
+        public void saveTasksFromExcel(MultipartFile file) {
+            try {
+                List<com.example.demo.dto.request.task.TaskCsvDTO> dtos = ExcelHelper.excelToTasks(file.getInputStream()); // Asumiendo que creaste este método en ExcelHelper
+                processTaskDtos(dtos);
+            } catch (Exception e) {
+                throw new RuntimeException("Fallo al guardar tareas Excel: " + e.getMessage());
+            }
+        }
+
+        // Método auxiliar para guardar la lista de DTOs
+        private void processTaskDtos(List<com.example.demo.dto.request.task.TaskCsvDTO> dtos) {
+            for (com.example.demo.dto.request.task.TaskCsvDTO dto : dtos) {
                 Project project = projectRepository.findById(dto.getProjectId())
                     .orElseThrow(() -> new RuntimeException("Proyecto no encontrado ID: " + dto.getProjectId()));
 
                 TaskEntity task = new TaskEntity();
                 task.setName(dto.getName());
-                task.setProject(project); // Relación crítica
-                // ... setear resto de campos y Enums
+                task.setDescription(dto.getDescription());
+                task.setProject(project);
                 
+                if (dto.getStatus() != null) task.setStatus(TaskStatus.valueOf(dto.getStatus().toUpperCase()));
+                if (dto.getPriority() != null) task.setPriority(TaskPriority.valueOf(dto.getPriority().toUpperCase()));
+                if (dto.getStartDate() != null) task.setStartDate(java.time.LocalDateTime.parse(dto.getStartDate())); // Asegúrate del formato
+                if (dto.getEndDate() != null) task.setEndDate(java.time.LocalDateTime.parse(dto.getEndDate()));
+                if (dto.getEstimatedHours() != null) task.setEstimatedHours(dto.getEstimatedHours());
+
                 taskRepository.save(task);
             }
-        } catch (Exception e) {
-            throw new RuntimeException("Fallo al guardar tareas CSV: " + e.getMessage());
         }
-    }
 
 
 

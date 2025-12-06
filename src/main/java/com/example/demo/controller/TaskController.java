@@ -19,7 +19,9 @@ import com.example.demo.util.PdfReportGenerator;
 import jakarta.validation.constraints.NotBlank;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-
+import com.example.demo.util.CsvHelper;
+import com.example.demo.util.ExcelHelper;
+import org.springframework.web.multipart.MultipartFile;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -524,6 +526,45 @@ public class TaskController {
                 .body(Map.of("message", "Error interno del servidor"));
         }
     }
+
+
+    // ============== ENDPOINTS DE CARGA MASIVA ==============
+
+    @PostMapping("/upload")
+    public ResponseEntity<String> uploadCsv(@RequestParam("file") MultipartFile file) {
+        String message = "";
+        if (CsvHelper.hasCSVFormat(file)) {
+            try {
+                taskService.saveTasksFromCsv(file);
+                message = "Archivo CSV subido exitosamente: " + file.getOriginalFilename();
+                return ResponseEntity.status(HttpStatus.OK).body(message);
+            } catch (Exception e) {
+                message = "No se pudo subir el archivo CSV: " + file.getOriginalFilename() + " Error: " + e.getMessage();
+                return ResponseEntity.status(HttpStatus.EXPECTATION_FAILED).body(message);
+            }
+        }
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Por favor suba un archivo CSV válido.");
+    }
+
+    @PostMapping("/upload/excel")
+    public ResponseEntity<String> uploadExcel(@RequestParam("file") MultipartFile file) {
+        String message = "";
+        if (ExcelHelper.hasExcelFormat(file)) {
+            try {
+                taskService.saveTasksFromExcel(file);
+                message = "Archivo Excel subido exitosamente: " + file.getOriginalFilename();
+                return ResponseEntity.status(HttpStatus.OK).body(message);
+            } catch (Exception e) {
+                message = "No se pudo subir el archivo Excel: " + file.getOriginalFilename() + " Error: " + e.getMessage();
+                return ResponseEntity.status(HttpStatus.EXPECTATION_FAILED).body(message);
+            }
+        }
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Por favor suba un archivo Excel válido (.xlsx).");
+    }
+
+
+
+
 
 }
 
