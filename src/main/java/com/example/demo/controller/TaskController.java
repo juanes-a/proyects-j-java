@@ -360,7 +360,9 @@ public class TaskController {
         }
 
 
-            return ResponseEntity.ok(assignment);
+            Map<String, String> response = new HashMap<>();
+            response.put("message", "Usuario asignado correctamente");
+            return ResponseEntity.ok(response);
 
         } catch (Exception e) {
             log.error("Error en asignación a tarea: ", e);

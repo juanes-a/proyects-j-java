@@ -86,10 +86,33 @@ public class TaskEntity {
     }
 
     // Usuario asignado a la tarea (opcional)
-    @JsonIgnore
+    @JsonIgnore // Esto oculta el objeto completo UserEntity
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "assigned_user_id")
     private UserEntity assignedUser;
+
+    // 👇 AGREGA ESTOS DOS MÉTODOS PARA QUE EL FRONTEND VEA LA ASIGNACIÓN 👇
+    
+    // 👇 AGREGA ESTO PARA PODER ASIGNAR DESDE EL EDITAR (PUT) 👇
+    @JsonProperty("assignedUserId")
+    public void setAssignedUserId(Long userId) {
+        if (userId != null) {
+            // Crea un usuario temporal solo con el ID para hacer la relación
+            this.assignedUser = UserEntity.builder().id(userId).build();
+        } else {
+            this.assignedUser = null;
+        }
+    }
+    @JsonProperty("assignedUserName")
+    public String getAssignedUserName() {
+        // Devuelve el username o email, lo que prefieras mostrar
+        return assignedUser != null ? assignedUser.getUsername() : null; 
+    }
+    
+    @JsonProperty("assignedUserEmail")
+    public String getAssignedUserEmail() {
+        return assignedUser != null ? assignedUser.getEmail() : null;
+    }
 
     // ===== ENUMS =====
     public enum TaskStatus {
