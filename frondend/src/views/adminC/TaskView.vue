@@ -330,7 +330,7 @@ import { Dialog, DialogPanel, DialogTitle, TransitionChild, TransitionRoot } fro
 import { useToastStore } from '@/stores/toast'
 import taskService from '@/services/taskService'
 import projectService from '@/services/projectService'
-import BulkUploadModal from '@/components/common/BulkUploadModal.vue'
+import BulkUploadModal from '@/components/BulkUploadModal.vue'
 import api from '@/api'
 
 const toast = useToastStore()
