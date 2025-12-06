@@ -528,36 +528,41 @@ const saveTask = async () => {
         endDate: form.value.endDate || null,
         estimatedHours: form.value.estimatedHours,
         actualHours: form.value.actualHours,
-        projectId: form.value.projectId
+        projectId: form.value.projectId,
+        // 👇 IMPORTANTE: Enviar el ID actual si existe (para mantener asignación si no cambia)
+        assignedUserId: form.value.assignedUserId 
     };
 
     let response;
+    let taskId; // Variable para guardar el ID y usarlo en la asignación
 
     if (isEditing.value) {
-      // Endpoint UPDATE del script guía
+      // Endpoint UPDATE
       response = await api.put(`/tasks/${form.value.id}`, taskData)
+      taskId = form.value.id; // Usamos el ID del formulario
       toast.showToast('Tarea actualizada correctamente', 'success')
     } else {
-      // Endpoint CREATE del script guía
+      // Endpoint CREATE
       response = await api.post('/tasks', taskData)
-      
-      // Asignación de usuario (solo en creación o si se requiere lógica separada)
-      if (form.value.assignedUserEmail) {
+      taskId = response.data.id; // Usamos el ID que devuelve el backend
+      toast.showToast('Tarea creada correctamente', 'success')
+    }
+
+    // 👇 LÓGICA DE ASIGNACIÓN (AHORA SE EJECUTA PARA AMBOS: CREAR Y EDITAR)
+    // Si el usuario escribió un correo en el campo "Asignar Responsable"
+    if (form.value.assignedUserEmail && form.value.assignedUserEmail.trim() !== '') {
         try {
-            // Endpoint ASSIGN del script guía
             await api.post('/tasks/assign-task', {
                 usernameOrEmail: form.value.assignedUserEmail,
-                taskId: response.data.id,
+                taskId: taskId, // Usamos el ID capturado arriba
                 role: 'COLLAB'
             });
-            toast.showToast('Tarea creada y asignada', 'success');
+            // Mensaje específico si se asignó
+            toast.showToast('Usuario asignado correctamente', 'success');
         } catch (e) {
             console.error(e);
-            toast.showToast('Tarea creada pero falló la asignación', 'warning');
+            toast.showToast('Tarea guardada, pero falló la asignación (verifique el correo)', 'warning');
         }
-      } else {
-          toast.showToast('Tarea creada correctamente', 'success')
-      }
     }
 
     await loadUserContext()
