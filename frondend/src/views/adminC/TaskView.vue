@@ -1,364 +1,278 @@
 <template>
-  <div class="space-y-6 bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 min-h-screen p-6">
+  <div class="min-h-screen bg-slate-50 dark:bg-slate-900 p-4 sm:p-6 lg:p-8 transition-all duration-300">
     
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-      <div v-for="stat in headerStats" :key="stat.title" class="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm card-hover border border-slate-100 dark:border-gray-700">
-        <div class="flex items-center justify-between">
+    <div class="mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div>
+        <h1 class="text-3xl font-bold text-slate-800 dark:text-white tracking-tight">
+          Mis Tareas
+          <span v-if="currentProjectName" class="text-indigo-600 dark:text-indigo-400 text-lg font-medium ml-2">
+            / {{ currentProjectName }}
+          </span>
+        </h1>
+        <p class="text-slate-500 dark:text-slate-400 mt-1">Gestiona y organiza tus actividades diarias.</p>
+      </div>
+      
+      <div class="flex gap-3">
+         <button 
+            @click="downloadTemplate"
+            class="px-4 py-2 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-200 border border-slate-200 dark:border-slate-700 rounded-xl font-medium hover:bg-slate-50 dark:hover:bg-slate-700 transition-all shadow-sm flex items-center gap-2"
+        >
+            <i class="fas fa-file-csv text-green-600"></i>
+            <span class="hidden sm:inline">Plantilla</span>
+        </button>
+
+        <button 
+            @click="showTaskUploadModal = true"
+            class="px-4 py-2 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-200 border border-slate-200 dark:border-slate-700 rounded-xl font-medium hover:bg-slate-50 dark:hover:bg-slate-700 transition-all shadow-sm flex items-center gap-2"
+        >
+            <i class="fas fa-cloud-upload-alt text-blue-500"></i>
+            <span class="hidden sm:inline">Importar</span>
+        </button>
+
+        <button 
+          @click="openCreateModal" 
+          class="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-semibold shadow-lg shadow-indigo-200 dark:shadow-none transform hover:-translate-y-0.5 transition-all flex items-center gap-2"
+        >
+          <i class="fas fa-plus"></i>
+          <span>Nueva Tarea</span>
+        </button>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+      <div v-for="(stat, index) in headerStats" :key="index" 
+           class="bg-white dark:bg-slate-800 rounded-2xl p-5 border border-slate-100 dark:border-slate-700 shadow-sm hover:shadow-md transition-all group">
+        <div class="flex justify-between items-start">
           <div>
-            <p class="text-sm font-medium text-slate-600 dark:text-gray-300 mb-1">{{ stat.title }}</p>
-            <p class="text-3xl font-bold text-slate-800 dark:text-white">{{ stat.value }}</p>
+            <p class="text-slate-500 dark:text-slate-400 text-sm font-medium mb-1">{{ stat.title }}</p>
+            <h3 class="text-3xl font-bold text-slate-800 dark:text-white group-hover:text-indigo-600 transition-colors">
+              {{ stat.value }}
+            </h3>
           </div>
-          <div :class="stat.iconBg" class="w-12 h-12 rounded-xl flex items-center justify-center shadow-md">
-            <i :class="stat.icon" class="text-white text-lg"></i>
+          <div :class="`p-3 rounded-xl ${stat.bgClass} bg-opacity-10 dark:bg-opacity-20`">
+            <i :class="`${stat.icon} ${stat.textClass} text-xl`"></i>
           </div>
         </div>
       </div>
     </div>
 
-   <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
-      <div class="lg:col-span-1">
-        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 sticky top-6 border border-slate-100 dark:border-gray-700">
-          <div class="flex items-center justify-between mb-6">
-            <h3 class="text-lg font-bold text-slate-800 dark:text-white flex items-center gap-2">
-              <i class="fas fa-filter text-indigo-500"></i> Filtros
-            </h3>
-            <button
-              @click="clearFilters"
-              class="text-sm text-slate-500 hover:text-indigo-600 dark:text-gray-400 dark:hover:text-indigo-400 font-medium transition-colors"
-            >
-              Limpiar
-            </button>
-          </div>
-
-          <div class="space-y-5">
-            <div>
-              <label class="form-label">Buscar</label>
-              <div class="relative">
-                <i class="fas fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400"></i>
-                <input
-                  v-model="filters.name"
-                  type="text"
-                  placeholder="Nombre tarea..."
-                  class="form-input pl-10"
-                />
-              </div>
-            </div>
-
-             <div>
-              <label class="form-label">Proyecto</label>
-              <select v-model="filters.projectId" class="form-input">
-                <option value="">Todos los Proyectos</option>
-                <option v-for="project in projects" :key="project.id" :value="project.id">
-                  {{ project.name }}
-                </option>
-              </select>
-            </div>
-
-            <div>
-              <label class="form-label">Estado</label>
-              <div class="space-y-2">
-                <div v-for="status in taskStatuses" :key="status" class="flex items-center">
-                  <input
-                    type="radio"
-                    :id="status"
-                    :value="status"
-                    v-model="filters.status"
-                    class="text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
-                  />
-                  <label :for="status" class="ml-2 text-sm text-slate-600 dark:text-gray-300 cursor-pointer">
-                    {{ formatStatus(status) }}
-                  </label>
-                </div>
-                 <div class="flex items-center">
-                  <input
-                    type="radio"
-                    id="all-status"
-                    value=""
-                    v-model="filters.status"
-                    class="text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
-                  />
-                  <label for="all-status" class="ml-2 text-sm text-slate-600 dark:text-gray-300 cursor-pointer">
-                    Todos
-                  </label>
-                </div>
-              </div>
-            </div>
-
-            <div>
-              <label class="form-label">Prioridad</label>
-              <select v-model="filters.priority" class="form-input">
-                <option value="">Todas</option>
-                <option v-for="priority in taskPriorities" :key="priority" :value="priority">
-                  {{ formatPriority(priority) }}
-                </option>
-              </select>
-            </div>
-          </div>
+    <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 p-4 mb-6">
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div class="relative col-span-1 md:col-span-2">
+          <i class="fas fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400"></i>
+          <input 
+            v-model="filters.name"
+            type="text" 
+            placeholder="Buscar tarea..." 
+            class="w-full pl-10 pr-4 py-2.5 bg-slate-50 dark:bg-slate-900 border-none rounded-xl text-slate-700 dark:text-white focus:ring-2 focus:ring-indigo-500 transition-all placeholder-slate-400"
+          >
         </div>
+
+        <select v-model="filters.status" class="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-900 border-none rounded-xl text-slate-700 dark:text-white focus:ring-2 focus:ring-indigo-500 cursor-pointer">
+          <option value="">Todos los Estados</option>
+          <option v-for="status in taskStatuses" :key="status" :value="status">{{ formatStatus(status) }}</option>
+        </select>
+
+        <select v-model="filters.priority" class="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-900 border-none rounded-xl text-slate-700 dark:text-white focus:ring-2 focus:ring-indigo-500 cursor-pointer">
+          <option value="">Todas las Prioridades</option>
+          <option v-for="priority in taskPriorities" :key="priority" :value="priority">{{ formatPriority(priority) }}</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 overflow-hidden">
+      
+      <div v-if="loading" class="p-12 text-center">
+        <div class="animate-spin rounded-full h-10 w-10 border-b-2 border-indigo-600 mx-auto mb-4"></div>
+        <p class="text-slate-500">Cargando tus tareas...</p>
       </div>
 
-      <div class="lg:col-span-3 space-y-6">
-        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-slate-100 dark:border-gray-700 overflow-hidden">
-          <div class="p-6 border-b border-slate-100 dark:border-gray-700">
-            <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-              <div>
-                <h2 class="text-xl font-bold text-slate-800 dark:text-white">Tareas</h2>
-                <p class="text-sm text-slate-500 dark:text-gray-400">Gestiona las tareas de tus proyectos</p>
-              </div>
-              
-              <div class="flex flex-wrap items-center gap-2">
-                 <button 
-                    @click="downloadTemplate"
-                    class="bg-slate-500 hover:bg-slate-600 text-white font-semibold py-2 px-3 rounded-lg transition-all duration-200 text-sm flex items-center gap-2"
-                    title="Descargar ejemplo CSV"
-                >
-                    <i class="fas fa-download"></i>
-                    <span>Plantilla</span>
-                </button>
-
-                 <button 
-                    @click="showTaskUploadModal = true"
-                    class="bg-green-600 hover:bg-green-700 text-white font-semibold py-2 px-3 rounded-lg transition-all duration-200 shadow-md hover:shadow-lg flex items-center gap-2 text-sm"
-                >
-                    <i class="fas fa-file-upload"></i>
-                    <span>Carga Masiva</span>
-                </button>
-
-                 <button @click="openCreateModal" class="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2 px-4 rounded-lg transition-all duration-200 shadow-md flex items-center gap-2 text-sm">
-                  <i class="fas fa-plus"></i>
-                  <span>Nueva Tarea</span>
-                </button>
-              </div>
-            </div>
-          </div>
-
-           <div v-if="loading" class="p-12 text-center">
-                <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto"></div>
-                <p class="mt-4 text-slate-500 dark:text-gray-400">Cargando tareas...</p>
-            </div>
-
-             <div v-else-if="filteredTasks.length === 0" class="p-12 text-center">
-                <div class="w-24 h-24 bg-slate-50 dark:bg-gray-700 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <i class="fas fa-tasks text-4xl text-slate-300 dark:text-gray-500"></i>
-                </div>
-                <h3 class="text-lg font-medium text-slate-900 dark:text-white">No hay tareas</h3>
-                <p class="text-slate-500 dark:text-gray-400 mt-2">Intenta ajustar los filtros o crea una nueva.</p>
-            </div>
-
-          <div v-else class="overflow-x-auto">
-            <table class="w-full">
-              <thead class="bg-slate-50 dark:bg-gray-700/50">
-                <tr>
-                  <th class="px-6 py-4 text-left text-xs font-semibold text-slate-500 dark:text-gray-400 uppercase tracking-wider">Info Tarea</th>
-                  <th class="px-6 py-4 text-left text-xs font-semibold text-slate-500 dark:text-gray-400 uppercase tracking-wider">Proyecto</th>
-                  <th class="px-6 py-4 text-left text-xs font-semibold text-slate-500 dark:text-gray-400 uppercase tracking-wider">Estado</th>
-                  <th class="px-6 py-4 text-left text-xs font-semibold text-slate-500 dark:text-gray-400 uppercase tracking-wider">Prioridad</th>
-                   <th class="px-6 py-4 text-left text-xs font-semibold text-slate-500 dark:text-gray-400 uppercase tracking-wider">Fechas</th>
-                   <th class="px-6 py-4 text-left text-xs font-semibold text-slate-500 dark:text-gray-400 uppercase tracking-wider">Asignado A</th>
-                  <th class="px-6 py-4 text-right text-xs font-semibold text-slate-500 dark:text-gray-400 uppercase tracking-wider">Acciones</th>
-                </tr>
-              </thead>
-              <tbody class="divide-y divide-slate-100 dark:divide-gray-700">
-                <tr v-for="task in filteredTasks" :key="task.id" class="group hover:bg-slate-50 dark:hover:bg-gray-700/50 transition-colors duration-150">
-                  
-                  <td class="px-6 py-4">
-                    <div class="flex items-start">
-                      <div class="ml-0">
-                        <div class="text-sm font-semibold text-slate-900 dark:text-white">
-                          {{ task.name }}
-                        </div>
-                        <div class="text-sm text-slate-500 dark:text-gray-400 line-clamp-1 max-w-xs" :title="task.description">
-                          {{ task.description || 'Sin descripción' }}
-                        </div>
-                         <div class="mt-1 flex items-center gap-2 text-xs text-slate-400 dark:text-gray-500">
-                             <span v-if="task.estimatedHours" title="Estimated Hours">
-                                <i class="fas fa-clock mr-1"></i>Est: {{ task.estimatedHours }}h
-                             </span>
-                        </div>
-                      </div>
-                    </div>
-                  </td>
-
-                  <td class="px-6 py-4">
-                     <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300 border border-blue-100 dark:border-blue-800">
-                        {{ task.projectName || 'Sin Proyecto' }}
-                     </span>
-                  </td>
-
-                  <td class="px-6 py-4">
-                    <span :class="getStatusClass(task.status)" class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border">
-                      <span class="w-1.5 h-1.5 rounded-full bg-current mr-1.5"></span>
-                      {{ formatStatus(task.status) }}
-                    </span>
-                  </td>
-
-                  <td class="px-6 py-4">
-                    <div class="flex items-center">
-                      <i :class="getPriorityIcon(task.priority)" class="mr-2 text-sm"></i>
-                      <span :class="getPriorityClass(task.priority)" class="text-sm font-medium">
-                        {{ formatPriority(task.priority) }}
-                      </span>
-                    </div>
-                  </td>
-
-                  <td class="px-6 py-4 whitespace-nowrap">
-                        <div class="text-xs text-slate-600 dark:text-gray-300">
-                            <div v-if="task.startDate">
-                                <span class="font-medium text-slate-400">Inicio:</span> {{ formatDate(task.startDate) }}
-                            </div>
-                            <div v-if="task.endDate" :class="{'text-red-500 font-semibold': isOverdue(task)}">
-                                <span class="font-medium text-slate-400">Fin:</span> {{ formatDate(task.endDate) }}
-                                 <i v-if="isOverdue(task)" class="fas fa-exclamation-circle ml-1" title="Vencida"></i>
-                            </div>
-                        </div>
-                  </td>
-
-                  <td class="px-6 py-4">
-                    <div class="flex items-center">
-                       <span v-if="task.assignedUserName" class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-50 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300 border border-purple-100 dark:border-purple-800">
-                           <i class="fas fa-user mr-1"></i> {{ task.assignedUserName }}
-                       </span>
-                       <span v-else class="text-xs text-slate-400 italic">Sin Asignar</span>
-                    </div>
-                  </td>
-
-                  <td class="px-6 py-4 text-right text-sm font-medium">
-                    <div class="flex items-center justify-end gap-2">
-                      <button @click="editTask(task)" class="p-2 text-slate-500 hover:text-indigo-600 dark:text-slate-400 dark:hover:text-indigo-400 transition-colors rounded-lg hover:bg-slate-100 dark:hover:bg-gray-700" title="Editar">
-                        <i class="fas fa-edit"></i>
-                      </button>
-                      <button @click="confirmDelete(task)" class="p-2 text-slate-500 hover:text-red-600 dark:text-slate-400 dark:hover:text-red-400 transition-colors rounded-lg hover:bg-slate-100 dark:hover:bg-gray-700" title="Eliminar">
-                        <i class="fas fa-trash-alt"></i>
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-          
-           <div class="bg-slate-50 dark:bg-gray-700/50 px-6 py-4 border-t border-slate-100 dark:border-gray-700 flex items-center justify-between">
-                <span class="text-sm text-slate-500 dark:text-gray-400">
-                    Mostrando {{ filteredTasks.length }} tareas
-                </span>
-           </div>
+      <div v-else-if="filteredTasks.length === 0" class="p-16 text-center flex flex-col items-center">
+        <div class="w-20 h-20 bg-indigo-50 dark:bg-slate-700 rounded-full flex items-center justify-center mb-4">
+          <i class="fas fa-clipboard-check text-3xl text-indigo-300 dark:text-slate-500"></i>
         </div>
+        <h3 class="text-lg font-bold text-slate-800 dark:text-white">Sin tareas pendientes</h3>
+        <p class="text-slate-500 max-w-xs mx-auto mt-2">No se encontraron tareas con los filtros actuales o aún no tienes ninguna asignada.</p>
+        <button @click="clearFilters" v-if="filters.name || filters.status" class="mt-4 text-indigo-600 font-medium hover:underline">
+          Limpiar filtros
+        </button>
+      </div>
+
+      <div v-else class="overflow-x-auto">
+        <table class="w-full text-left border-collapse">
+          <thead>
+            <tr class="border-b border-slate-100 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/50">
+              <th class="p-4 pl-6 font-semibold text-slate-500 dark:text-slate-400 text-sm">Tarea</th>
+              <th class="p-4 font-semibold text-slate-500 dark:text-slate-400 text-sm">Estado</th>
+              <th class="p-4 font-semibold text-slate-500 dark:text-slate-400 text-sm">Prioridad</th>
+              <th class="p-4 font-semibold text-slate-500 dark:text-slate-400 text-sm">Fechas</th>
+              <th class="p-4 font-semibold text-slate-500 dark:text-slate-400 text-sm">Horas</th>
+              <th class="p-4 font-semibold text-slate-500 dark:text-slate-400 text-sm">Asignado</th>
+              <th class="p-4 pr-6 text-right font-semibold text-slate-500 dark:text-slate-400 text-sm">Acciones</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100 dark:divide-slate-700">
+            <tr v-for="task in filteredTasks" :key="task.id" class="group hover:bg-slate-50 dark:hover:bg-slate-700/30 transition-colors">
+              
+              <td class="p-4 pl-6">
+                <div class="flex items-start gap-3">
+                  <div class="mt-1 w-2 h-2 rounded-full bg-indigo-500 flex-shrink-0"></div>
+                  <div>
+                    <p class="font-bold text-slate-800 dark:text-slate-200">{{ task.name }}</p>
+                    <p class="text-sm text-slate-500 dark:text-slate-400 line-clamp-1 max-w-[200px]">{{ task.description || 'Sin descripción' }}</p>
+                  </div>
+                </div>
+              </td>
+
+              <td class="p-4">
+                <span :class="getStatusBadgeClass(task.status)" class="px-3 py-1 rounded-full text-xs font-bold border">
+                  {{ formatStatus(task.status) }}
+                </span>
+              </td>
+
+              <td class="p-4">
+                <div class="flex items-center gap-2">
+                  <i :class="getPriorityIcon(task.priority)"></i>
+                  <span class="text-sm font-medium text-slate-700 dark:text-slate-300">{{ formatPriority(task.priority) }}</span>
+                </div>
+              </td>
+
+              <td class="p-4">
+                <div class="flex flex-col text-xs">
+                  <span class="text-slate-500 mb-1"><i class="far fa-calendar mr-1"></i>{{ formatDate(task.startDate) }}</span>
+                  <span :class="isOverdue(task) ? 'text-red-500 font-bold' : 'text-slate-500'">
+                    <i class="far fa-flag mr-1"></i>{{ formatDate(task.endDate) }}
+                  </span>
+                </div>
+              </td>
+
+              <td class="p-4">
+                <div class="text-xs font-mono text-slate-600 dark:text-slate-300">
+                   <div class="flex justify-between gap-2"><span>Est:</span> <span class="font-bold">{{ task.estimatedHours || 0 }}h</span></div>
+                   <div class="flex justify-between gap-2 opacity-70"><span>Real:</span> <span>{{ task.actualHours || 0 }}h</span></div>
+                </div>
+              </td>
+
+              <td class="p-4">
+                <div v-if="task.assignedUserName" class="flex items-center gap-2">
+                    <div class="w-6 h-6 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center text-xs font-bold">
+                        {{ task.assignedUserName.charAt(0).toUpperCase() }}
+                    </div>
+                    <span class="text-sm text-slate-700 dark:text-slate-300 truncate max-w-[100px]" :title="task.assignedUserName">
+                        {{ task.assignedUserName }}
+                    </span>
+                </div>
+                <span v-else class="text-xs text-slate-400 italic pl-2">-- Libre --</span>
+              </td>
+
+              <td class="p-4 pr-6 text-right">
+                <div class="flex justify-end gap-2">
+                  <button @click="editTask(task)" class="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-100 hover:text-blue-700 transition-colors flex items-center justify-center" title="Editar">
+                    <i class="fas fa-pencil-alt text-sm"></i>
+                  </button>
+                  <button @click="confirmDelete(task)" class="w-8 h-8 rounded-lg bg-red-50 text-red-600 hover:bg-red-100 hover:text-red-700 transition-colors flex items-center justify-center" title="Eliminar">
+                    <i class="fas fa-trash text-sm"></i>
+                  </button>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
       </div>
     </div>
 
     <TransitionRoot appear :show="isModalOpen" as="template">
       <Dialog as="div" @close="closeModal" class="relative z-50">
-        <TransitionChild
-          as="template"
-          enter="duration-300 ease-out"
-          enter-from="opacity-0"
-          enter-to="opacity-100"
-          leave="duration-200 ease-in"
-          leave-from="opacity-100"
-          leave-to="opacity-0"
-        >
-          <div class="fixed inset-0 bg-black/25 backdrop-blur-sm" />
+        <TransitionChild as="template" enter="duration-300 ease-out" enter-from="opacity-0" enter-to="opacity-100" leave="duration-200 ease-in" leave-from="opacity-100" leave-to="opacity-0">
+          <div class="fixed inset-0 bg-black/40 backdrop-blur-sm" />
         </TransitionChild>
 
         <div class="fixed inset-0 overflow-y-auto">
-          <div class="flex min-h-full items-center justify-center p-4 text-center">
-            <TransitionChild
-              as="template"
-              enter="duration-300 ease-out"
-              enter-from="opacity-0 scale-95"
-              enter-to="opacity-100 scale-100"
-              leave="duration-200 ease-in"
-              leave-from="opacity-100 scale-100"
-              leave-to="opacity-0 scale-95"
-            >
-              <DialogPanel class="w-full max-w-2xl transform overflow-hidden rounded-2xl bg-white dark:bg-gray-800 p-8 text-left align-middle shadow-xl transition-all border border-slate-100 dark:border-gray-700">
-                <DialogTitle as="h3" class="text-2xl font-bold leading-6 text-slate-900 dark:text-white mb-6 flex items-center gap-3">
-                    <div class="w-10 h-10 rounded-lg bg-indigo-100 dark:bg-indigo-900/50 flex items-center justify-center text-indigo-600 dark:text-indigo-400">
-                        <i :class="isEditing ? 'fas fa-edit' : 'fas fa-plus'"></i>
-                    </div>
-                  {{ isEditing ? 'Editar Tarea' : 'Crear Nueva Tarea' }}
-                </DialogTitle>
+          <div class="flex min-h-full items-center justify-center p-4">
+            <TransitionChild as="template" enter="duration-300 ease-out" enter-from="opacity-0 scale-95" enter-to="opacity-100 scale-100" leave="duration-200 ease-in" leave-from="opacity-100 scale-100" leave-to="opacity-0 scale-95">
+              <DialogPanel class="w-full max-w-2xl bg-white dark:bg-slate-800 rounded-2xl shadow-xl overflow-hidden border border-slate-100 dark:border-slate-700">
                 
-                <form @submit.prevent="saveTask" class="space-y-6">
-                  <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div class="col-span-2">
-                        <label class="form-label">Nombre de Tarea</label>
-                        <input v-model="form.name" type="text" required class="form-input" placeholder="Ingrese nombre" />
-                    </div>
+                <div class="bg-slate-50 dark:bg-slate-700/50 px-8 py-5 border-b border-slate-100 dark:border-slate-700 flex justify-between items-center">
+                    <h3 class="text-xl font-bold text-slate-800 dark:text-white">
+                        {{ isEditing ? 'Editar Tarea' : 'Nueva Tarea' }}
+                    </h3>
+                    <button @click="closeModal" class="text-slate-400 hover:text-slate-600 transition-colors">
+                        <i class="fas fa-times text-xl"></i>
+                    </button>
+                </div>
+                
+                <form @submit.prevent="saveTask" class="p-8 space-y-6">
+                  <div>
+                    <label class="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">Nombre de la tarea</label>
+                    <input v-model="form.name" type="text" required class="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-600 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all" placeholder="Ej. Diseño de interfaz" />
+                  </div>
 
-                    <div class="col-span-2">
-                        <label class="form-label">Descripción</label>
-                        <textarea v-model="form.description" rows="3" class="form-input" placeholder="Ingrese descripción"></textarea>
-                    </div>
+                  <div>
+                    <label class="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">Descripción</label>
+                    <textarea v-model="form.description" rows="3" class="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-600 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all resize-none" placeholder="Detalles adicionales..."></textarea>
+                  </div>
 
-                    <div class="col-span-2">
-                        <label class="form-label">Proyecto</label>
-                        <select v-model="form.projectId" required class="form-input" :disabled="isEditing">
-                            <option :value="null" disabled>Seleccione un proyecto</option>
-                            <option v-for="project in projects" :key="project.id" :value="project.id">
-                                {{ project.name }}
-                            </option>
+                  <div class="grid grid-cols-2 gap-6">
+                     <div class="col-span-2">
+                        <label class="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">Proyecto Asociado</label>
+                        <select v-model="form.projectId" required class="w-full px-4 py-2.5 bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-600 rounded-xl text-slate-600 cursor-not-allowed" disabled>
+                            <option v-for="project in projects" :key="project.id" :value="project.id">{{ project.name }}</option>
                         </select>
                     </div>
 
                     <div>
-                        <label class="form-label">Estado</label>
-                        <select v-model="form.status" class="form-input">
-                             <option v-for="status in taskStatuses" :key="status" :value="status">
-                                {{ formatStatus(status) }}
-                            </option>
+                        <label class="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">Estado</label>
+                        <select v-model="form.status" class="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-600 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none">
+                             <option v-for="status in taskStatuses" :key="status" :value="status">{{ formatStatus(status) }}</option>
                         </select>
                     </div>
 
                     <div>
-                        <label class="form-label">Prioridad</label>
-                        <select v-model="form.priority" class="form-input">
-                            <option v-for="priority in taskPriorities" :key="priority" :value="priority">
-                                {{ formatPriority(priority) }}
-                            </option>
+                        <label class="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">Prioridad</label>
+                        <select v-model="form.priority" class="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-600 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none">
+                            <option v-for="priority in taskPriorities" :key="priority" :value="priority">{{ formatPriority(priority) }}</option>
                         </select>
                     </div>
-                     <div>
-                        <label class="form-label">Fecha Inicio</label>
-                        <input type="datetime-local" v-model="form.startDate" class="form-input" />
+
+                    <div>
+                        <label class="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">Fecha Inicio</label>
+                        <input type="datetime-local" v-model="form.startDate" class="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-600 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none" />
                     </div>
                     
                     <div>
-                        <label class="form-label">Fecha Fin</label>
-                        <input type="datetime-local" v-model="form.endDate" class="form-input" />
+                        <label class="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">Fecha Fin</label>
+                        <input type="datetime-local" v-model="form.endDate" class="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-600 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none" />
                     </div>
 
                      <div>
-                        <label class="form-label">Horas Estimadas</label>
-                         <input type="number" v-model.number="form.estimatedHours" min="0" class="form-input" />
+                        <label class="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">Horas Estimadas</label>
+                         <input type="number" v-model.number="form.estimatedHours" min="0" class="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-600 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none" />
                      </div>
                      <div>
-                        <label class="form-label">Horas Reales</label>
-                        <input type="number" v-model.number="form.actualHours" min="0" class="form-input" />
+                        <label class="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">Horas Reales</label>
+                        <input type="number" v-model.number="form.actualHours" min="0" class="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-600 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none" />
                      </div>
 
-                     <div class="col-span-2 p-4 bg-slate-50 dark:bg-gray-700/50 rounded-lg border border-slate-100 dark:border-gray-600" 
-                          v-if="!isEditing || (isEditing && !currentTaskHasAssignee)">
-                        <label class="form-label text-indigo-600 dark:text-indigo-400">Asignar Usuario (Opcional)</label>
-                        <input 
-                            v-model="form.assignedUserEmail" 
-                            type="text" 
-                            class="form-input" 
-                            placeholder="Correo o Username del usuario"
-                        />
-                        <p class="text-xs text-slate-500 mt-1">
-                            <i class="fas fa-info-circle mr-1"></i>
-                            Si dejas esto vacío, la tarea quedará sin asignar.
-                        </p>
+                     <div class="col-span-2" v-if="!isEditing || (isEditing && !currentTaskHasAssignee)">
+                        <div class="p-4 bg-indigo-50 dark:bg-indigo-900/20 rounded-xl border border-indigo-100 dark:border-indigo-800">
+                            <label class="block text-sm font-bold text-indigo-700 dark:text-indigo-300 mb-2">
+                                <i class="fas fa-user-plus mr-2"></i>Asignar Responsable (Opcional)
+                            </label>
+                            <input 
+                                v-model="form.assignedUserEmail" 
+                                type="text" 
+                                class="w-full px-4 py-2.5 bg-white dark:bg-slate-900 border border-indigo-200 dark:border-indigo-700 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none placeholder-slate-400" 
+                                placeholder="Escribe el email o usuario..."
+                            />
+                        </div>
                     </div>
-
                   </div>
 
-                  <div class="mt-8 flex justify-end gap-3">
-                    <button type="button" class="btn-secondary" @click="closeModal">Cancelar</button>
-                    <button type="submit" class="btn-primary" :disabled="loading">
+                  <div class="flex justify-end gap-3 pt-4 border-t border-slate-100 dark:border-slate-700">
+                    <button type="button" class="px-6 py-2.5 text-slate-600 font-semibold hover:bg-slate-100 rounded-xl transition-colors" @click="closeModal">Cancelar</button>
+                    <button type="submit" class="px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-xl shadow-md hover:shadow-lg transition-all" :disabled="loading">
                        <span v-if="loading"><i class="fas fa-spinner fa-spin mr-2"></i>Guardando...</span>
-                       <span v-else>{{ isEditing ? 'Actualizar' : 'Crear Tarea' }}</span>
+                       <span v-else>{{ isEditing ? 'Guardar Cambios' : 'Crear Tarea' }}</span>
                     </button>
                   </div>
                 </form>
@@ -372,24 +286,25 @@
     <TransitionRoot appear :show="isDeleteModalOpen" as="template">
         <Dialog as="div" @close="closeDeleteModal" class="relative z-50">
              <TransitionChild as="template" enter="duration-300 ease-out" enter-from="opacity-0" enter-to="opacity-100" leave="duration-200 ease-in" leave-from="opacity-100" leave-to="opacity-0">
-                <div class="fixed inset-0 bg-black/25 backdrop-blur-sm" />
+                <div class="fixed inset-0 bg-black/40 backdrop-blur-sm" />
             </TransitionChild>
             <div class="fixed inset-0 overflow-y-auto">
-                <div class="flex min-h-full items-center justify-center p-4 text-center">
+                <div class="flex min-h-full items-center justify-center p-4">
                     <TransitionChild as="template" enter="duration-300 ease-out" enter-from="opacity-0 scale-95" enter-to="opacity-100 scale-100" leave="duration-200 ease-in" leave-from="opacity-100 scale-100" leave-to="opacity-0 scale-95">
-                        <DialogPanel class="w-full max-w-md transform overflow-hidden rounded-2xl bg-white dark:bg-gray-800 p-6 text-left align-middle shadow-xl transition-all border border-slate-100 dark:border-gray-700">
-                            <DialogTitle as="h3" class="text-lg font-bold leading-6 text-slate-900 dark:text-white mb-2 text-red-600 flex items-center gap-2">
-                                <i class="fas fa-exclamation-triangle"></i> Eliminar Tarea
+                        <DialogPanel class="w-full max-w-md bg-white dark:bg-slate-800 rounded-2xl p-6 shadow-xl border border-slate-100 dark:border-slate-700">
+                            <DialogTitle as="h3" class="text-lg font-bold text-slate-900 dark:text-white mb-3 flex items-center gap-2">
+                                <div class="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center">
+                                    <i class="fas fa-exclamation-triangle text-red-600"></i>
+                                </div>
+                                Confirmar Eliminación
                             </DialogTitle>
-                            <div class="mt-2">
-                                <p class="text-sm text-slate-500 dark:text-gray-400">
-                                    ¿Estás seguro de eliminar la tarea <strong>"{{ taskToDelete?.name }}"</strong>? Esta acción no se puede deshacer.
-                                </p>
-                            </div>
+                            <p class="text-slate-500 dark:text-slate-400 ml-12">
+                                ¿Estás seguro de eliminar la tarea <strong>"{{ taskToDelete?.name }}"</strong>? Esta acción no se puede deshacer.
+                            </p>
                             <div class="mt-6 flex justify-end gap-3">
-                                <button type="button" class="btn-secondary" @click="closeDeleteModal">Cancelar</button>
-                                <button type="button" class="bg-red-600 hover:bg-red-700 text-white font-semibold py-2 px-4 rounded-lg transition-colors shadow-md" @click="deleteTask">
-                                    Eliminar
+                                <button type="button" class="px-4 py-2 text-slate-600 font-medium hover:bg-slate-100 rounded-lg transition-colors" @click="closeDeleteModal">Cancelar</button>
+                                <button type="button" class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white font-semibold rounded-lg shadow-sm" @click="deleteTask">
+                                    Sí, eliminar
                                 </button>
                             </div>
                         </DialogPanel>
@@ -406,7 +321,6 @@
         @close="showTaskUploadModal = false"
         @success="handleTaskUploadSuccess"
     />
-
   </div>
 </template>
 
@@ -416,8 +330,8 @@ import { Dialog, DialogPanel, DialogTitle, TransitionChild, TransitionRoot } fro
 import { useToastStore } from '@/stores/toast'
 import taskService from '@/services/taskService'
 import projectService from '@/services/projectService'
-import BulkUploadModal from '@/components/BulkUploadModal.vue'
-import api from '@/api' // Importante para asignación manual
+import BulkUploadModal from '@/components/common/BulkUploadModal.vue'
+import api from '@/api'
 
 const toast = useToastStore()
 
@@ -429,60 +343,81 @@ const isModalOpen = ref(false)
 const isDeleteModalOpen = ref(false)
 const isEditing = ref(false)
 const taskToDelete = ref(null)
-const currentTaskHasAssignee = ref(false) // Control de asignación
-
+const currentTaskHasAssignee = ref(false)
 const showTaskUploadModal = ref(false)
+const currentProjectName = ref('')
 
 const filters = ref({
   name: '',
-  projectId: '',
   status: '',
   priority: ''
 })
 
-const headerStats = ref([
-  { title: 'Total Tareas', value: '0', icon: 'fas fa-clipboard-list', iconBg: 'bg-blue-500' },
-  { title: 'Pendientes', value: '0', icon: 'fas fa-clock', iconBg: 'bg-amber-500' },
-  { title: 'En Progreso', value: '0', icon: 'fas fa-spinner', iconBg: 'bg-indigo-500' },
-  { title: 'Completadas', value: '0', icon: 'fas fa-check-circle', iconBg: 'bg-emerald-500' },
-])
-
 const form = ref({
-  id: null,
-  name: '',
-  description: '',
-  status: 'PENDING',
-  priority: 'MEDIUM',
-  projectId: null,
-  startDate: '',
-  endDate: '',
-  estimatedHours: 0,
-  actualHours: 0,
-  assignedUserEmail: ''
+  id: null, name: '', description: '', status: 'PENDING', priority: 'MEDIUM',
+  projectId: null, startDate: '', endDate: '', estimatedHours: 0, actualHours: 0, assignedUserEmail: ''
 })
 
 const taskStatuses = ['PENDING', 'IN_PROGRESS', 'IN_REVIEW', 'COMPLETED', 'CANCELLED']
 const taskPriorities = ['LOW', 'MEDIUM', 'HIGH', 'URGENT']
 
+// Stats Icons Setup
+const headerStats = ref([
+  { title: 'Total Tareas', value: '0', icon: 'fas fa-layer-group', bgClass: 'bg-blue-500', textClass: 'text-blue-600' },
+  { title: 'Pendientes', value: '0', icon: 'fas fa-clock', bgClass: 'bg-amber-500', textClass: 'text-amber-600' },
+  { title: 'En Progreso', value: '0', icon: 'fas fa-spinner', bgClass: 'bg-indigo-500', textClass: 'text-indigo-600' },
+  { title: 'Completadas', value: '0', icon: 'fas fa-check-circle', bgClass: 'bg-emerald-500', textClass: 'text-emerald-600' },
+])
+
 // Computed
 const filteredTasks = computed(() => {
   return tasks.value.filter(task => {
     const matchName = task.name.toLowerCase().includes(filters.value.name.toLowerCase())
-    const matchProject = !filters.value.projectId || task.projectId === filters.value.projectId
     const matchStatus = !filters.value.status || task.status === filters.value.status
     const matchPriority = !filters.value.priority || task.priority === filters.value.priority
-    return matchName && matchProject && matchStatus && matchPriority
+    return matchName && matchStatus && matchPriority
   })
 })
 
 // Methods
+const loadUserContext = async () => {
+    loading.value = true
+    try {
+        const user = JSON.parse(localStorage.getItem('user')) || {}
+        const email = user.email || user.username;
 
-// Función para descargar plantilla CSV
+        if (!email) return;
+
+        // Usamos el endpoint que devuelve tu proyecto asignado y tareas
+        const response = await api.get(`/projects/assing-project/${email}`).catch(() => null)
+        
+        if (response && response.data) {
+            const data = response.data
+            
+            // 1. Setear Tareas
+            tasks.value = data.tasks || []
+            
+            // 2. Setear Proyecto (Solo el asignado)
+            if (data.projectId) {
+                projects.value = [{ id: data.projectId, name: data.projectName }]
+                currentProjectName.value = data.projectName
+            } else {
+                 // Caso Admin Global (si aplica) o sin proyecto
+                projects.value = []
+            }
+            updateStats()
+        }
+    } catch (error) {
+        console.error("Error cargando contexto de usuario", error)
+    } finally {
+        loading.value = false
+    }
+}
+
 const downloadTemplate = () => {
   const headers = 'name,description,status,priority,startDate,endDate,estimatedHours,projectId';
-  const example = 'Diseño DB,Crear diagrama ER,PENDING,HIGH,2024-05-01T09:00:00,2024-05-05T18:00:00,20,1';
+  const example = `Diseño UI,Pantallas Login,PENDING,HIGH,2024-05-01T09:00:00,2024-05-05T18:00:00,20,${projects.value[0]?.id || 'ID_PROYECTO'}`;
   const csvContent = "data:text/csv;charset=utf-8," + headers + "\n" + example;
-  
   const encodedUri = encodeURI(csvContent);
   const link = document.createElement("a");
   link.setAttribute("href", encodedUri);
@@ -490,29 +425,6 @@ const downloadTemplate = () => {
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);
-}
-
-const fetchTasks = async () => {
-  loading.value = true
-  try {
-    const response = await taskService.getAllTasks()
-    tasks.value = response.data
-    updateStats()
-  } catch (error) {
-    console.error('Error fetching tasks:', error)
-    toast.showToast('Error al cargar tareas', 'error')
-  } finally {
-    loading.value = false
-  }
-}
-
-const fetchProjects = async () => {
-    try {
-        const response = await projectService.getAllProjects()
-        projects.value = Array.isArray(response.data) ? response.data : (response.data.content || [])
-    } catch (error) {
-        console.error("Error fetching projects", error)
-    }
 }
 
 const updateStats = () => {
@@ -529,57 +441,46 @@ const updateStats = () => {
 
 const handleTaskUploadSuccess = async () => {
     showTaskUploadModal.value = false;
-    await fetchTasks();
+    await loadUserContext(); // Recargar todo
 }
 
 const openCreateModal = () => {
   isEditing.value = false
-  currentTaskHasAssignee.value = false; 
+  currentTaskHasAssignee.value = false;
   
   form.value = {
-    id: null,
-    name: '',
-    description: '',
-    status: 'PENDING',
-    priority: 'MEDIUM',
-    projectId: null,
-    startDate: '',
-    endDate: '',
-    estimatedHours: 0,
-    actualHours: 0,
-    assignedUserEmail: ''
+    id: null, name: '', description: '', status: 'PENDING', priority: 'MEDIUM',
+    projectId: projects.value.length > 0 ? projects.value[0].id : null, // Auto-seleccionar
+    startDate: '', endDate: '', estimatedHours: 0, actualHours: 0, assignedUserEmail: ''
   }
   isModalOpen.value = true
 }
 
 const editTask = (task) => {
   isEditing.value = true
-  
-  // VERIFICAR si tiene usuario asignado (usando assignedUserId que viene del backend)
   currentTaskHasAssignee.value = !!task.assignedUserId;
-
-  const formatDateForInput = (dateStr) => {
-      if(!dateStr) return '';
-      return new Date(dateStr).toISOString().slice(0, 16);
-  }
+  
+  const formatDate = (d) => d ? new Date(d).toISOString().slice(0, 16) : '';
 
   form.value = { 
       ...task,
-      startDate: formatDateForInput(task.startDate),
-      endDate: formatDateForInput(task.endDate),
+      startDate: formatDate(task.startDate),
+      endDate: formatDate(task.endDate),
+      projectId: task.projectId || (projects.value[0]?.id), // Asegurar ID de proyecto
       assignedUserEmail: '' 
   }
   isModalOpen.value = true
 }
 
-const closeModal = () => {
-  isModalOpen.value = false
-}
+const closeModal = () => isModalOpen.value = false
 
 const saveTask = async () => {
   try {
+    loading.value = true
+    
     if(!form.value.projectId) {
-        toast.showToast('Selecciona un proyecto', 'warning');
+        toast.showToast('No hay un proyecto asociado para crear la tarea', 'warning');
+        loading.value = false;
         return;
     }
 
@@ -593,40 +494,38 @@ const saveTask = async () => {
 
     if (isEditing.value) {
       const response = await taskService.updateTask(form.value.id, payload)
-      const index = tasks.value.findIndex(t => t.id === form.value.id)
-      if (index !== -1) tasks.value[index] = response.data
       savedTaskId = form.value.id;
-      toast.showToast('Tarea actualizada', 'success')
+      toast.showToast('Tarea actualizada correctamente', 'success')
     } else {
       const response = await taskService.createTask(payload)
-      tasks.value.push(response.data)
       savedTaskId = response.data.id;
-      toast.showToast('Tarea creada', 'success')
+      toast.showToast('Tarea creada correctamente', 'success')
     }
 
-    // LÓGICA DE ASIGNACIÓN
+    // Asignar usuario si se indicó
     if (form.value.assignedUserEmail) {
         if (!isEditing.value || (isEditing.value && !currentTaskHasAssignee.value)) {
             try {
                 await api.post('/tasks/assign-user', {
                     usernameOrEmail: form.value.assignedUserEmail,
                     taskId: savedTaskId,
-                    role: 'COLLAB' 
+                    role: 'COLLAB'
                 });
-                toast.showToast('Usuario asignado correctamente', 'success');
-            } catch (assignError) {
-                console.error("Error asignando usuario:", assignError);
-                toast.showToast('Tarea guardada, pero error al asignar usuario', 'warning');
+                toast.showToast('Usuario asignado', 'success');
+            } catch (e) {
+                console.error(e);
+                toast.showToast('Tarea guardada, pero falló la asignación', 'warning');
             }
         }
     }
 
-    updateStats()
+    await loadUserContext()
     closeModal()
-    fetchTasks()
   } catch (error) {
-    console.error('Error saving task:', error)
-    toast.showToast('Error al guardar tarea', 'error')
+    console.error(error)
+    toast.showToast('Error al guardar la tarea', 'error')
+  } finally {
+    loading.value = false
   }
 }
 
@@ -642,96 +541,48 @@ const closeDeleteModal = () => {
 
 const deleteTask = async () => {
   if (!taskToDelete.value) return
-  
   try {
     await taskService.deleteTask(taskToDelete.value.id)
-    tasks.value = tasks.value.filter(t => t.id !== taskToDelete.value.id)
-    updateStats()
+    await loadUserContext()
     toast.showToast('Tarea eliminada', 'success')
     closeDeleteModal()
   } catch (error) {
-    console.error('Error deleting task:', error)
-    toast.showToast('Error al eliminar tarea', 'error')
+    console.error(error)
+    toast.showToast('Error al eliminar', 'error')
   }
 }
 
-const clearFilters = () => {
-  filters.value = { name: '', projectId: '', status: '', priority: '' }
-}
+const clearFilters = () => filters.value = { name: '', status: '', priority: '' }
 
-const formatStatus = (status) => {
-  return status ? status.replace('_', ' ') : ''
-}
+// Formatters & UI Helpers
+const formatStatus = (s) => s ? {
+    'PENDING': 'Pendiente', 'IN_PROGRESS': 'En Progreso', 
+    'IN_REVIEW': 'En Revisión', 'COMPLETED': 'Completada', 'CANCELLED': 'Cancelada'
+}[s] || s : ''
 
-const formatPriority = (priority) => {
-  return priority ? priority : ''
-}
+const formatPriority = (p) => p ? {
+    'LOW': 'Baja', 'MEDIUM': 'Media', 'HIGH': 'Alta', 'URGENT': 'Urgente'
+}[p] || p : ''
 
-const formatDate = (dateStr) => {
-    if (!dateStr) return '-';
-    return new Date(dateStr).toLocaleDateString() + ' ' + new Date(dateStr).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
-}
+const getStatusBadgeClass = (s) => ({
+    'PENDING': 'bg-slate-100 text-slate-600 border-slate-200',
+    'IN_PROGRESS': 'bg-blue-50 text-blue-600 border-blue-200',
+    'IN_REVIEW': 'bg-purple-50 text-purple-600 border-purple-200',
+    'COMPLETED': 'bg-emerald-50 text-emerald-600 border-emerald-200',
+    'CANCELLED': 'bg-red-50 text-red-600 border-red-200'
+}[s] || 'bg-gray-100 text-gray-600')
 
-const isOverdue = (task) => {
-    if (!task.endDate || task.status === 'COMPLETED' || task.status === 'CANCELLED') return false;
-    return new Date(task.endDate) < new Date();
-}
+const getPriorityIcon = (p) => ({
+    'LOW': 'fas fa-arrow-down text-emerald-500',
+    'MEDIUM': 'fas fa-minus text-blue-500',
+    'HIGH': 'fas fa-arrow-up text-orange-500',
+    'URGENT': 'fas fa-exclamation-circle text-red-500'
+}[p] || '')
 
-const getStatusClass = (status) => {
-  const classes = {
-    'PENDING': 'bg-slate-100 text-slate-700 border-slate-200 dark:bg-gray-700 dark:text-gray-300 dark:border-gray-600',
-    'IN_PROGRESS': 'bg-indigo-50 text-indigo-700 border-indigo-200 dark:bg-indigo-900/30 dark:text-indigo-300 dark:border-indigo-800',
-    'IN_REVIEW': 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-900/30 dark:text-amber-300 dark:border-amber-800',
-    'COMPLETED': 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-300 dark:border-emerald-800',
-    'CANCELLED': 'bg-red-50 text-red-700 border-red-200 dark:bg-red-900/30 dark:text-red-300 dark:border-red-800'
-  }
-  return classes[status] || classes['PENDING']
-}
-
-const getPriorityIcon = (priority) => {
-    const icons = {
-        'LOW': 'fas fa-arrow-down',
-        'MEDIUM': 'fas fa-minus',
-        'HIGH': 'fas fa-arrow-up',
-        'URGENT': 'fas fa-exclamation-triangle'
-    }
-    return icons[priority] || 'fas fa-circle'
-}
-
-const getPriorityClass = (priority) => {
-    const classes = {
-        'LOW': 'text-emerald-600 dark:text-emerald-400',
-        'MEDIUM': 'text-blue-600 dark:text-blue-400',
-        'HIGH': 'text-orange-600 dark:text-orange-400',
-        'URGENT': 'text-red-600 dark:text-red-400'
-    }
-    return classes[priority] || 'text-gray-600'
-}
+const formatDate = (d) => d ? new Date(d).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' }) : '-'
+const isOverdue = (t) => t.endDate && new Date(t.endDate) < new Date() && t.status !== 'COMPLETED'
 
 onMounted(() => {
-  fetchTasks()
-  fetchProjects()
+  loadUserContext()
 })
 </script>
-
-<style scoped>
-.card-hover {
-  @apply transition-all duration-300 hover:shadow-lg hover:-translate-y-1;
-}
-
-.form-label {
-    @apply block text-sm font-medium text-slate-700 dark:text-gray-300 mb-1;
-}
-
-.form-input {
-    @apply block w-full rounded-lg border-slate-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-slate-900 dark:text-white shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm py-2 px-3;
-}
-
-.btn-primary {
-    @apply bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2 px-4 rounded-lg transition-colors shadow-md;
-}
-
-.btn-secondary {
-    @apply bg-white dark:bg-gray-700 text-slate-700 dark:text-gray-200 border border-slate-300 dark:border-gray-600 hover:bg-slate-50 dark:hover:bg-gray-600 font-semibold py-2 px-4 rounded-lg transition-colors;
-}
-</style>
