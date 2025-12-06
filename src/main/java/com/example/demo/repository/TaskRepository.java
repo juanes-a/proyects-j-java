@@ -10,7 +10,6 @@ import org.springframework.stereotype.Repository;
 
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Optional;
 
 @Repository
 public interface TaskRepository extends JpaRepository<TaskEntity, Long> {
@@ -22,8 +21,8 @@ public interface TaskRepository extends JpaRepository<TaskEntity, Long> {
     List<TaskEntity> findByProjectId(@Param("projectId") Long projectId);
 
     
-    // Buscar todas las tareas asignadas a un usuario específico
-    List<TaskEntity> findByAssignedUserId(Long userId);
+    // CORREGIDO: Usamos assignedUser_Id para evitar conflicto con el getter del Entity
+    List<TaskEntity> findByAssignedUser_Id(Long userId);
     
     // Buscar tareas por estado
     List<TaskEntity> findByStatus(TaskStatus status);
@@ -37,48 +36,41 @@ public interface TaskRepository extends JpaRepository<TaskEntity, Long> {
     // Buscar tareas de un proyecto con estado específico
     List<TaskEntity> findByProjectIdAndStatus(Long projectId, TaskStatus status);
     
-    // Buscar tareas asignadas a un usuario con estado específico
-    List<TaskEntity> findByAssignedUserIdAndStatus(Long userId, TaskStatus status);
+    // CORREGIDO: assignedUser_Id
+    List<TaskEntity> findByAssignedUser_IdAndStatus(Long userId, TaskStatus status);
     
     // Buscar tareas de un proyecto con prioridad específica
     List<TaskEntity> findByProjectIdAndPriority(Long projectId, TaskPriority priority);
     
-    // Buscar tareas asignadas a un usuario con prioridad específica
-    List<TaskEntity> findByAssignedUserIdAndPriority(Long userId, TaskPriority priority);
+    // CORREGIDO: assignedUser_Id
+    List<TaskEntity> findByAssignedUser_IdAndPriority(Long userId, TaskPriority priority);
 
     // ========== BÚSQUEDAS POR FECHAS ==========
     
-    // Buscar tareas que vencen antes de una fecha específica
     List<TaskEntity> findByEndDateBefore(LocalDateTime endDate);
     
-    // Buscar tareas que vencen entre dos fechas
     List<TaskEntity> findByEndDateBetween(LocalDateTime startDate, LocalDateTime endDate);
     
-    // Buscar tareas vencidas (fecha de fin pasada y no completadas)
     @Query("SELECT t FROM TaskEntity t WHERE t.endDate < :currentDate AND t.status NOT IN :completedStatuses")
     List<TaskEntity> findOverdueTasks(@Param("currentDate") LocalDateTime currentDate, 
                                     @Param("completedStatuses") List<TaskStatus> completedStatuses);
 
     // ========== BÚSQUEDAS AVANZADAS ==========
     
-    // Buscar tareas sin asignar de un proyecto
     List<TaskEntity> findByProjectIdAndAssignedUserIsNull(Long projectId);
     
-    // Buscar tareas de un departamento (a través del proyecto)
     @Query("SELECT t FROM TaskEntity t WHERE t.project.department.id = :departmentId")
     List<TaskEntity> findByDepartmentId(@Param("departmentId") Long departmentId);
     
-    // Contar tareas por estado en un proyecto
     @Query("SELECT COUNT(t) FROM TaskEntity t WHERE t.project.id = :projectId AND t.status = :status")
     Long countByProjectIdAndStatus(@Param("projectId") Long projectId, @Param("status") TaskStatus status);
     
-    // Contar tareas asignadas a un usuario por estado
+    // Este usa @Query, así que NO necesita cambiarse, ya es explícito
     @Query("SELECT COUNT(t) FROM TaskEntity t WHERE t.assignedUser.id = :userId AND t.status = :status")
     Long countByAssignedUserIdAndStatus(@Param("userId") Long userId, @Param("status") TaskStatus status);
 
     // ========== BÚSQUEDA POR FILTROS MÚLTIPLES ==========
     
-    // Método principal de búsqueda con filtros múltiples
     @Query("SELECT t FROM TaskEntity t WHERE " +
            "(:projectId IS NULL OR t.project.id = :projectId) AND " +
            "(:assignedUserId IS NULL OR t.assignedUser.id = :assignedUserId) AND " +
@@ -98,9 +90,6 @@ public interface TaskRepository extends JpaRepository<TaskEntity, Long> {
 
     // ========== ESTADÍSTICAS ==========
     
-    // Obtener estadísticas de un proyecto
     @Query("SELECT t.status, COUNT(t) FROM TaskEntity t WHERE t.project.id = :projectId GROUP BY t.status")
     List<Object[]> getProjectTaskStatistics(@Param("projectId") Long projectId);
-    
-  
 }

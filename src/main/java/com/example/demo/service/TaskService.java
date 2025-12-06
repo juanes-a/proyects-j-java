@@ -47,40 +47,31 @@ public class TaskService {
      * @return TaskEntity - Tarea creada con ID generado
      */
     public TaskEntity createTask(TaskRequestDTO dto) {
-        log.info("Creando nueva tarea desde DTO: {}", dto.getName());
-
-        // Validar y obtener el proyecto
-        Project project = projectRepository.findById(dto.getProjectId())
-                .orElseThrow(() -> new IllegalArgumentException("Proyecto no encontrado con ID: " + dto.getProjectId()));
-
-        // Validar y obtener el usuario asignado (si lo hay)
-        UserEntity user = null;
-        if (dto.getAssignedUserId() != null) {
-            user = userRepository.findById(dto.getAssignedUserId())
-                    .orElseThrow(() -> new IllegalArgumentException("Usuario no encontrado con ID: " + dto.getAssignedUserId()));
+    log.info("Creando nueva tarea desde DTO: {}", dto.getName());
+            Project project = projectRepository.findById(dto.getProjectId())
+                    .orElseThrow(() -> new IllegalArgumentException("Proyecto no encontrado con ID: " + dto.getProjectId()));
+            UserEntity user = null;
+            if (dto.getAssignedUserId() != null) {
+                user = userRepository.findById(dto.getAssignedUserId())
+                        .orElseThrow(() -> new IllegalArgumentException("Usuario no encontrado con ID: " + dto.getAssignedUserId()));
+            }
+            TaskEntity task = new TaskEntity();
+            task.setName(dto.getName());
+            task.setDescription(dto.getDescription());
+            task.setStartDate(dto.getStartDate());
+            task.setEndDate(dto.getEndDate());
+            task.setEstimatedHours(dto.getEstimatedHours());
+            task.setActualHours(dto.getActualHours());
+            task.setProject(project);
+            task.setAssignedUser(user);
+            task.setStatus(dto.getStatus() != null ? TaskStatus.valueOf(dto.getStatus()) : TaskStatus.PENDING);
+            task.setPriority(dto.getPriority() != null ? TaskPriority.valueOf(dto.getPriority()) : TaskPriority.MEDIUM);
+            TaskEntity savedTask = taskRepository.save(task);
+            log.info("✅ Tarea creada exitosamente con ID: {}", savedTask.getId());
+            return savedTask;
         }
 
 
-        // Mapear DTO a entidad
-        TaskEntity task = new TaskEntity();
-        task.setName(dto.getName());
-        task.setDescription(dto.getDescription());
-        task.setStartDate(dto.getStartDate());
-        task.setEndDate(dto.getEndDate());
-        task.setEstimatedHours(dto.getEstimatedHours());
-        task.setActualHours(dto.getActualHours());
-        task.setProject(project);
-        task.setAssignedUser(user);
-
-        // Aplicar valores por defecto si no vienen
-        task.setStatus(dto.getStatus() != null ? TaskStatus.valueOf(dto.getStatus()) : TaskStatus.PENDING);
-        task.setPriority(dto.getPriority() != null ? TaskPriority.valueOf(dto.getPriority()) : TaskPriority.MEDIUM);
-
-        // Guardar
-        TaskEntity savedTask = taskRepository.save(task);
-        log.info("✅ Tarea creada exitosamente con ID: {}", savedTask.getId());
-        return savedTask;
-    }
     /**
      * Obtener todas las tareas
      * @return List<TaskEntity> - Lista de todas las tareas
@@ -121,61 +112,32 @@ public class TaskService {
      * @return TaskEntity - Tarea actualizada
      */
     public TaskEntity updateTask(Long id, TaskEntity taskUpdate) {
-        log.info("Actualizando tarea con ID: {}", id);
-        
-        TaskEntity existingTask = getTaskByIdOrThrow(id);
-        
-        // Actualizar campos no nulos
-        if (taskUpdate.getName() != null) {
-            existingTask.setName(taskUpdate.getName());
+    log.info("Actualizando tarea con ID: {}", id);
+            TaskEntity existingTask = getTaskByIdOrThrow(id);
+            if (taskUpdate.getName() != null) existingTask.setName(taskUpdate.getName());
+            if (taskUpdate.getDescription() != null) existingTask.setDescription(taskUpdate.getDescription());
+            if (taskUpdate.getStatus() != null) existingTask.setStatus(taskUpdate.getStatus());
+            if (taskUpdate.getPriority() != null) existingTask.setPriority(taskUpdate.getPriority());
+            if (taskUpdate.getStartDate() != null) existingTask.setStartDate(taskUpdate.getStartDate());
+            if (taskUpdate.getEndDate() != null) existingTask.setEndDate(taskUpdate.getEndDate());
+            if (taskUpdate.getEstimatedHours() != null) existingTask.setEstimatedHours(taskUpdate.getEstimatedHours());
+            if (taskUpdate.getActualHours() != null) existingTask.setActualHours(taskUpdate.getActualHours());
+            
+            if (taskUpdate.getAssignedUser() != null) {
+                validateUserExists(taskUpdate.getAssignedUser().getId());
+                existingTask.setAssignedUser(taskUpdate.getAssignedUser());
+            }
+            return taskRepository.save(existingTask);
         }
-        if (taskUpdate.getDescription() != null) {
-            existingTask.setDescription(taskUpdate.getDescription());
-        }
-        if (taskUpdate.getStatus() != null) {
-            existingTask.setStatus(taskUpdate.getStatus());
-        }
-        if (taskUpdate.getPriority() != null) {
-            existingTask.setPriority(taskUpdate.getPriority());
-        }
-        if (taskUpdate.getStartDate() != null) {
-            existingTask.setStartDate(taskUpdate.getStartDate());
-        }
-        if (taskUpdate.getEndDate() != null) {
-            existingTask.setEndDate(taskUpdate.getEndDate());
-        }
-        if (taskUpdate.getEstimatedHours() != null) {
-            existingTask.setEstimatedHours(taskUpdate.getEstimatedHours());
-        }
-        if (taskUpdate.getActualHours() != null) {
-            existingTask.setActualHours(taskUpdate.getActualHours());
-        }
-        
-
-        // Validar y actualizar usuario asignado
-        if (taskUpdate.getAssignedUser() != null) {
-            validateUserExists(taskUpdate.getAssignedUser().getId());
-            existingTask.setAssignedUser(taskUpdate.getAssignedUser());
-        }
-
-        TaskEntity savedTask = taskRepository.save(existingTask);
-        log.info("Tarea actualizada exitosamente: {}", savedTask.getId());
-        return savedTask;
-    }
 
     /**
      * Eliminar una tarea
      * @param id - ID de la tarea a eliminar
      */
     public void deleteTask(Long id) {
-        log.info("Eliminando tarea con ID: {}", id);
-        
         TaskEntity task = getTaskByIdOrThrow(id);
         taskRepository.delete(task);
-        
-        log.info("Tarea eliminada exitosamente: {}", id);
     }
-
     // ========== OPERACIONES DE BÚSQUEDA ==========
 
     /**
@@ -199,7 +161,8 @@ public class TaskService {
     public List<TaskEntity> getTasksByUser(Long userId) {
         log.debug("Obteniendo tareas del usuario: {}", userId);
         validateUserExists(userId);
-        return taskRepository.findByAssignedUserId(userId);
+        // CAMBIO: findByAssignedUserId -> findByAssignedUser_Id
+        return taskRepository.findByAssignedUser_Id(userId);
     }
 
     /**
@@ -233,41 +196,25 @@ public class TaskService {
 // En TaskService.java
 
     public UsersAsignation assignUserToTask(String usernameOrEmail, Long taskId, Role role) {
-        // 1. Validar usuario
+        // (Tu código corregido de assignUserToTask...)
         UserEntity user = userRepository.findByUsernameOrEmail(usernameOrEmail, usernameOrEmail)
             .orElseThrow(() -> new BusinessException("Usuario no encontrado: " + usernameOrEmail));
-
-        // 2. Validar tarea
         TaskEntity taskEntity = taskRepository.findById(taskId)
             .orElseThrow(() -> new BusinessException("Tarea no encontrada con ID: " + taskId));
-
-        // ❌ ELIMINADO: No cambies el rol global del usuario aquí.
-        // user.setRole(role); 
-        // userRepository.save(user);
-
-        // 3. Verificar duplicados en la tabla de asignaciones
-        Optional<UsersAsignation> existingAssignment = usersAsignationRepository
-            .findByUserAndTask(user, taskEntity);
-
+        
+        Optional<UsersAsignation> existingAssignment = usersAsignationRepository.findByUserAndTask(user, taskEntity);
         if (existingAssignment.isPresent()) {
             throw new BusinessException("El usuario ya está asignado a esta tarea.");
         }
-
-        // 4. Crear el registro de asignación (Tabla intermedia)
         UsersAsignation assignment = new UsersAsignation();
         assignment.setUser(user);
         assignment.setTask(taskEntity);
         assignment.setRolAsignado(role);
         assignment.setDateAsignDateTime(LocalDateTime.now());
-
-        // ✅ CRÍTICO: Actualizar la relación directa en la Tarea
-        // Esto hace que aparezca en el frontend inmediatamente
+        
         taskEntity.setAssignedUser(user); 
         taskRepository.save(taskEntity);
-
-        log.info("Asignando usuario {} a la tarea {}...", user.getUsername(), taskEntity.getId());
         
-        // 5. Guardar asignación
         return usersAsignationRepository.save(assignment);
     }
 
