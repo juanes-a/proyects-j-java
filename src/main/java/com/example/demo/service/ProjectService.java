@@ -28,6 +28,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.io.IOException;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -36,6 +37,8 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 import lombok.extern.slf4j.Slf4j;
+import main.java.com.example.demo.util.ExcelHelper;
+
 import org.modelmapper.ModelMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -457,4 +460,61 @@ public class ProjectService {
             throw new RuntimeException("Fallo al guardar datos CSV: " + e.getMessage());
         }
     }
+
+
+    // ... imports necesarios arriba:
+    // import com.example.demo.util.ExcelHelper;
+    // import java.io.IOException;
+
+    // AGREGAR ESTE MÉTODO EN ProjectService.java
+    public void saveProjectsFromExcel(MultipartFile file) {
+        try {
+            // 1. Usar el ExcelHelper para obtener la lista de DTOs
+            List<ProjectCsvDTO> dtos = ExcelHelper.excelToProjects(file.getInputStream());
+
+            // 2. Reutilizar la misma lógica de guardado (iterar y guardar)
+            // Como la lógica es idéntica a la del CSV, lo ideal es refactorizar,
+            // pero por ahora puedes copiar el bucle 'for' del método saveProjectsFromCsv aquí.
+            
+            for (ProjectCsvDTO dto : dtos) {
+                // ... (Copia aquí EXACTAMENTE el mismo contenido del bucle 'for' que ya tienes en saveProjectsFromCsv)
+                // Desde buscar departamento hasta projectRepository.save(project)
+                 Department dept = departmentRepository.findById(dto.getDepartmentId())
+                    .orElseThrow(() -> new RuntimeException("Departamento no encontrado ID: " + dto.getDepartmentId()));
+
+                Project project = new Project();
+                project.setName(dto.getName());
+                project.setDescription(dto.getDescription());
+                project.setObjectives(dto.getObjectives());
+                project.setDepartment(dept); 
+
+                if (dto.getPriority() != null) {
+                    project.setPriority(ProjectPriority.valueOf(dto.getPriority().toUpperCase()));
+                }
+                
+                if (dto.getStatus() != null) {
+                    project.setStatus(ProjectStatus.valueOf(dto.getStatus().toUpperCase()));
+                }
+
+                if (dto.getStartDate() != null && !dto.getStartDate().isEmpty()) {
+                    project.setStartDate(LocalDate.parse(dto.getStartDate()));
+                }
+                
+                if (dto.getEndDate() != null && !dto.getEndDate().isEmpty()) {
+                    project.setEndDate(LocalDate.parse(dto.getEndDate()));
+                }
+
+                project.setBudget(dto.getBudget());
+                projectRepository.save(project);
+            }
+        } catch (IOException e) {
+            throw new RuntimeException("Fallo al procesar el archivo Excel: " + e.getMessage());
+        } catch (IllegalArgumentException e) {
+            throw new RuntimeException("Error en datos del Excel (Verifique Enums o Fechas): " + e.getMessage());
+        } catch (Exception e) {
+            throw new RuntimeException("Error al guardar datos del Excel: " + e.getMessage());
+        }
+    }
+
+
 }
