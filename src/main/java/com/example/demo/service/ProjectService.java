@@ -36,12 +36,10 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 import lombok.extern.slf4j.Slf4j;
-
-
 import org.modelmapper.ModelMapper;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 @Slf4j
 @Service
 @Transactional
@@ -61,7 +59,6 @@ public class ProjectService {
     @Autowired
     private UserRepository userRepository;
 
-
     private final ModelMapper modelMapper;
     
     @Autowired
@@ -69,18 +66,14 @@ public class ProjectService {
         this.modelMapper = modelMapper;
     }
 
-
     public ProjectService(ProjectRepository projectRepository) {
         this.projectRepository = projectRepository;
-            this.modelMapper = new ModelMapper();
-        }
+        this.modelMapper = new ModelMapper();
+    }
+
     public List<Project> getAllProjectEntities() {
         return projectRepository.findAll();
     }
-
-
-
-
 
     // ============== Operaciones CRUD ==============
 
@@ -99,7 +92,7 @@ public class ProjectService {
         Project project = new Project();
         project.setName(dto.getName());
         project.setDescription(dto.getDescription());
-        project.setDepartment(department); // Asegurar que department no sea null
+        project.setDepartment(department);
         project.setStartDate(dto.getStartDate());
         project.setEndDate(dto.getEndDate());
         project.setBudget(dto.getBudget() != null ? BigDecimal.valueOf(dto.getBudget()) : null);
@@ -124,7 +117,6 @@ public class ProjectService {
         existingProject.setBudget(updateDTO.getBudget());
         existingProject.setPriority(updateDTO.getPriority());
         existingProject.setStatus(updateDTO.getStatus());
-
         
         // Validación de fechas adicional
         if (updateDTO.getStartDate().isAfter(updateDTO.getEndDate())) {
@@ -133,8 +125,6 @@ public class ProjectService {
         
         return projectRepository.save(existingProject);
     }
- 
-
 
     // ============== Gestión de estado ==============
 
@@ -230,6 +220,7 @@ public class ProjectService {
             throw new BusinessException("Project name already exists in this department");
         }
     }
+
     public List<Project> searchProjects(
             String name,
             Long departmentId,
@@ -251,7 +242,6 @@ public class ProjectService {
                 .filter(p -> maxBudget == null || p.getBudget().compareTo(maxBudget) <= 0)
                 .toList();
     }
-
 
     private void validateProjectDates(LocalDate startDate, LocalDate endDate) {
         if (startDate == null || endDate == null) {
@@ -287,7 +277,7 @@ public class ProjectService {
         );
     }
 
-     @Transactional
+    @Transactional
     public void deleteProject(Long id) {
         Project project = projectRepository.findById(id)
             .orElseThrow(() -> new ProjectNotFoundException("Project not found with id: " + id));
@@ -311,23 +301,19 @@ public class ProjectService {
         return mapToResponse(project);
     }
 
-
     public Project getProjectEntityById(Long id) {
         return projectRepository.findById(id)
             .orElseThrow(() -> new ProjectNotFoundException("Project not found with id: " + id));
     }
 
-
-    // En Contro de proyectos
+    // En Control de proyectos
     public long countProjectsByDepartment(Long departmentId) {
         try {
-            // Verifica que el departmentId no sea nulo
             if (departmentId == null) {
                 throw new IllegalArgumentException("Department ID cannot be null");
             }
             return projectRepository.countByDepartmentId(departmentId);
         } catch (Exception e) {
-            // Log del error para diagnóstico
             logger.error("Error counting projects for department {}: {}", departmentId, e.getMessage(), e);
             throw new ResponseStatusException(
                 HttpStatus.INTERNAL_SERVER_ERROR, 
@@ -336,7 +322,6 @@ public class ProjectService {
             );
         }
     }
-
 
     public long countByDepartmentIdAndStatus(Long departmentId, ProjectStatus status) {
         try {
@@ -379,7 +364,6 @@ public class ProjectService {
         return projects.stream()
             .map(project -> {
                 ProjectResponseDTO dto = ProjectResponseDTO.fromEntity(project);
-                // Asegurar que los campos del departamento están poblados
                 if (dto.getDepartmentId() == null) {
                     dto.setDepartmentId(departmentId);
                     dto.setDepartmentName(project.getDepartment().getName());
@@ -389,22 +373,16 @@ public class ProjectService {
             .collect(Collectors.toList());
     }
 
-
-
     public UsersAsignation assignUserToProject(String usernameOrEmail, Long projectId, Role role) {
-        // Validar usuario
         UserEntity user = userRepository.findByUsernameOrEmail(usernameOrEmail, usernameOrEmail)
             .orElseThrow(() -> new BusinessException("Usuario no encontrado: " + usernameOrEmail));
 
-        // Validar proyecto
         Project project = projectRepository.findById(projectId)
             .orElseThrow(() -> new BusinessException("Proyecto no encontrado con ID: " + projectId));
 
-        // Asignar rol
         user.setRole(role);
         userRepository.save(user);
 
-        // Verificar si ya está asignado al proyecto
         Optional<UsersAsignation> existingAssignment = usersAsignationRepository
             .findByUserAndProject(user, project);
 
@@ -412,7 +390,6 @@ public class ProjectService {
             throw new BusinessException("El usuario ya está asignado a este proyecto.");
         }
 
-        // Crear asignación
         UsersAsignation assignment = new UsersAsignation();
         assignment.setUser(user);
         assignment.setProject(project);
@@ -421,52 +398,40 @@ public class ProjectService {
 
         logger.info("Asignando usuario al proyecto {}...", project.getId());
         UsersAsignation saved = usersAsignationRepository.save(assignment);
-        usersAsignationRepository.flush(); // Fuerza el INSERT
+        usersAsignationRepository.flush();
         logger.info("Asignación guardada: {}", saved);
 
         return saved;
     }
 
     public Optional<UsersAsignation> getUserProjectAssignment(String usernameOrEmail) {
-        // 1. Validación básica del input
         if (usernameOrEmail == null || usernameOrEmail.isBlank()) {
             throw new IllegalArgumentException("Username/email no puede estar vacío");
         }
 
-        // 2. Normalización del input
         String normalizedInput = usernameOrEmail.trim().toLowerCase();
 
-        // 3. Buscar usuario (con mejor manejo de errores)
         UserEntity user = userRepository.findByUsernameOrEmail(normalizedInput, normalizedInput)
             .orElseThrow(() -> new EntityNotFoundException(
                 "Usuario '" + normalizedInput + "' no encontrado"));
 
-        // 4. Obtener asignación activa más reciente
         return usersAsignationRepository.findTopByUserAndProjectIsNotNullOrderByDateAsignDateTimeDesc(user);
     }
 
     public void saveProjectsFromCsv(MultipartFile file) {
         try {
-            // 1. Usar el parser para obtener la lista de DTOs
             List<ProjectCsvDTO> dtos = CsvHelper.parseProjectsDto(file);
 
             for (ProjectCsvDTO dto : dtos) {
-                // 2. Buscar el Departamento (Relación Obligatoria)
                 Department dept = departmentRepository.findById(dto.getDepartmentId())
                     .orElseThrow(() -> new RuntimeException("Departamento no encontrado ID: " + dto.getDepartmentId()));
 
                 Project project = new Project();
-                
-                // 3. Asignar campos de texto básicos
                 project.setName(dto.getName());
                 project.setDescription(dto.getDescription());
                 project.setObjectives(dto.getObjectives());
-                
-                // 4. Asignar relación
                 project.setDepartment(dept); 
 
-                // 5. CONVERSIÓN DE ENUMS (Aquí estaba el error)
-                // Usamos toUpperCase() para asegurar que "High" o "high" se convierta en el Enum HIGH
                 if (dto.getPriority() != null) {
                     project.setPriority(ProjectPriority.valueOf(dto.getPriority().toUpperCase()));
                 }
@@ -475,8 +440,6 @@ public class ProjectService {
                     project.setStatus(ProjectStatus.valueOf(dto.getStatus().toUpperCase()));
                 }
 
-                // 6. CONVERSIÓN DE FECHAS
-                // Parseamos el String 'YYYY-MM-DD' a LocalDate
                 if (dto.getStartDate() != null && !dto.getStartDate().isEmpty()) {
                     project.setStartDate(LocalDate.parse(dto.getStartDate()));
                 }
@@ -485,23 +448,13 @@ public class ProjectService {
                     project.setEndDate(LocalDate.parse(dto.getEndDate()));
                 }
 
-                // 7. Presupuesto (Ya viene como BigDecimal desde el DTO)
                 project.setBudget(dto.getBudget());
-
-                // Guardar en BD
                 projectRepository.save(project);
             }
         } catch (IllegalArgumentException e) {
-            // Captura errores si el Enum o la Fecha no tienen el formato correcto
             throw new RuntimeException("Error en el formato de datos del CSV (Verifique Enums o Fechas): " + e.getMessage());
         } catch (Exception e) {
             throw new RuntimeException("Fallo al guardar datos CSV: " + e.getMessage());
         }
     }
-
 }
-
-
-
-
-
