@@ -230,20 +230,22 @@ public class TaskService {
     /**
      * Asignar tarea a un usuario
      */
+// En TaskService.java
+
     public UsersAsignation assignUserToTask(String usernameOrEmail, Long taskId, Role role) {
-        // Validar usuario
+        // 1. Validar usuario
         UserEntity user = userRepository.findByUsernameOrEmail(usernameOrEmail, usernameOrEmail)
             .orElseThrow(() -> new BusinessException("Usuario no encontrado: " + usernameOrEmail));
 
-        // Validar tarea
+        // 2. Validar tarea
         TaskEntity taskEntity = taskRepository.findById(taskId)
             .orElseThrow(() -> new BusinessException("Tarea no encontrada con ID: " + taskId));
 
-        // Asignar rol (si aplica cambiarlo)
-        user.setRole(role);
-        userRepository.save(user);
+        // ❌ ELIMINADO: No cambies el rol global del usuario aquí.
+        // user.setRole(role); 
+        // userRepository.save(user);
 
-        // Verificar si ya está asignado a esta tarea (único caso que no permites)
+        // 3. Verificar duplicados en la tabla de asignaciones
         Optional<UsersAsignation> existingAssignment = usersAsignationRepository
             .findByUserAndTask(user, taskEntity);
 
@@ -251,19 +253,22 @@ public class TaskService {
             throw new BusinessException("El usuario ya está asignado a esta tarea.");
         }
 
-        // Crear asignación
+        // 4. Crear el registro de asignación (Tabla intermedia)
         UsersAsignation assignment = new UsersAsignation();
         assignment.setUser(user);
         assignment.setTask(taskEntity);
         assignment.setRolAsignado(role);
         assignment.setDateAsignDateTime(LocalDateTime.now());
 
-        log.info("Asignando usuario a la tarea {}...", taskEntity.getId());
-        UsersAsignation saved = usersAsignationRepository.save(assignment);
-        usersAsignationRepository.flush();
+        // ✅ CRÍTICO: Actualizar la relación directa en la Tarea
+        // Esto hace que aparezca en el frontend inmediatamente
+        taskEntity.setAssignedUser(user); 
+        taskRepository.save(taskEntity);
 
-        log.info("Asignación guardada: {}", saved);
-        return saved;
+        log.info("Asignando usuario {} a la tarea {}...", user.getUsername(), taskEntity.getId());
+        
+        // 5. Guardar asignación
+        return usersAsignationRepository.save(assignment);
     }
 
 
