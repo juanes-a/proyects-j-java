@@ -17,7 +17,6 @@
             @click="downloadTemplate"
             class="px-4 py-2 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-200 border border-slate-200 dark:border-slate-700 rounded-xl font-medium hover:bg-slate-50 dark:hover:bg-slate-700 transition-all shadow-sm flex items-center gap-2"
         >
-            <i class="fas fa-file-csv text-green-600"></i>
             <span class="hidden sm:inline">Plantilla</span>
         </button>
 
@@ -25,7 +24,6 @@
             @click="showTaskUploadModal = true"
             class="px-4 py-2 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-200 border border-slate-200 dark:border-slate-700 rounded-xl font-medium hover:bg-slate-50 dark:hover:bg-slate-700 transition-all shadow-sm flex items-center gap-2"
         >
-            <i class="fas fa-cloud-upload-alt text-blue-500"></i>
             <span class="hidden sm:inline">Importar</span>
         </button>
 
@@ -33,7 +31,9 @@
           @click="openCreateModal" 
           class="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-semibold shadow-lg shadow-indigo-200 dark:shadow-none transform hover:-translate-y-0.5 transition-all flex items-center gap-2"
         >
-          <i class="fas fa-plus"></i>
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+            <path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd" />
+          </svg>
           <span>Nueva Tarea</span>
         </button>
       </div>
@@ -50,7 +50,7 @@
             </h3>
           </div>
           <div :class="`p-3 rounded-xl ${stat.bgClass} bg-opacity-10 dark:bg-opacity-20`">
-            <i :class="`${stat.icon} ${stat.textClass} text-xl`"></i>
+            <span :class="`${stat.textClass} text-xl font-bold`">#</span>
           </div>
         </div>
       </div>
@@ -59,12 +59,11 @@
     <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 p-4 mb-6">
       <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
         <div class="relative col-span-1 md:col-span-2">
-          <i class="fas fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400"></i>
           <input 
             v-model="filters.name"
             type="text" 
             placeholder="Buscar tarea..." 
-            class="w-full pl-10 pr-4 py-2.5 bg-slate-50 dark:bg-slate-900 border-none rounded-xl text-slate-700 dark:text-white focus:ring-2 focus:ring-indigo-500 transition-all placeholder-slate-400"
+            class="w-full pl-4 pr-4 py-2.5 bg-slate-50 dark:bg-slate-900 border-none rounded-xl text-slate-700 dark:text-white focus:ring-2 focus:ring-indigo-500 transition-all placeholder-slate-400"
           >
         </div>
 
@@ -88,9 +87,6 @@
       </div>
 
       <div v-else-if="filteredTasks.length === 0" class="p-16 text-center flex flex-col items-center">
-        <div class="w-20 h-20 bg-indigo-50 dark:bg-slate-700 rounded-full flex items-center justify-center mb-4">
-          <i class="fas fa-clipboard-check text-3xl text-indigo-300 dark:text-slate-500"></i>
-        </div>
         <h3 class="text-lg font-bold text-slate-800 dark:text-white">Sin tareas pendientes</h3>
         <p class="text-slate-500 max-w-xs mx-auto mt-2">No se encontraron tareas con los filtros actuales o aún no tienes ninguna asignada.</p>
         <button @click="clearFilters" v-if="filters.name || filters.status" class="mt-4 text-indigo-600 font-medium hover:underline">
@@ -132,16 +128,15 @@
 
               <td class="p-4">
                 <div class="flex items-center gap-2">
-                  <i :class="getPriorityIcon(task.priority)"></i>
                   <span class="text-sm font-medium text-slate-700 dark:text-slate-300">{{ formatPriority(task.priority) }}</span>
                 </div>
               </td>
 
               <td class="p-4">
                 <div class="flex flex-col text-xs">
-                  <span class="text-slate-500 mb-1"><i class="far fa-calendar mr-1"></i>{{ formatDate(task.startDate) }}</span>
+                  <span class="text-slate-500 mb-1">{{ formatDate(task.startDate) }}</span>
                   <span :class="isOverdue(task) ? 'text-red-500 font-bold' : 'text-slate-500'">
-                    <i class="far fa-flag mr-1"></i>{{ formatDate(task.endDate) }}
+                    {{ formatDate(task.endDate) }}
                   </span>
                 </div>
               </td>
@@ -167,11 +162,15 @@
 
               <td class="p-4 pr-6 text-right">
                 <div class="flex justify-end gap-2">
-                  <button @click="editTask(task)" class="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-100 hover:text-blue-700 transition-colors flex items-center justify-center" title="Editar">
-                    <i class="fas fa-pencil-alt text-sm"></i>
+                  <button @click="editTask(task)" class="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-100 hover:text-blue-700 transition-colors flex items-center justify-center border border-blue-200" title="Editar">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                    </svg>
                   </button>
-                  <button @click="confirmDelete(task)" class="w-8 h-8 rounded-lg bg-red-50 text-red-600 hover:bg-red-100 hover:text-red-700 transition-colors flex items-center justify-center" title="Eliminar">
-                    <i class="fas fa-trash text-sm"></i>
+                  <button @click="confirmDelete(task)" class="w-8 h-8 rounded-lg bg-red-50 text-red-600 hover:bg-red-100 hover:text-red-700 transition-colors flex items-center justify-center border border-red-200" title="Eliminar">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    </svg>
                   </button>
                 </div>
               </td>
@@ -197,7 +196,9 @@
                         {{ isEditing ? 'Editar Tarea' : 'Nueva Tarea' }}
                     </h3>
                     <button @click="closeModal" class="text-slate-400 hover:text-slate-600 transition-colors">
-                        <i class="fas fa-times text-xl"></i>
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
                     </button>
                 </div>
                 
@@ -256,7 +257,12 @@
                      <div class="col-span-2" v-if="!isEditing || (isEditing && !currentTaskHasAssignee)">
                         <div class="p-4 bg-indigo-50 dark:bg-indigo-900/20 rounded-xl border border-indigo-100 dark:border-indigo-800">
                             <label class="block text-sm font-bold text-indigo-700 dark:text-indigo-300 mb-2">
-                                <i class="fas fa-user-plus mr-2"></i>Asignar Responsable (Opcional)
+                                <span class="mr-2 inline-block align-middle">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
+                                    </svg>
+                                </span>
+                                Asignar Responsable (Opcional)
                             </label>
                             <input 
                                 v-model="form.assignedUserEmail" 
@@ -271,7 +277,7 @@
                   <div class="flex justify-end gap-3 pt-4 border-t border-slate-100 dark:border-slate-700">
                     <button type="button" class="px-6 py-2.5 text-slate-600 font-semibold hover:bg-slate-100 rounded-xl transition-colors" @click="closeModal">Cancelar</button>
                     <button type="submit" class="px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-xl shadow-md hover:shadow-lg transition-all" :disabled="loading">
-                       <span v-if="loading"><i class="fas fa-spinner fa-spin mr-2"></i>Guardando...</span>
+                       <span v-if="loading">Guardando...</span>
                        <span v-else>{{ isEditing ? 'Guardar Cambios' : 'Crear Tarea' }}</span>
                     </button>
                   </div>
@@ -294,7 +300,9 @@
                         <DialogPanel class="w-full max-w-md bg-white dark:bg-slate-800 rounded-2xl p-6 shadow-xl border border-slate-100 dark:border-slate-700">
                             <DialogTitle as="h3" class="text-lg font-bold text-slate-900 dark:text-white mb-3 flex items-center gap-2">
                                 <div class="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center">
-                                    <i class="fas fa-exclamation-triangle text-red-600"></i>
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                                    </svg>
                                 </div>
                                 Confirmar Eliminación
                             </DialogTitle>
@@ -325,11 +333,10 @@
 </template>
 
 <script setup>
-import { ref, onMounted, computed, nextTick } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { Dialog, DialogPanel, DialogTitle, TransitionChild, TransitionRoot } from '@headlessui/vue'
 import { useToastStore } from '@/stores/toast'
 import taskService from '@/services/taskService'
-import projectService from '@/services/projectService'
 import BulkUploadModal from '@/components/BulkUploadModal.vue'
 import api from '@/api'
 
@@ -361,12 +368,12 @@ const form = ref({
 const taskStatuses = ['PENDING', 'IN_PROGRESS', 'IN_REVIEW', 'COMPLETED', 'CANCELLED']
 const taskPriorities = ['LOW', 'MEDIUM', 'HIGH', 'URGENT']
 
-// Stats Icons Setup
+// Stats Setup
 const headerStats = ref([
-  { title: 'Total Tareas', value: '0', icon: 'fas fa-layer-group', bgClass: 'bg-blue-500', textClass: 'text-blue-600' },
-  { title: 'Pendientes', value: '0', icon: 'fas fa-clock', bgClass: 'bg-amber-500', textClass: 'text-amber-600' },
-  { title: 'En Progreso', value: '0', icon: 'fas fa-spinner', bgClass: 'bg-indigo-500', textClass: 'text-indigo-600' },
-  { title: 'Completadas', value: '0', icon: 'fas fa-check-circle', bgClass: 'bg-emerald-500', textClass: 'text-emerald-600' },
+  { title: 'Total Tareas', value: '0', bgClass: 'bg-blue-500', textClass: 'text-blue-600' },
+  { title: 'Pendientes', value: '0', bgClass: 'bg-amber-500', textClass: 'text-amber-600' },
+  { title: 'En Progreso', value: '0', bgClass: 'bg-indigo-500', textClass: 'text-indigo-600' },
+  { title: 'Completadas', value: '0', bgClass: 'bg-emerald-500', textClass: 'text-emerald-600' },
 ])
 
 // Computed
@@ -383,32 +390,41 @@ const filteredTasks = computed(() => {
 const loadUserContext = async () => {
     loading.value = true
     try {
+        // Lógica actualizada basada en tu script "que funciona"
         const user = JSON.parse(localStorage.getItem('user')) || {}
-        const email = user.email || user.username;
+        const email = user.email || user.username || localStorage.getItem('userEmail');
 
-        if (!email) return;
+        if (!email) {
+            console.error('Email de usuario no encontrado');
+            return;
+        }
 
-        // Usamos el endpoint que devuelve tu proyecto asignado y tareas
-        const response = await api.get(`/projects/assing-project/${email}`).catch(() => null)
+        const response = await api.get(`/projects/assing-project/${email}`);
         
         if (response && response.data) {
             const data = response.data
             
-            // 1. Setear Tareas
+            // Setear Tareas
             tasks.value = data.tasks || []
             
-            // 2. Setear Proyecto (Solo el asignado)
-            if (data.projectId) {
-                projects.value = [{ id: data.projectId, name: data.projectName }]
-                currentProjectName.value = data.projectName
+            // Lógica para "All projects" vs Proyecto único (según script guía)
+            if (data.projectName === 'All projects') {
+                const allProjectsResponse = await api.get('/projects');
+                projects.value = [
+                    { id: null, name: 'Todos los proyectos' },
+                    ...allProjectsResponse.data.map(p => ({ id: p.id, name: p.name }))
+                ];
+                currentProjectName.value = 'Todos los proyectos';
             } else {
-                 // Caso Admin Global (si aplica) o sin proyecto
-                projects.value = []
+                projects.value = [{ id: data.projectId, name: data.projectName }];
+                currentProjectName.value = data.projectName;
             }
+
             updateStats()
         }
     } catch (error) {
-        console.error("Error cargando contexto de usuario", error)
+        console.error("Error cargando tareas:", error)
+        tasks.value = []
     } finally {
         loading.value = false
     }
@@ -441,32 +457,49 @@ const updateStats = () => {
 
 const handleTaskUploadSuccess = async () => {
     showTaskUploadModal.value = false;
-    await loadUserContext(); // Recargar todo
+    await loadUserContext(); 
 }
 
 const openCreateModal = () => {
   isEditing.value = false
   currentTaskHasAssignee.value = false;
   
+  // Encontrar ID de proyecto válido (saltar 'All projects' que tiene ID null)
+  let defaultProjId = null;
+  if (projects.value.length > 0) {
+      const validProject = projects.value.find(p => p.id !== null);
+      if (validProject) defaultProjId = validProject.id;
+  }
+
   form.value = {
     id: null, name: '', description: '', status: 'PENDING', priority: 'MEDIUM',
-    projectId: projects.value.length > 0 ? projects.value[0].id : null, // Auto-seleccionar
+    projectId: defaultProjId,
     startDate: '', endDate: '', estimatedHours: 0, actualHours: 0, assignedUserEmail: ''
   }
   isModalOpen.value = true
 }
 
+// Helper para inputs datetime-local (YYYY-MM-DDThh:mm)
+const formatDateForInput = (dateString) => {
+    if (!dateString) return ''
+    const date = new Date(dateString)
+    const year = date.getFullYear()
+    const month = String(date.getMonth() + 1).padStart(2, '0')
+    const day = String(date.getDate()).padStart(2, '0')
+    const hours = String(date.getHours()).padStart(2, '0')
+    const minutes = String(date.getMinutes()).padStart(2, '0')
+    return `${year}-${month}-${day}T${hours}:${minutes}`
+}
+
 const editTask = (task) => {
   isEditing.value = true
   currentTaskHasAssignee.value = !!task.assignedUserId;
-  
-  const formatDate = (d) => d ? new Date(d).toISOString().slice(0, 16) : '';
 
   form.value = { 
       ...task,
-      startDate: formatDate(task.startDate),
-      endDate: formatDate(task.endDate),
-      projectId: task.projectId || (projects.value[0]?.id), // Asegurar ID de proyecto
+      startDate: task.startDate ? formatDateForInput(task.startDate) : '',
+      endDate: task.endDate ? formatDateForInput(task.endDate) : '',
+      projectId: task.projectId || (projects.value.find(p => p.id)?.id),
       assignedUserEmail: '' 
   }
   isModalOpen.value = true
@@ -474,49 +507,57 @@ const editTask = (task) => {
 
 const closeModal = () => isModalOpen.value = false
 
+// Lógica de guardado basada en el script que funciona
 const saveTask = async () => {
   try {
     loading.value = true
     
+    // Validar proyecto
     if(!form.value.projectId) {
-        toast.showToast('No hay un proyecto asociado para crear la tarea', 'warning');
+        toast.showToast('No hay un proyecto seleccionado para la tarea', 'warning');
         loading.value = false;
         return;
     }
 
-    const payload = {
-        ...form.value,
-        startDate: form.value.startDate ? new Date(form.value.startDate).toISOString() : null,
-        endDate: form.value.endDate ? new Date(form.value.endDate).toISOString() : null
-    }
+    const taskData = {
+        name: form.value.name,
+        description: form.value.description,
+        status: form.value.status,
+        priority: form.value.priority,
+        startDate: form.value.startDate || null,
+        endDate: form.value.endDate || null,
+        estimatedHours: form.value.estimatedHours,
+        actualHours: form.value.actualHours,
+        projectId: form.value.projectId
+    };
 
-    let savedTaskId = null;
+    let response;
 
     if (isEditing.value) {
-      const response = await taskService.updateTask(form.value.id, payload)
-      savedTaskId = form.value.id;
+      // Endpoint UPDATE del script guía
+      response = await api.put(`/tasks/${form.value.id}`, taskData)
       toast.showToast('Tarea actualizada correctamente', 'success')
     } else {
-      const response = await taskService.createTask(payload)
-      savedTaskId = response.data.id;
-      toast.showToast('Tarea creada correctamente', 'success')
-    }
-
-    // Asignar usuario si se indicó
-    if (form.value.assignedUserEmail) {
-        if (!isEditing.value || (isEditing.value && !currentTaskHasAssignee.value)) {
-            try {
-                await api.post('/tasks/assign-user', {
-                    usernameOrEmail: form.value.assignedUserEmail,
-                    taskId: savedTaskId,
-                    role: 'COLLAB'
-                });
-                toast.showToast('Usuario asignado', 'success');
-            } catch (e) {
-                console.error(e);
-                toast.showToast('Tarea guardada, pero falló la asignación', 'warning');
-            }
+      // Endpoint CREATE del script guía
+      response = await api.post('/tasks', taskData)
+      
+      // Asignación de usuario (solo en creación o si se requiere lógica separada)
+      if (form.value.assignedUserEmail) {
+        try {
+            // Endpoint ASSIGN del script guía
+            await api.post('/tasks/assign-task', {
+                usernameOrEmail: form.value.assignedUserEmail,
+                taskId: response.data.id,
+                role: 'COLLAB'
+            });
+            toast.showToast('Tarea creada y asignada', 'success');
+        } catch (e) {
+            console.error(e);
+            toast.showToast('Tarea creada pero falló la asignación', 'warning');
         }
+      } else {
+          toast.showToast('Tarea creada correctamente', 'success')
+      }
     }
 
     await loadUserContext()
@@ -542,7 +583,7 @@ const closeDeleteModal = () => {
 const deleteTask = async () => {
   if (!taskToDelete.value) return
   try {
-    await taskService.deleteTask(taskToDelete.value.id)
+    await api.delete(`/tasks/${taskToDelete.value.id}`)
     await loadUserContext()
     toast.showToast('Tarea eliminada', 'success')
     closeDeleteModal()
@@ -554,7 +595,7 @@ const deleteTask = async () => {
 
 const clearFilters = () => filters.value = { name: '', status: '', priority: '' }
 
-// Formatters & UI Helpers
+// Formatters
 const formatStatus = (s) => s ? {
     'PENDING': 'Pendiente', 'IN_PROGRESS': 'En Progreso', 
     'IN_REVIEW': 'En Revisión', 'COMPLETED': 'Completada', 'CANCELLED': 'Cancelada'
@@ -571,13 +612,6 @@ const getStatusBadgeClass = (s) => ({
     'COMPLETED': 'bg-emerald-50 text-emerald-600 border-emerald-200',
     'CANCELLED': 'bg-red-50 text-red-600 border-red-200'
 }[s] || 'bg-gray-100 text-gray-600')
-
-const getPriorityIcon = (p) => ({
-    'LOW': 'fas fa-arrow-down text-emerald-500',
-    'MEDIUM': 'fas fa-minus text-blue-500',
-    'HIGH': 'fas fa-arrow-up text-orange-500',
-    'URGENT': 'fas fa-exclamation-circle text-red-500'
-}[p] || '')
 
 const formatDate = (d) => d ? new Date(d).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' }) : '-'
 const isOverdue = (t) => t.endDate && new Date(t.endDate) < new Date() && t.status !== 'COMPLETED'
