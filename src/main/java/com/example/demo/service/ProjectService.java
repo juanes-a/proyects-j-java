@@ -447,27 +447,57 @@ public class ProjectService {
 
     public void saveProjectsFromCsv(MultipartFile file) {
         try {
-            // 1. Usar el parser modificado para obtener una lista de DTOs o usar lógica manual aquí
-            // Supongamos que lees línea por línea o usas un DTO intermedio que tiene el ID del departamento
-            List<ProjectCsvDTO> dtos = CsvHelper.parseProjectsDto(file); // Implementa esto en tu helper
+            // 1. Usar el parser para obtener la lista de DTOs
+            List<ProjectCsvDTO> dtos = CsvHelper.parseProjectsDto(file);
 
             for (ProjectCsvDTO dto : dtos) {
+                // 2. Buscar el Departamento (Relación Obligatoria)
                 Department dept = departmentRepository.findById(dto.getDepartmentId())
                     .orElseThrow(() -> new RuntimeException("Departamento no encontrado ID: " + dto.getDepartmentId()));
 
                 Project project = new Project();
-                project.setName(dto.getName());
-                project.setDepartment(dept); // Relación crítica
-                project.setPriority(dto.getPriority());
-                // ... setear resto de campos
                 
+                // 3. Asignar campos de texto básicos
+                project.setName(dto.getName());
+                project.setDescription(dto.getDescription());
+                project.setObjectives(dto.getObjectives());
+                
+                // 4. Asignar relación
+                project.setDepartment(dept); 
+
+                // 5. CONVERSIÓN DE ENUMS (Aquí estaba el error)
+                // Usamos toUpperCase() para asegurar que "High" o "high" se convierta en el Enum HIGH
+                if (dto.getPriority() != null) {
+                    project.setPriority(ProjectPriority.valueOf(dto.getPriority().toUpperCase()));
+                }
+                
+                if (dto.getStatus() != null) {
+                    project.setStatus(ProjectStatus.valueOf(dto.getStatus().toUpperCase()));
+                }
+
+                // 6. CONVERSIÓN DE FECHAS
+                // Parseamos el String 'YYYY-MM-DD' a LocalDate
+                if (dto.getStartDate() != null && !dto.getStartDate().isEmpty()) {
+                    project.setStartDate(LocalDate.parse(dto.getStartDate()));
+                }
+                
+                if (dto.getEndDate() != null && !dto.getEndDate().isEmpty()) {
+                    project.setEndDate(LocalDate.parse(dto.getEndDate()));
+                }
+
+                // 7. Presupuesto (Ya viene como BigDecimal desde el DTO)
+                project.setBudget(dto.getBudget());
+
+                // Guardar en BD
                 projectRepository.save(project);
             }
+        } catch (IllegalArgumentException e) {
+            // Captura errores si el Enum o la Fecha no tienen el formato correcto
+            throw new RuntimeException("Error en el formato de datos del CSV (Verifique Enums o Fechas): " + e.getMessage());
         } catch (Exception e) {
             throw new RuntimeException("Fallo al guardar datos CSV: " + e.getMessage());
         }
     }
-
 
 }
 
