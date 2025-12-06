@@ -201,6 +201,7 @@ import {
 const tasks = ref([])
 const loading = ref(false)
 const username = ref('')
+const userIdentifier = ref('') // Added to store actual username/email for API call
 const userInitial = ref('U')
 const currentDate = ref('')
 
@@ -221,17 +222,32 @@ const getUserData = () => {
   const userStr = localStorage.getItem('user')
   if (userStr) {
     const user = JSON.parse(userStr)
+    // Display name
     username.value = user.name || user.username || 'Collaborator'
+    // Actual identifier for API calls (username or email)
+    userIdentifier.value = user.username || user.email || '' 
     userInitial.value = username.value.charAt(0).toUpperCase()
   }
 }
 
 const fetchAssignedTasks = async () => {
+  // Guard clause if we don't have a user identifier
+  if (!userIdentifier.value) {
+    console.warn('No user identifier found for fetching tasks')
+    return
+  }
+
   loading.value = true
   try {
-    // Keeping backend route as requested
-    const response = await api.get('/tasks/user/my-tasks')
-    tasks.value = response.data
+    // CORRECTED ENDPOINT: Using the endpoint that actually exists in TaskController
+    const response = await api.get(`/tasks/assigned-tasks/${userIdentifier.value}`)
+    
+    // CORRECTED DATA ACCESS: The backend returns a map { user: "...", assignedTasks: [...] }
+    if (response.data && response.data.assignedTasks) {
+       tasks.value = response.data.assignedTasks
+    } else {
+       tasks.value = []
+    }
 
     calculateStats()
   } catch (error) {
@@ -242,14 +258,9 @@ const fetchAssignedTasks = async () => {
 }
 
 const calculateStats = () => {
-  const today = new Date().toISOString().split('T')[0]
-  
+  // Basic stats calculation based on the fetched tasks
   stats.value.totalTasks = tasks.value.length
   
-  // Tasks completed today (assuming updated_at or similar field exists, falling back to basic check)
-  // Since original code had logic for this, we replicate a simple check:
-  // If status is DONE/COMPLETED. Note: Real "Completed Today" needs a 'completedAt' date check.
-  // For now, we will count TOTAL completed as per typical simple dashboards if date isn't available.
   stats.value.completedToday = tasks.value.filter(t => 
     (t.status === 'COMPLETED' || t.status === 'DONE')
   ).length

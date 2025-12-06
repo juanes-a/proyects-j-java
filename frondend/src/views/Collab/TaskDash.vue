@@ -270,7 +270,7 @@
                       </div>
                       <div>
                         <p class="text-xs text-gray-500 dark:text-gray-400">Assigned To</p>
-                        <p class="font-medium text-gray-900 dark:text-white">{{ authStore.user?.email || 'Current User' }}</p>
+                        <p class="font-medium text-gray-900 dark:text-white">{{ userEmail }}</p>
                       </div>
                    </div>
                 </div>
@@ -321,7 +321,7 @@
 <script>
 import { ref, computed, onMounted } from 'vue'
 import { useAuthStore } from '../../stores/auth'
-import axios from 'axios'
+import api from '../../api' // ✅ CORRECCIÓN 1: Usar instancia 'api' configurada
 
 export default {
   name: 'TaskDash',
@@ -332,6 +332,7 @@ export default {
     const tasks = ref([])
     const filteredTasks = ref([])
     const updatingTasks = ref([])
+    const userEmail = ref('')
     
     // Toast state
     const showToast = ref(false)
@@ -382,14 +383,30 @@ export default {
     const loadTasks = async () => {
       try {
         loading.value = true
-        const usernameOrEmail = authStore.user?.email || localStorage.getItem('userEmail')
-        if (!usernameOrEmail) throw new Error('Could not get authenticated user')
+        
+        // ✅ CORRECCIÓN 2: Obtener email correctamente del objeto 'user' guardado
+        let email = authStore.user?.email
+        if (!email) {
+            const userStr = localStorage.getItem('user')
+            if (userStr) {
+                const userData = JSON.parse(userStr)
+                email = userData.email || userData.username
+            }
+        }
+        userEmail.value = email || 'Unknown User'
 
-        const response = await axios.get(`/api/tasks/assigned-tasks/${usernameOrEmail}`)
+        if (!email) throw new Error('Could not get authenticated user')
+
+        // ✅ CORRECCIÓN 3: Usar 'api.get' y quitar '/api' del path (porque ya está en baseURL)
+        const response = await api.get(`/tasks/assigned-tasks/${email}`)
+        
+        // El backend devuelve { user: "...", assignedTasks: [...] }
         tasks.value = response.data.assignedTasks || []
+        
         filterTasks() 
       } catch (err) {
-        error.value = 'Error loading tasks: ' + err.message
+        error.value = 'Error loading tasks: ' + (err.message || 'Unknown error')
+        console.error(err)
         showError('Error loading tasks')
       } finally {
         loading.value = false
@@ -401,7 +418,8 @@ export default {
       updatingTasks.value.push(taskId)
       
       try {
-        await axios.put(`/api/tasks/${taskId}/status`, null, {
+        // ✅ CORRECCIÓN 4: Usar 'api.put' y ruta correcta
+        await api.put(`/tasks/${taskId}/status`, null, {
           params: { status: newStatus }
         })
         
@@ -409,7 +427,6 @@ export default {
         if (taskIndex !== -1) {
           tasks.value[taskIndex].status = newStatus
           
-          // Also update the selected task if it's currently open in the modal
           if (selectedTask.value && selectedTask.value.id === taskId) {
             selectedTask.value.status = newStatus
           }
@@ -475,16 +492,14 @@ export default {
       return task.endDate && new Date(task.endDate) < new Date() && task.status !== 'COMPLETED'
     }
 
-    // Modal Logic
     const openTaskDetails = (task) => {
-      selectedTask.value = { ...task } // Create a copy to avoid direct mutation issues
+      selectedTask.value = { ...task } 
     }
 
     const closeTaskDetails = () => {
       selectedTask.value = null
     }
 
-    // UI Helpers
     const getStatusDisplay = (status) => {
       const map = {
         'PENDING': 'Pending',
@@ -569,7 +584,7 @@ export default {
       // State
       loading, tasks, filteredTasks, updatingTasks, filters, darkMode, authStore,
       showToast, showErrorToast, toastMessage, errorMessage, hasActiveFilters,
-      selectedTask,
+      selectedTask, userEmail,
       
       // Actions
       loadTasks, changeTaskStatus, filterTasks, clearFilters, isTaskOverdue, 
