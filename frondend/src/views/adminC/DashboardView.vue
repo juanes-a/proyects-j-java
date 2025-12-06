@@ -14,7 +14,7 @@
             
             <div class="min-w-0">
               <h1 class="text-3xl sm:text-4xl font-extrabold tracking-tight truncate">
-                {{ projectName || 'Loading Project...' }}
+                {{ projectName || 'Cargando Proyecto...' }}
               </h1>
               <p class="text-purple-100 text-sm sm:text-base font-medium flex items-center gap-2 mt-1">
                 <span :class="['w-2 h-2 rounded-full animate-pulse', projectName ? 'bg-fuchsia-400' : 'bg-gray-400']"></span>
@@ -28,7 +28,7 @@
             class="hidden md:flex items-center px-4 py-2 bg-white/10 hover:bg-white/20 border border-white/30 rounded-xl transition-all duration-200 backdrop-blur-sm text-sm font-semibold group"
           >
             <ListTodo class="w-4 h-4 mr-2 group-hover:scale-110 transition-transform" />
-            Manage Tasks
+            Gestionar Tareas
           </button>
         </div>
       </div>
@@ -38,7 +38,7 @@
         <div class="bg-white dark:bg-zinc-900 border border-gray-100 dark:border-zinc-800 rounded-2xl p-5 shadow-sm hover:shadow-md transition-shadow relative overflow-hidden group">
           <div class="flex justify-between items-start z-10 relative">
             <div>
-              <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Total Hours</p>
+              <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Total Horas</p>
               <h3 class="text-2xl font-bold text-gray-800 dark:text-white mt-1">{{ totalHours }}h</h3>
             </div>
             <div class="p-2 bg-violet-100 dark:bg-violet-500/10 rounded-lg text-violet-600 dark:text-violet-400">
@@ -46,7 +46,7 @@
             </div>
           </div>
           <div class="mt-4 flex items-center text-xs">
-            <span class="text-gray-400">Estimated vs Actual</span>
+            <span class="text-gray-400">Estimadas vs Reales</span>
           </div>
           <div class="absolute -bottom-4 -right-4 w-16 h-16 bg-violet-500/10 rounded-full blur-xl group-hover:bg-violet-500/20 transition-colors"></div>
         </div>
@@ -54,7 +54,7 @@
         <div class="bg-white dark:bg-zinc-900 border border-gray-100 dark:border-zinc-800 rounded-2xl p-5 shadow-sm hover:shadow-md transition-shadow relative overflow-hidden group">
           <div class="flex justify-between items-start z-10 relative">
             <div>
-              <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Progress</p>
+              <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Progreso</p>
               <h3 class="text-2xl font-bold text-gray-800 dark:text-white mt-1">{{ Math.round(progressPercentage) }}%</h3>
             </div>
             <div class="p-2 bg-fuchsia-100 dark:bg-fuchsia-500/10 rounded-lg text-fuchsia-600 dark:text-fuchsia-400">
@@ -72,7 +72,7 @@
         <div class="bg-white dark:bg-zinc-900 border border-gray-100 dark:border-zinc-800 rounded-2xl p-5 shadow-sm hover:shadow-md transition-shadow relative overflow-hidden group">
           <div class="flex justify-between items-start z-10 relative">
             <div>
-              <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Pending Tasks</p>
+              <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Pendientes</p>
               <h3 class="text-2xl font-bold text-gray-800 dark:text-white mt-1">{{ pendingTasks }}</h3>
             </div>
             <div class="p-2 bg-amber-100 dark:bg-amber-500/10 rounded-lg text-amber-600 dark:text-amber-400">
@@ -80,14 +80,14 @@
             </div>
           </div>
           <div class="mt-4 flex items-center text-xs text-amber-600 dark:text-amber-500 font-medium">
-             Need attention
+             Requieren atención
           </div>
         </div>
 
-         <div class="bg-white dark:bg-zinc-900 border border-gray-100 dark:border-zinc-800 rounded-2xl p-5 shadow-sm hover:shadow-md transition-shadow relative overflow-hidden group">
+        <div class="bg-white dark:bg-zinc-900 border border-gray-100 dark:border-zinc-800 rounded-2xl p-5 shadow-sm hover:shadow-md transition-shadow relative overflow-hidden group">
           <div class="flex justify-between items-start z-10 relative">
             <div>
-              <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Completed</p>
+              <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Completadas</p>
               <h3 class="text-2xl font-bold text-gray-800 dark:text-white mt-1">{{ completedTasks }}</h3>
             </div>
             <div class="p-2 bg-emerald-100 dark:bg-emerald-500/10 rounded-lg text-emerald-600 dark:text-emerald-400">
@@ -95,7 +95,7 @@
             </div>
           </div>
           <div class="mt-4 flex items-center text-xs text-gray-400">
-             Total Tasks: {{ tasks.length }}
+             Total: {{ tasks.length }}
           </div>
         </div>
 
@@ -106,10 +106,10 @@
           <div class="flex items-center justify-between mb-6">
             <h3 class="text-xl font-bold text-gray-800 dark:text-white flex items-center gap-2">
               <BarChartIcon class="w-5 h-5 text-violet-500" />
-              Burned Hours Stats
+              Estadísticas de Tareas
             </h3>
             <span class="text-xs font-medium px-2 py-1 rounded-md bg-violet-50 dark:bg-violet-900/20 text-violet-600 dark:text-violet-300">
-              Real-time
+              Tiempo Real
             </span>
           </div>
           
@@ -124,7 +124,7 @@
         <div class="bg-white dark:bg-zinc-900 border border-gray-100 dark:border-zinc-800 rounded-2xl shadow-sm p-6 flex flex-col h-full">
           <h3 class="text-xl font-bold text-gray-800 dark:text-white mb-6 flex items-center gap-2">
             <Zap class="w-5 h-5 text-fuchsia-500" />
-            Recent Tasks
+            Recientes
           </h3>
           
           <div class="overflow-y-auto max-h-[350px] custom-scrollbar space-y-3 pr-2">
@@ -135,8 +135,7 @@
             >
               <div class="flex justify-between items-start mb-1">
                 <h4 class="text-sm font-semibold text-gray-800 dark:text-gray-200 line-clamp-1 group-hover:text-violet-500 transition-colors">
-                  {{ task.title }}
-                </h4>
+                  {{ task.name }} </h4>
                 <span :class="['text-[10px] px-1.5 py-0.5 rounded font-bold uppercase', getPriorityClass(task.priority)]">
                   {{ task.priority }}
                 </span>
@@ -148,13 +147,12 @@
                 </span>
                 <div class="flex items-center text-xs text-gray-400">
                    <Clock class="w-3 h-3 mr-1" />
-                   {{ formatDate(task.dueDate) }}
-                </div>
+                   {{ formatDate(task.endDate) }} </div>
               </div>
             </div>
 
             <div v-if="recentTasks.length === 0 && !loading" class="text-center py-8 text-gray-500">
-               No tasks found.
+               No hay tareas recientes.
             </div>
           </div>
         </div>
@@ -187,70 +185,40 @@ const projectId = ref(null)
 const hoursChart = ref(null)
 let chartInstance = null
 
-// --- Data Fetching ---
+// --- Data Fetching CORREGIDO ---
 const fetchDashboardData = async () => {
   try {
     loading.value = true
-    const user = JSON.parse(localStorage.getItem('user'))
-    
-    // 1. Get Project Assignment
-    // We try to find the project this Manager is assigned to
-    // Note: Adjust endpoint if your backend provides a direct "my-project" endpoint
-    // Assuming we fetch by user email/id similar to departments
-    
-    // Strategy: Get projects, filter where user is manager? 
-    // Or use the user assignment endpoint you likely have.
-    // For now, mirroring previous logic:
-    const assignmentRes = await api.get(`/users/assignment/${user.email || user.username}`).catch(() => null)
-    
-    // Fallback if that endpoint is different, let's try getting user details which might have project info
-    // or using the /projects endpoint and filtering.
-    
-    // Assuming simpler path for this demo based on context:
-    // Let's assume the user IS a project manager and has one active project they manage
-    const assignData = assignmentRes?.data;
-    
-    if (assignData?.project) {
-        projectId.value = assignData.project.id
-        projectName.value = assignData.project.name
-    } else {
-        // Fallback: Fetch all projects and find one where they are Admin_Collab
-        // This part depends on your specific API structure for "My Managed Project"
-        // Since I don't want to break routes, I'll use a safe fetch approach
-        const allProjects = await api.get('/projects')
-        const myProject = allProjects.data.find(p => p.managerId === user.id) // Example logic
-        if (myProject) {
-            projectId.value = myProject.id
-            projectName.value = myProject.name
-        }
+    const user = JSON.parse(localStorage.getItem('user')) || {}
+    const email = user.email || user.username; // Obtener email o username
+
+    if (!email) {
+        console.warn("No user email found");
+        return;
     }
 
-    // If we still don't have a project ID (maybe testing), let's mock one or try a generic fetch
-    if (!projectId.value) {
-       // Try fetching tasks directly if the backend filters by user automatically
-       const tasksRes = await api.get('/tasks/user/my-tasks').catch(() => ({ data: [] })) // Safe fallback
-       tasks.value = tasksRes.data
-       
-       if (tasks.value.length > 0 && tasks.value[0].project) {
-           projectName.value = tasks.value[0].project.name
-           projectId.value = tasks.value[0].project.id
-       } else {
-           projectName.value = 'No Active Project'
-       }
-    } else {
-        // We have project ID, fetch tasks for this project
-        const tasksRes = await api.get(`/tasks/project/${projectId.value}`)
-        tasks.value = tasksRes.data
-    }
+    // Llamada al endpoint CORRECTO que ya existe en ProjectController
+    // Este endpoint devuelve: { projectId, projectName, tasks: [] }
+    const response = await api.get(`/projects/assing-project/${email}`);
+    
+    const data = response.data;
+    
+    // Asignar datos
+    projectId.value = data.projectId;
+    projectName.value = data.projectName;
+    tasks.value = data.tasks || []; // Las tareas vienen incluidas en la respuesta
 
     await nextTick()
     renderChart()
 
   } catch (error) {
     console.error('Error loading dashboard:', error)
-    // Don't show error toast on 404 for assignments, just show empty state
-    if (error.response?.status !== 404) {
-        toastStore.showToast('Could not load project data', 'error')
+    // Manejo silencioso de errores 404 si no tiene proyecto
+    if (error.response?.status === 404) {
+        projectName.value = 'Sin Proyecto Asignado';
+        tasks.value = [];
+    } else {
+        toastStore.showToast('Error al cargar datos del proyecto', 'error')
     }
   } finally {
     loading.value = false
@@ -276,8 +244,9 @@ const progressPercentage = computed(() => {
 })
 
 const recentTasks = computed(() => {
+  // Ordenar por ID descendente (más recientes primero)
   return [...tasks.value]
-    .sort((a, b) => new Date(b.createdAt || b.id) - new Date(a.createdAt || a.id))
+    .sort((a, b) => b.id - a.id)
     .slice(0, 5)
 })
 
@@ -289,12 +258,11 @@ const renderChart = () => {
 
   const isDark = document.documentElement.classList.contains('dark')
   
-  // Group tasks by status for the chart
   const statusCounts = {
-    'To Do': tasks.value.filter(t => t.status === 'PENDING').length,
-    'In Progress': tasks.value.filter(t => t.status === 'IN_PROGRESS').length,
-    'Review': tasks.value.filter(t => t.status === 'IN_REVIEW').length,
-    'Done': completedTasks.value
+    'Pendiente': tasks.value.filter(t => t.status === 'PENDING').length,
+    'En Progreso': tasks.value.filter(t => t.status === 'IN_PROGRESS').length,
+    'Revisión': tasks.value.filter(t => t.status === 'IN_REVIEW').length,
+    'Completado': completedTasks.value
   }
 
   chartInstance = new Chart(ctx, {
@@ -302,7 +270,7 @@ const renderChart = () => {
     data: {
       labels: Object.keys(statusCounts),
       datasets: [{
-        label: 'Tasks by Status',
+        label: 'Tareas por Estado',
         data: Object.values(statusCounts),
         backgroundColor: [
           'rgba(167, 139, 250, 0.8)', // Violet
@@ -339,7 +307,16 @@ const renderChart = () => {
 
 // --- Helpers ---
 const formatStatus = (status) => {
-  return status ? status.replace('_', ' ') : ''
+  if (!status) return '';
+  // Traducción simple
+  const map = {
+      'PENDING': 'Pendiente',
+      'IN_PROGRESS': 'En Progreso',
+      'IN_REVIEW': 'En Revisión',
+      'COMPLETED': 'Completada',
+      'CANCELLED': 'Cancelada'
+  };
+  return map[status] || status.replace('_', ' ');
 }
 
 const getStatusClass = (status) => {
@@ -364,13 +341,12 @@ const getPriorityClass = (priority) => {
 }
 
 const formatDate = (date) => {
-  if (!date) return 'No date'
-  return new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+  if (!date) return '-'
+  return new Date(date).toLocaleDateString('es-ES', { month: 'short', day: 'numeric' })
 }
 
 onMounted(() => {
   fetchDashboardData()
-  // Re-render chart on theme change
   new MutationObserver(renderChart).observe(document.documentElement, { attributes: true, attributeFilter: ['class'] })
 })
 </script>
