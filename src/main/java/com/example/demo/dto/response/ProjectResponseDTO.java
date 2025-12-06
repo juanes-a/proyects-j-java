@@ -32,6 +32,7 @@ public class ProjectResponseDTO {
     private String departmentName;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
+    private boolean hasAssignees;
     private boolean overdue; // Campo calculado útil para el frontend
 
     public static ProjectResponseDTO fromEntity(Project project) {
@@ -53,6 +54,7 @@ public class ProjectResponseDTO {
             .departmentName(project.getDepartment() != null ? project.getDepartment().getName() : null)
             .createdAt(project.getCreatedAt())
             .updatedAt(project.getUpdatedAt())
+            .hasAssignees(project.getAsignaciones() != null && !project.getAsignaciones().isEmpty())
             .overdue(project.isOverdue()) // Usando el método de tu entidad
             .build();
     }

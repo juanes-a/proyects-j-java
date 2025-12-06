@@ -145,7 +145,9 @@
                   <th class="px-6 py-4 text-left text-xs font-semibold text-slate-500 dark:text-gray-400 uppercase tracking-wider">Project</th>
                   <th class="px-6 py-4 text-left text-xs font-semibold text-slate-500 dark:text-gray-400 uppercase tracking-wider">Status</th>
                   <th class="px-6 py-4 text-left text-xs font-semibold text-slate-500 dark:text-gray-400 uppercase tracking-wider">Priority</th>
-                   <th class="px-6 py-4 text-left text-xs font-semibold text-slate-500 dark:text-gray-400 uppercase tracking-wider">Timeline</th> <th class="px-6 py-4 text-right text-xs font-semibold text-slate-500 dark:text-gray-400 uppercase tracking-wider">Actions</th>
+                   <th class="px-6 py-4 text-left text-xs font-semibold text-slate-500 dark:text-gray-400 uppercase tracking-wider">Timeline</th>
+                   <th class="px-6 py-4 text-left text-xs font-semibold text-slate-500 dark:text-gray-400 uppercase tracking-wider">Assigned To</th>
+                  <th class="px-6 py-4 text-right text-xs font-semibold text-slate-500 dark:text-gray-400 uppercase tracking-wider">Actions</th>
                 </tr>
               </thead>
               <tbody class="divide-y divide-slate-100 dark:divide-gray-700">
@@ -177,7 +179,8 @@
                   </td>
                   <td class="px-6 py-4">
                      <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300 border border-blue-100 dark:border-blue-800">
-                        {{ task.projectName || 'Unassigned' }} </span>
+                        {{ task.projectName || 'Unassigned' }}
+                     </span>
                   </td>
                   <td class="px-6 py-4">
                     <span :class="getStatusClass(task.status)" class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border">
@@ -207,6 +210,14 @@
                             </div>
                         </div>
                   </td>
+                  <td class="px-6 py-4">
+                    <div class="flex items-center">
+                       <span v-if="task.assignedUserName" class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-50 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300 border border-purple-100 dark:border-purple-800">
+                           <i class="fas fa-user mr-1"></i> {{ task.assignedUserName }}
+                       </span>
+                       <span v-else class="text-xs text-slate-400 italic">Unassigned</span>
+                    </div>
+                  </td>
 
                   <td class="px-6 py-4 text-right text-sm font-medium">
                     <div class="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -227,7 +238,7 @@
                 <span class="text-sm text-slate-500 dark:text-gray-400">
                     Showing {{ filteredTasks.length }} tasks
                 </span>
-                </div>
+           </div>
         </div>
       </div>
     </div>
@@ -324,6 +335,17 @@
                         <input type="number" v-model.number="form.actualHours" min="0" class="form-input" />
                      </div>
 
+                     <div class="col-span-2" v-if="!isEditing || (isEditing && !currentTaskHasAssignee)">
+                        <label class="form-label">Assign User (Email/Username)</label>
+                        <input 
+                            v-model="form.assignedUserEmail" 
+                            type="text" 
+                            class="form-input" 
+                            placeholder="Enter email or username to assign"
+                        />
+                        <p class="text-xs text-slate-500 mt-1">Leave empty to keep unassigned.</p>
+                    </div>
+
                   </div>
 
                   <div class="mt-8 flex justify-end gap-3">
@@ -388,21 +410,23 @@ import { Dialog, DialogPanel, DialogTitle, TransitionChild, TransitionRoot } fro
 import { useToastStore } from '@/stores/toast'
 import taskService from '@/services/taskService'
 import projectService from '@/services/projectService'
-// Importar componente y servicio para carga masiva
 import BulkUploadModal from '@/components/BulkUploadModal.vue'
+import api from '@/api' // IMPORTANTE: Importar API para la asignación manual
 
 const toast = useToastStore()
 
 // State
 const tasks = ref([])
-const projects = ref([]) // Lista de proyectos para el dropdown
+const projects = ref([]) 
 const loading = ref(false)
 const isModalOpen = ref(false)
 const isDeleteModalOpen = ref(false)
 const isEditing = ref(false)
 const taskToDelete = ref(null)
 
-// Estado para Carga Masiva
+// Variables para control de asignación
+const currentTaskHasAssignee = ref(false)
+
 const showTaskUploadModal = ref(false)
 
 const filters = ref({
@@ -425,11 +449,12 @@ const form = ref({
   description: '',
   status: 'PENDING',
   priority: 'MEDIUM',
-  projectId: null, // ID del proyecto seleccionado
+  projectId: null,
   startDate: '',
   endDate: '',
   estimatedHours: 0,
-  actualHours: 0
+  actualHours: 0,
+  assignedUserEmail: '' // Nuevo campo para asignación
 })
 
 const taskStatuses = ['PENDING', 'IN_PROGRESS', 'IN_REVIEW', 'COMPLETED', 'CANCELLED']
@@ -439,7 +464,7 @@ const taskPriorities = ['LOW', 'MEDIUM', 'HIGH', 'URGENT']
 const filteredTasks = computed(() => {
   return tasks.value.filter(task => {
     const matchName = task.name.toLowerCase().includes(filters.value.name.toLowerCase())
-    const matchProject = !filters.value.projectId || task.projectId === filters.value.projectId // Filtrar por ID de proyecto
+    const matchProject = !filters.value.projectId || task.projectId === filters.value.projectId
     const matchStatus = !filters.value.status || task.status === filters.value.status
     const matchPriority = !filters.value.priority || task.priority === filters.value.priority
     return matchName && matchProject && matchStatus && matchPriority
@@ -461,12 +486,9 @@ const fetchTasks = async () => {
   }
 }
 
-// Cargar proyectos para el selector
 const fetchProjects = async () => {
     try {
-        const response = await projectService.getAllProjects() // Asumiendo que existe este método
-        // Si projectService devuelve paginado, asegúrate de obtener la lista.
-        // Aquí asumo que devuelve un array directo o dentro de .data
+        const response = await projectService.getAllProjects()
         projects.value = Array.isArray(response.data) ? response.data : (response.data.content || [])
     } catch (error) {
         console.error("Error fetching projects", error)
@@ -485,15 +507,15 @@ const updateStats = () => {
   headerStats.value[3].value = completed
 }
 
-// Manejador de éxito para carga masiva
 const handleTaskUploadSuccess = async () => {
     showTaskUploadModal.value = false;
     await fetchTasks();
-    // fetchProjects no es estrictamente necesario recargarlo, pero fetchTasks sí.
 }
 
 const openCreateModal = () => {
   isEditing.value = false
+  currentTaskHasAssignee.value = false; // Reset al crear
+  
   form.value = {
     id: null,
     name: '',
@@ -504,14 +526,18 @@ const openCreateModal = () => {
     startDate: '',
     endDate: '',
     estimatedHours: 0,
-    actualHours: 0
+    actualHours: 0,
+    assignedUserEmail: ''
   }
   isModalOpen.value = true
 }
 
 const editTask = (task) => {
   isEditing.value = true
-  // Formatear fechas para input datetime-local (YYYY-MM-DDTHH:mm)
+  
+  // VERIFICAR si tiene usuario asignado
+  currentTaskHasAssignee.value = !!task.assignedUserId;
+
   const formatDateForInput = (dateStr) => {
       if(!dateStr) return '';
       return new Date(dateStr).toISOString().slice(0, 16);
@@ -520,7 +546,8 @@ const editTask = (task) => {
   form.value = { 
       ...task,
       startDate: formatDateForInput(task.startDate),
-      endDate: formatDateForInput(task.endDate)
+      endDate: formatDateForInput(task.endDate),
+      assignedUserEmail: '' // Limpiar input para nueva asignación
   }
   isModalOpen.value = true
 }
@@ -538,26 +565,48 @@ const saveTask = async () => {
 
     const payload = {
         ...form.value,
-        // Asegurarse de enviar fechas en formato ISO si el backend lo requiere, o null si están vacías
         startDate: form.value.startDate ? new Date(form.value.startDate).toISOString() : null,
         endDate: form.value.endDate ? new Date(form.value.endDate).toISOString() : null
     }
 
+    let savedTaskId = null;
 
     if (isEditing.value) {
       const response = await taskService.updateTask(form.value.id, payload)
-      // Actualizar localmente
+      // Update local array
       const index = tasks.value.findIndex(t => t.id === form.value.id)
       if (index !== -1) tasks.value[index] = response.data
+      savedTaskId = form.value.id;
       toast.showToast('Task updated successfully', 'success')
     } else {
-      const response = await taskService.createTask(payload) // Backend debe manejar creación con projectId
+      const response = await taskService.createTask(payload)
       tasks.value.push(response.data)
+      savedTaskId = response.data.id;
       toast.showToast('Task created successfully', 'success')
     }
+
+    // === LÓGICA DE ASIGNACIÓN ===
+    if (form.value.assignedUserEmail) {
+        // Solo asignar si es nueva O si es edición pero estaba libre
+        if (!isEditing.value || (isEditing.value && !currentTaskHasAssignee.value)) {
+            try {
+                await api.post('/tasks/assign-user', {
+                    usernameOrEmail: form.value.assignedUserEmail,
+                    taskId: savedTaskId,
+                    role: 'COLLAB' // Rol por defecto para tareas
+                });
+                toast.showToast('User assigned successfully', 'success');
+            } catch (assignError) {
+                console.error("Error assigning user:", assignError);
+                toast.showToast('Task saved but user assignment failed', 'warning');
+            }
+        }
+    }
+    // ============================
+
     updateStats()
     closeModal()
-    fetchTasks() // Recargar para asegurar consistencia (ej. nombres de proyecto)
+    fetchTasks()
   } catch (error) {
     console.error('Error saving task:', error)
     toast.showToast('Error saving task', 'error')
@@ -598,7 +647,6 @@ const clearFilters = () => {
   }
 }
 
-// Helpers
 const formatStatus = (status) => {
   return status.replace('_', ' ').charAt(0) + status.replace('_', ' ').slice(1).toLowerCase()
 }
@@ -648,15 +696,13 @@ const getPriorityClass = (priority) => {
     return classes[priority] || 'text-gray-600'
 }
 
-// Lifecycle
 onMounted(() => {
   fetchTasks()
-  fetchProjects() // Cargar proyectos al montar
+  fetchProjects()
 })
 </script>
 
 <style scoped>
-/* Tus estilos personalizados adicionales aquí */
 .card-hover {
   @apply transition-all duration-300 hover:shadow-lg hover:-translate-y-1;
 }

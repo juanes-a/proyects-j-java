@@ -697,7 +697,7 @@ const closeViewModal = () => { showViewModal.value = false; selectedProject.valu
 const closeCancelModal = () => { showCancelModal.value = false; selectedProject.value = null }
 const closeListModal = () => { showListModal.value = false; modalProjects.value = []; modalTitle.value = '' }
 
-// CRUD operations
+// CRUD operations (Actualizado con lógica de asignación)
 const handleSave = async (projectData) => {
   try {
     const cleanedData = {
@@ -718,13 +718,41 @@ const handleSave = async (projectData) => {
       }
     })
 
+    let savedProjectId = null;
+
     if (isEditing.value) {
       await api.put(`/projects/${selectedProject.value.id}`, cleanedData)
+      savedProjectId = selectedProject.value.id; // ID existente
       toastStore.showToast('Project updated successfully', 'success')
     } else {
-      await api.post('/projects', cleanedData)
+      const res = await api.post('/projects', cleanedData)
+      savedProjectId = res.data.id; // ID del nuevo proyecto
       toastStore.showToast('Project created successfully', 'success')
     }
+
+    // === NUEVA LÓGICA: ASIGNAR USUARIO SI CORRESPONDE ===
+    // Verifica si el modal envió un assignedUserId y si el proyecto cumple condiciones
+    if (projectData.assignedUserId) {
+        // Permitir si es nuevo O si es edición pero estaba sin asignar
+        const canAssign = !isEditing.value || (isEditing.value && !selectedProject.value.hasAssignees);
+        
+        if (canAssign) {
+            try {
+                // Asumimos que el modal envía 'assignedUserEmail' o similar. 
+                // Ajusta 'usernameOrEmail' según lo que emita tu ProjectModal.vue
+                await api.post('/projects/assign-user', {
+                    usernameOrEmail: projectData.assignedUserEmail || projectData.assignedUserName, // Asegúrate que el modal emita esto
+                    projectId: savedProjectId,
+                    role: projectData.assignedRole || 'MANAGER_PROYECTO'
+                });
+                toastStore.showToast('Usuario asignado correctamente', 'success');
+            } catch (assignError) {
+                console.error("Error asignando usuario:", assignError);
+                toastStore.showToast('Proyecto guardado, pero error al asignar usuario', 'warning');
+            }
+        }
+    }
+    // ====================================================
 
     await fetchProjects()
     await fetchSpecialProjects()
