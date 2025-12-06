@@ -389,7 +389,7 @@ import { useToastStore } from '@/stores/toast'
 import taskService from '@/services/taskService'
 import projectService from '@/services/projectService'
 // Importar componente y servicio para carga masiva
-import BulkUploadModal from '@/components/common/BulkUploadModal.vue'
+import BulkUploadModal from '@/components/BulkUploadModal.vue'
 
 const toast = useToastStore()
 

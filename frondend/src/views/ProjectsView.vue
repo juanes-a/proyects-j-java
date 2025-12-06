@@ -414,7 +414,7 @@ import ProjectListModal from '../components/projects/ProjectListModal.vue'
 import { useToastStore } from '../stores/toast'
 // Importaciones para carga masiva
 import projectService from '@/services/projectService';
-import BulkUploadModal from '@/components/common/BulkUploadModal.vue';
+import BulkUploadModal from '@/components/BulkUploadModal.vue';
 
 const route = useRoute()
 const router = useRouter()
