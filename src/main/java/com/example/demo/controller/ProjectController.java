@@ -49,6 +49,8 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import main.java.com.example.demo.util.ExcelHelper;
+
 import org.springframework.web.multipart.MultipartFile;
 import com.example.demo.util.CsvHelper;
 import java.io.ByteArrayInputStream;
@@ -530,7 +532,18 @@ public class ProjectController {
         }
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Por favor suba un archivo CSV válido.");
     }
-
+    @PostMapping("/upload/excel")
+    public ResponseEntity<String> uploadExcel(@RequestParam("file") MultipartFile file) {
+        if (ExcelHelper.hasExcelFormat(file)) {
+            try {
+                projectService.saveProjectsFromExcel(file);
+                return ResponseEntity.ok("Excel procesado correctamente.");
+            } catch (Exception e) {
+                return ResponseEntity.status(HttpStatus.EXPECTATION_FAILED).body("Error: " + e.getMessage());
+            }
+        }
+        return ResponseEntity.badRequest().body("Por favor suba un archivo Excel válido (.xlsx)");
+    }
 
 }
 

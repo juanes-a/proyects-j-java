@@ -13,5 +13,12 @@ export default {
                 'Content-Type': 'multipart/form-data'
             }
         });
+    },
+        uploadExcel(file) {
+        const formData = new FormData();
+        formData.append('file', file);
+        return api.post('/projects/upload/excel', formData, { // Ruta específica para Excel
+            headers: { 'Content-Type': 'multipart/form-data' }
+        });
     }
 };

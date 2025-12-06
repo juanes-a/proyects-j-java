@@ -166,11 +166,21 @@
             <button 
                 @click="showUploadModal = true"
                 class="flex items-center space-x-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors duration-200"
+                title="Subir archivo CSV"
             >
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
                 </svg>
-                <span>Carga Masiva</span>
+                <span>Carga CSV</span>
+            </button>
+
+            <button 
+                @click="showExcelUploadModal = true"
+                class="flex items-center space-x-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg transition-colors duration-200"
+                title="Subir archivo Excel"
+            >
+                <FileSpreadsheet class="w-4 h-4" />
+                <span>Carga Excel</span>
             </button>
 
             <button
@@ -373,9 +383,17 @@
 
     <BulkUploadModal
         :is-open="showUploadModal"
-        title="Carga Masiva de Proyectos"
+        title="Carga Masiva de Proyectos (CSV)"
         :upload-service-function="projectService.uploadCsv"
         @close="showUploadModal = false"
+        @success="handleUploadSuccess"
+    />
+
+    <BulkUploadModal
+        :is-open="showExcelUploadModal"
+        title="Carga Masiva de Proyectos (Excel)"
+        :upload-service-function="projectService.uploadExcel"
+        @close="showExcelUploadModal = false"
         @success="handleUploadSuccess"
     />
   </div>
@@ -386,7 +404,7 @@ import { ref, computed, onMounted, watch, nextTick } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import {
   FolderOpen, Users, DollarSign, TrendingUp, CheckCircle, Search, Plus, Eye, Edit,
-  Play, XCircle, Trash2, AlertTriangle, Zap, Calendar, Circle, AlertCircle
+  Play, XCircle, Trash2, AlertTriangle, Zap, Calendar, Circle, AlertCircle, FileSpreadsheet
 } from 'lucide-vue-next'
 import api from '@/api' 
 import ProjectModal from '../components/projects/ProjectModal.vue'
@@ -402,7 +420,7 @@ const route = useRoute()
 const router = useRouter()
 const toastStore = useToastStore()
 
-// ... [El método generatePdf se mantiene igual que en tu código original] ...
+// ... [El método generatePdf se mantiene igual] ...
 const generatePdf = async () => {
   try {
     const params = new URLSearchParams();
@@ -452,8 +470,9 @@ const showViewModal = ref(false)
 const showEditModal = ref(false)
 const showCancelModal = ref(false)
 const showListModal = ref(false)
-// ESTADO NUEVO: Carga Masiva
+// Estados para Carga Masiva
 const showUploadModal = ref(false)
+const showExcelUploadModal = ref(false) // NUEVO ESTADO
 
 const selectedProject = ref(null)
 const isEditing = ref(false)
@@ -560,9 +579,10 @@ const fetchSpecialProjects = async () => {
   }
 };
 
-// NUEVO MÉTODO: Manejar éxito de carga masiva
+// Manejar éxito de carga masiva (cierra ambos modales)
 const handleUploadSuccess = async () => {
     showUploadModal.value = false;
+    showExcelUploadModal.value = false;
     await fetchProjects();
     await fetchSpecialProjects();
 };
