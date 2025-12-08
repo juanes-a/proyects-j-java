@@ -257,7 +257,8 @@ const loading = ref(false)
 const errors = ref({})
 const generalError = ref('')
 
-const FIXED_ROLE = 'MANAGER_PROYECTO'; // Usamos MANAGER_PROYECTO como rol fijo para la asignación
+const FIXED_ROLE = 'ADMIN_COLLAB';
+ // Usamos MANAGER_PROYECTO como rol fijo para la asignaciónkmas
 
 const form = reactive({
   name: '',
