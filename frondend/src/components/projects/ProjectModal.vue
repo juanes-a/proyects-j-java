@@ -196,14 +196,11 @@
               <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Rol de Asignación
               </label>
-              <select
-                v-model="form.assignedRole"
-                :disabled="!form.assignedUserEmail"
-                class="block w-full rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white border-gray-300 dark:border-gray-600 disabled:opacity-50"
+              <p 
+                class="block w-full rounded-md shadow-sm p-2.5 text-sm bg-gray-100 dark:bg-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600"
               >
-                <option value="MANAGER_PROYECTO">Manager Proyecto</option>
-                <option value="COLABORADOR">Colaborador</option>
-              </select>
+                {{ formatRole(form.assignedRole) }}
+              </p>
             </div>
           </div>
           <p class="text-xs text-gray-500 dark:text-gray-400 mt-1" v-if="isEditing">
@@ -260,6 +257,8 @@ const loading = ref(false)
 const errors = ref({})
 const generalError = ref('')
 
+const FIXED_ROLE = 'MANAGER_PROYECTO'; // Usamos MANAGER_PROYECTO como rol fijo para la asignación
+
 const form = reactive({
   name: '',
   description: '',
@@ -270,8 +269,8 @@ const form = reactive({
   startDate: new Date().toISOString().split('T')[0], // Fecha actual por defecto
   endDate: '',
   budget: null,
-  assignedUserEmail: '', // NUEVO: Campo para email/username del manager
-  assignedRole: 'MANAGER_PROYECTO' // NUEVO: Rol de asignación por defecto
+  assignedUserEmail: '', 
+  assignedRole: FIXED_ROLE // Se inicializa con el rol fijo
 })
 
 // Función para formatear fechas del backend
@@ -282,6 +281,15 @@ const formatDateFromBackend = (dateString) => {
   } catch {
     return ''
   }
+}
+
+// Nueva función de ayuda para formatear el rol para mostrarlo en la UI
+const formatRole = (role) => {
+    const roleMap = {
+        'MANAGER_PROYECTO': 'Manager de Proyecto',
+        'COLABORADOR': 'Colaborador',
+    }
+    return roleMap[role] || role;
 }
 
 watch(() => props.project, (newProject) => {
@@ -296,9 +304,9 @@ watch(() => props.project, (newProject) => {
       startDate: formatDateFromBackend(newProject.startDate),
       endDate: formatDateFromBackend(newProject.endDate),
       budget: newProject.budget || null,
-      // CORRECCIÓN: Aseguramos que los nuevos campos se inicialicen/reseteen
+      // Se resetean los campos de asignación a sus valores por defecto/fijos
       assignedUserEmail: '', 
-      assignedRole: 'MANAGER_PROYECTO'
+      assignedRole: FIXED_ROLE 
     })
   } else {
     // Reset form for new project
@@ -312,8 +320,8 @@ watch(() => props.project, (newProject) => {
       startDate: new Date().toISOString().split('T')[0],
       endDate: '',
       budget: null,
-      assignedUserEmail: '', // NUEVO
-      assignedRole: 'MANAGER_PROYECTO' // NUEVO
+      assignedUserEmail: '',
+      assignedRole: FIXED_ROLE 
     })
   }
 }, { immediate: true })
@@ -351,11 +359,7 @@ const validateForm = () => {
     isValid = false
   }
   
-  // Validación de asignación (si se proporciona email)
-  if (form.assignedUserEmail && !form.assignedRole) {
-      errors.value.assignedRole = 'Assignment Role is required if a user is specified'
-      isValid = false
-  }
+  // Ya no se requiere validar assignedRole, ya que siempre es fijo
 
   return isValid
 }
@@ -377,9 +381,9 @@ const handleSubmit = async () => {
       startDate: form.startDate,
       endDate: form.endDate,
       budget: form.budget !== null ? Number(form.budget) : null,
-      // NUEVO: Incluir campos de asignación en la data emitida para ProjectsView.vue
+      // Se incluye el rol fijo en la data emitida para ProjectsView.vue
       assignedUserEmail: form.assignedUserEmail.trim() || null,
-      assignedRole: form.assignedRole
+      assignedRole: FIXED_ROLE
     }
     
     console.log('Sending project data:', projectData)
@@ -393,14 +397,12 @@ const handleSubmit = async () => {
       const backendErrors = error.response.data
       
       if (Array.isArray(backendErrors)) {
-        // Manejar array de errores
         backendErrors.forEach(err => {
           if (err.propertyPath && err.message) {
             errors.value[err.propertyPath] = err.message
           }
         })
       } else if (typeof backendErrors === 'object') {
-        // Manejar objeto de errores
         for (const [field, message] of Object.entries(backendErrors)) {
           if (field !== 'message' && field !== 'error' && field !== 'timestamp') {
               errors.value[field] = message

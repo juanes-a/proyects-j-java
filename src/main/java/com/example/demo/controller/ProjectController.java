@@ -28,6 +28,7 @@ import com.example.demo.exception.BusinessException;
 import java.io.IOException;
 
 
+import com.example.demo.service.UserService;
 import com.example.demo.util.PdfProjectReportGenerator;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.InputStreamResource;
@@ -48,10 +49,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import com.example.demo.util.ExcelHelper;
 
-import org.springframework.web.multipart.MultipartFile;
-import com.example.demo.util.CsvHelper;
 import java.io.ByteArrayInputStream;
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -62,7 +60,7 @@ import java.util.stream.Collectors;
 @Slf4j
 @RestController
 @RequestMapping("/api/projects")
-
+@CrossOrigin(origins = "http://localhost:5173")
 @Validated
 public class ProjectController {
 
@@ -104,7 +102,6 @@ public class ProjectController {
         private LocalDate startDate;
         private LocalDate endDate;
         private Double budget;
-        private boolean hasAssignees;
     }
 
     @Data
@@ -369,7 +366,7 @@ public class ProjectController {
         return ResponseEntity.badRequest().body(response);
     }
 
-    /*  Obtener lo projectos por email */
+    /* Obtener lo projectos por email */
     @GetMapping("user/{usernameOrEmail}")
     public ResponseEntity<?> getProjectsByUserDepartment(@PathVariable @NotBlank String usernameOrEmail) {
         try {
@@ -418,9 +415,11 @@ public class ProjectController {
     /*Asignar un proyecto */
     @PostMapping("/assign-user")
     public ResponseEntity<?> assignUserToProject(@RequestBody AssignUserToProjectRequest request) {
-        log.info("Datos recibidos en /projects/assign: {}", request);
+        // [CORRECCIÓN] Cambiar el log para que use la ruta correcta
+        log.info("Datos recibidos en /projects/assign-user: {}", request);
 
         try {
+            // 1. Ejecutar la lógica de asignación (valida usuario/proyecto, asigna rol)
             UsersAsignation assignment = projectService.assignUserToProject(
                 request.getUsernameOrEmail(),
                 request.getProjectId(),
@@ -429,40 +428,36 @@ public class ProjectController {
 
             log.info("Asignación exitosa a proyecto: {}", assignment);
 
-            // 👇 Buscar el correo del usuario asignado
+            // 2. Buscar el correo del usuario asignado para el email
             UserEntity usuarioAsignado = UserService.findByUsernameOrEmail(request.getUsernameOrEmail());
 
-        if (usuarioAsignado != null && usuarioAsignado.getEmail() != null) {
-            String subject = "Asignación a proyecto";
-
-            String body = "<html>" +
-                "<body style='font-family: Arial, sans-serif;'>" +
-                "<h2 style='color:#333;'>Asignación a proyecto</h2>" +
-                "<p>Hola <b>" + usuarioAsignado.getName() + "</b>,</p>" +
-                "<p>Se te ha asignado al proyecto con ID: <b>" + request.getProjectId() + "</b> " +
-                "con el rol de: <b>" + request.getRole() + "</b>.</p>" +
-                "<p>Puedes consultar más detalles y gestionar el proyecto en el siguiente enlace:</p>" +
-                "<p><a href='http://localhost:5173/dashTask/" + request.getProjectId() + "' " +
-                "style='display:inline-block; background-color:#007bff; color:white; padding:10px 15px; " +
-                "text-decoration:none; border-radius:5px;'>Ver Proyecto</a></p>" +
-                "<br><p>Saludos,<br>Equipo de Administración</p>" +
-                "</body>" +
-                "</html>";
-
-            emailService.enviarCorreo(
-                usuarioAsignado.getEmail(),
-                subject,
-                body
-            );
-        }
-
+            if (usuarioAsignado != null && usuarioAsignado.getEmail() != null) {
+                // 3. Enviar correo
+                emailService.enviarCorreo(
+                    usuarioAsignado.getEmail(),
+                    "Asignación a proyecto",
+                    "Has sido asignado al proyecto con ID: " + request.getProjectId() +
+                    " con el rol de: " + request.getRole()
+                );
+            }
 
             return ResponseEntity.ok(assignment);
 
-        } catch (Exception e) {
-            log.error("Error en asignación a proyecto: ", e);
+        } catch (BusinessException e) {
+            // [NUEVO] Manejo explícito de BusinessException (Ej. Usuario no encontrado, Proyecto ya asignado)
+            log.error("Error de negocio en asignación a proyecto: ", e);
             return ResponseEntity.badRequest()
-                .body(new ErrorResponse("Error al asignar usuario al proyecto: " + e.getMessage()));
+                .body(new ErrorResponse(e.getMessage()));
+
+        } catch (Exception e) {
+            // [CORRECCIÓN] Manejo genérico para cualquier otra excepción (problemas de correo, JPA, etc.)
+            log.error("Error interno en asignación a proyecto: ", e);
+            
+            // Mensaje más seguro y devolver 500 (Internal Server Error) para errores de servidor.
+            String errorMessage = e.getMessage() != null ? e.getMessage() : "Ocurrió un error interno en el servidor. Verifique la configuración del correo o la base de datos.";
+            
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR) 
+                .body(new ErrorResponse("Error al asignar usuario al proyecto: " + errorMessage));
         }
     }
 
@@ -520,31 +515,7 @@ public class ProjectController {
         }
     }
 
-    @PostMapping("/upload")
-    public ResponseEntity<String> uploadProjects(@RequestParam("file") MultipartFile file) {
-        if (CsvHelper.hasCSVFormat(file)) { // Valida que sea CSV
-            try {
-                projectService.saveProjectsFromCsv(file);
-                return ResponseEntity.ok("Archivos subidos y base de datos actualizada exitosamente.");
-            } catch (Exception e) {
-                return ResponseEntity.status(HttpStatus.EXPECTATION_FAILED).body("No se pudieron subir los archivos: " + e.getMessage());
-            }
-        }
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Por favor suba un archivo CSV válido.");
-    }
-    @PostMapping("/upload/excel")
-    public ResponseEntity<String> uploadExcel(@RequestParam("file") MultipartFile file) {
-        if (ExcelHelper.hasExcelFormat(file)) {
-            try {
-                projectService.saveProjectsFromExcel(file);
-                return ResponseEntity.ok("Excel procesado correctamente.");
-            } catch (Exception e) {
-                return ResponseEntity.status(HttpStatus.EXPECTATION_FAILED).body("Error: " + e.getMessage());
-            }
-        }
-        return ResponseEntity.badRequest().body("Por favor suba un archivo Excel válido (.xlsx)");
-    }
+
+
 
 }
-
-    
