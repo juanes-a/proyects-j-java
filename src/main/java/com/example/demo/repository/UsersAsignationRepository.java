@@ -39,6 +39,10 @@ public interface UsersAsignationRepository extends JpaRepository<UsersAsignation
     List<UsersAsignation> findByProject(Project project);
     
     List<UsersAsignation> findByProjectAndRolAsignado(Project project, Role role);
+    
+    // [NUEVO] Método para verificar si el proyecto tiene al menos una asignación
+    @Query("SELECT COUNT(ua) > 0 FROM UsersAsignation ua WHERE ua.project.id = :projectId")
+    boolean existsByProjectId(@Param("projectId") Long projectId); // <<-- ¡CORRECCIÓN AÑADIDA!
 
     // Consultas para Tareas
     @Query("SELECT ua FROM UsersAsignation ua WHERE ua.user = :user AND ua.task IS NOT NULL")
