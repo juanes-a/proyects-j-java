@@ -266,24 +266,21 @@ public class ProjectService {
         }
     }
 
-    private ProjectResponse mapToResponse(Project project) {
-            // 1. Calculamos el valor antes de usarlo
-            boolean hasAssignees = project.getAsignaciones() != null && !project.getAsignaciones().isEmpty();
-
-            // 2. Ahora sí podemos usar la variable 'hasAssignees' en el constructor
-            return new ProjectResponse(
-                project.getId(),
-                project.getName(),
-                project.getDescription(),
-                new DepartmentDTO(project.getDepartment().getId(), project.getDepartment().getName()),
-                project.getStatus().name(),
-                project.getPriority().name(),
-                project.getStartDate(),
-                project.getEndDate(),
-                project.getBudget() != null ? project.getBudget().doubleValue() : null,
-                hasAssignees // <--- Aquí pasamos el valor calculado
-            );
-        }
+private ProjectResponse mapToResponse(Project project) {
+        return new ProjectResponse(
+            project.getId(),
+            project.getName(),
+            project.getDescription(),
+            new DepartmentDTO(project.getDepartment().getId(), project.getDepartment().getName()),
+            project.getStatus().name(),
+            project.getPriority().name(),
+            project.getStartDate(),
+            project.getEndDate(),
+            project.getBudget() != null ? project.getBudget().doubleValue() : null,
+            // [CORRECCIÓN] 10mo argumento: Verifica si existen asignaciones
+            usersAsignationRepository.existsByProjectId(project.getId()) 
+        );
+    }
 
     @Transactional
     public void deleteProject(Long id) {

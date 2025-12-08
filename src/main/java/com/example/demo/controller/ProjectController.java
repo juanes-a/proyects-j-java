@@ -102,6 +102,7 @@ public class ProjectController {
         private LocalDate startDate;
         private LocalDate endDate;
         private Double budget;
+        private boolean hasAssignees;
     }
 
     @Data
