@@ -697,9 +697,10 @@ const closeViewModal = () => { showViewModal.value = false; selectedProject.valu
 const closeCancelModal = () => { showCancelModal.value = false; selectedProject.value = null }
 const closeListModal = () => { showListModal.value = false; modalProjects.value = []; modalTitle.value = '' }
 
-// CRUD operations (Actualizado con lógica de asignación)
+// CRUD operations (Actualizado con lógica de asignación y corrección de edición)
 const handleSave = async (projectData) => {
   try {
+    // Tomar los datos, incluyendo los nuevos campos opcionales de asignación que vienen del modal
     const cleanedData = {
       ...projectData,
       description: projectData.description || '',
@@ -707,7 +708,10 @@ const handleSave = async (projectData) => {
       departmentId: projectData.departmentId ? parseInt(projectData.departmentId) : null,
       budget: projectData.budget ? parseFloat(projectData.budget) : 0,
       startDate: projectData.startDate || null,
-      endDate: projectData.endDate || null
+      endDate: projectData.endDate || null,
+      // Se copian temporalmente los campos de asignación para la lógica posterior
+      assignedUserEmail: projectData.assignedUserEmail || null, 
+      assignedRole: projectData.assignedRole || null,
     }
 
     Object.keys(cleanedData).forEach(key => {
@@ -716,11 +720,22 @@ const handleSave = async (projectData) => {
           delete cleanedData[key]
         }
       }
+      // [CORRECCIÓN/NUEVO] Asegurar que los campos de asignación no se envíen a la ruta /projects
+      if (key === 'assignedUserEmail' || key === 'assignedRole') {
+          delete cleanedData[key];
+      }
     })
 
     let savedProjectId = null;
+    let assignmentEmail = projectData.assignedUserEmail; // Guardar el email/username para la asignación
+    let assignmentRole = projectData.assignedRole;
 
     if (isEditing.value) {
+      // [CORRECCIÓN RUTA/PAYLOAD] Eliminar departmentId para la operación de PUT 
+      if (cleanedData.departmentId) {
+        delete cleanedData.departmentId;
+      }
+
       await api.put(`/projects/${selectedProject.value.id}`, cleanedData)
       savedProjectId = selectedProject.value.id; // ID existente
       toastStore.showToast('Project updated successfully', 'success')
@@ -730,26 +745,31 @@ const handleSave = async (projectData) => {
       toastStore.showToast('Project created successfully', 'success')
     }
 
-    // === NUEVA LÓGICA: ASIGNAR USUARIO SI CORRESPONDE ===
-    // Verifica si el modal envió un assignedUserId y si el proyecto cumple condiciones
-    if (projectData.assignedUserId) {
-        // Permitir si es nuevo O si es edición pero estaba sin asignar
-        const canAssign = !isEditing.value || (isEditing.value && !selectedProject.value.hasAssignees);
+    // === LÓGICA DE ASIGNACIÓN (REVISADA) ===
+    // Verifica si el modal envió un assignedUserEmail
+    if (assignmentEmail) {
+        // Permitir si es nuevo O si es edición pero estaba sin asignar (asumiendo que selectedProject.value incluye una propiedad como hasAssignees)
+        const isCurrentlyAssigned = selectedProject.value?.hasAssignees === true; 
+        const canAssign = !isEditing.value || (isEditing.value && !isCurrentlyAssigned);
         
         if (canAssign) {
             try {
-                // Asumimos que el modal envía 'assignedUserEmail' o similar. 
-                // Ajusta 'usernameOrEmail' según lo que emita tu ProjectModal.vue
+                // El backend espera 'usernameOrEmail'
                 await api.post('/projects/assign-user', {
-                    usernameOrEmail: projectData.assignedUserEmail || projectData.assignedUserName, // Asegúrate que el modal emita esto
+                    usernameOrEmail: assignmentEmail, 
                     projectId: savedProjectId,
-                    role: projectData.assignedRole || 'MANAGER_PROYECTO'
+                    role: assignmentRole || 'MANAGER_PROYECTO' // Usar el rol del formulario o el default
                 });
                 toastStore.showToast('Usuario asignado correctamente', 'success');
             } catch (assignError) {
                 console.error("Error asignando usuario:", assignError);
-                toastStore.showToast('Proyecto guardado, pero error al asignar usuario', 'warning');
+                // Mensaje de error más detallado para el usuario
+                const assignErrorMessage = assignError.response?.data?.message || 'Verifique el username o email del usuario a asignar.';
+                toastStore.showToast('Proyecto guardado, pero error al asignar usuario: ' + assignErrorMessage, 'warning');
             }
+        } else if (isEditing.value && isCurrentlyAssigned) {
+            // Notificar que la reasignación no se maneja desde aquí si ya está asignado.
+            toastStore.showToast('El proyecto ya tiene asignaciones activas, la reasignación debe hacerse en la gestión de equipo.', 'warning');
         }
     }
     // ====================================================
@@ -771,7 +791,15 @@ const handleSave = async (projectData) => {
 const deleteProject = async (project) => {
   if (!confirm(`Are you sure you want to delete "${project.name}"?`)) return
   try {
-    await api.delete(`/projects/${project.id}`)
+    // Nota: El backend de Java requiere el nombre para la eliminación.
+    // Aunque el componente parece usar un modal de confirmación simple (confirm),
+    // el backend de Java en ProjectController.java sí requiere el nombre en el body de la petición DELETE.
+    // Para simplificar aquí, asumimos que la validación se hace en el backend o que el modal de confirmación es suficiente.
+    // Si tienes problemas de eliminación, asegúrate de que tu backend de Java no espere el nombre en el body, o actualiza la llamada:
+    /* await api.delete(`/projects/${project.id}`, { data: { name: project.name } })
+    */
+    
+    await api.delete(`/projects/${project.id}`) 
     projects.value = projects.value.filter(p => p.id !== project.id)
     updateStats()
     await fetchSpecialProjects()

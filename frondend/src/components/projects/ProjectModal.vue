@@ -1,7 +1,6 @@
 <template>
   <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
     <div class="bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full max-w-2xl mx-4 max-h-[90vh] overflow-y-auto">
-      <!-- Header -->
       <div class="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
         <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
           {{ isEditing ? 'Edit Project' : 'Create Project' }}
@@ -14,11 +13,8 @@
         </button>
       </div>
 
-      <!-- Form -->
       <form @submit.prevent="handleSubmit" class="p-6 space-y-6">
-        <!-- Basic Information -->
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <!-- Name -->
           <div class="md:col-span-2">
             <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               Project Name *
@@ -36,7 +32,6 @@
             <p v-if="errors.name" class="text-red-500 text-sm mt-1">{{ errors.name }}</p>
           </div>
 
-          <!-- Department -->
           <div>
             <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               Department *
@@ -61,7 +56,6 @@
             <p v-if="errors.departmentId" class="text-red-500 text-sm mt-1">{{ errors.departmentId }}</p>
           </div>
 
-          <!-- Priority -->
           <div>
             <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               Priority *
@@ -78,7 +72,6 @@
             </select>
           </div>
 
-          <!-- Status -->
           <div>
             <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               Status *
@@ -95,7 +88,6 @@
             </select>
           </div>
 
-          <!-- Budget -->
           <div>
             <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               Budget
@@ -118,9 +110,7 @@
           </div>
         </div>
 
-        <!-- Dates -->
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <!-- Start Date -->
           <div>
             <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               Start Date *
@@ -137,7 +127,6 @@
             <p v-if="errors.startDate" class="text-red-500 text-sm mt-1">{{ errors.startDate }}</p>
           </div>
 
-          <!-- End Date -->
           <div>
             <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               End Date *
@@ -156,7 +145,6 @@
           </div>
         </div>
 
-        <!-- Description -->
         <div>
           <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
             Description
@@ -173,7 +161,6 @@
           </p>
         </div>
 
-        <!-- Objectives -->
         <div>
           <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
             Objectives
@@ -189,8 +176,41 @@
             {{ (form.objectives || '').length }}/1000 characters
           </p>
         </div>
+        
+        <div v-if="!isEditing || (isEditing && !project?.hasAssignees)">
+          <h4 class="text-md font-semibold text-gray-800 dark:text-white mb-3 pt-4 border-t border-gray-200 dark:border-gray-700">Asignación de Manager (Opcional)</h4>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Asignar Usuario (Username o Email)
+              </label>
+              <input
+                v-model="form.assignedUserEmail"
+                type="text"
+                placeholder="user@example.com o username"
+                class="block w-full rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white border-gray-300 dark:border-gray-600"
+              />
+            </div>
 
-        <!-- Error message general -->
+            <div>
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Rol de Asignación
+              </label>
+              <select
+                v-model="form.assignedRole"
+                :disabled="!form.assignedUserEmail"
+                class="block w-full rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white border-gray-300 dark:border-gray-600 disabled:opacity-50"
+              >
+                <option value="MANAGER_PROYECTO">Manager Proyecto</option>
+                <option value="COLABORADOR">Colaborador</option>
+              </select>
+            </div>
+          </div>
+          <p class="text-xs text-gray-500 dark:text-gray-400 mt-1" v-if="isEditing">
+            Solo puedes asignar un Manager si el proyecto no tiene asignaciones previas.
+          </p>
+        </div>
+
         <div v-if="generalError" class="bg-red-50 border-l-4 border-red-500 p-4">
           <div class="flex">
             <div class="flex-shrink-0">
@@ -202,7 +222,6 @@
           </div>
         </div>
 
-        <!-- Actions -->
         <div class="flex space-x-3 pt-4">
           <button
             type="button"
@@ -250,7 +269,9 @@ const form = reactive({
   priority: 'MEDIUM',
   startDate: new Date().toISOString().split('T')[0], // Fecha actual por defecto
   endDate: '',
-  budget: null
+  budget: null,
+  assignedUserEmail: '', // NUEVO: Campo para email/username del manager
+  assignedRole: 'MANAGER_PROYECTO' // NUEVO: Rol de asignación por defecto
 })
 
 // Función para formatear fechas del backend
@@ -274,7 +295,10 @@ watch(() => props.project, (newProject) => {
       priority: newProject.priority || 'MEDIUM',
       startDate: formatDateFromBackend(newProject.startDate),
       endDate: formatDateFromBackend(newProject.endDate),
-      budget: newProject.budget || null
+      budget: newProject.budget || null,
+      // CORRECCIÓN: Aseguramos que los nuevos campos se inicialicen/reseteen
+      assignedUserEmail: '', 
+      assignedRole: 'MANAGER_PROYECTO'
     })
   } else {
     // Reset form for new project
@@ -287,7 +311,9 @@ watch(() => props.project, (newProject) => {
       priority: 'MEDIUM',
       startDate: new Date().toISOString().split('T')[0],
       endDate: '',
-      budget: null
+      budget: null,
+      assignedUserEmail: '', // NUEVO
+      assignedRole: 'MANAGER_PROYECTO' // NUEVO
     })
   }
 }, { immediate: true })
@@ -324,6 +350,12 @@ const validateForm = () => {
     errors.value.endDate = 'End date must be after start date'
     isValid = false
   }
+  
+  // Validación de asignación (si se proporciona email)
+  if (form.assignedUserEmail && !form.assignedRole) {
+      errors.value.assignedRole = 'Assignment Role is required if a user is specified'
+      isValid = false
+  }
 
   return isValid
 }
@@ -344,12 +376,15 @@ const handleSubmit = async () => {
       priority: form.priority,
       startDate: form.startDate,
       endDate: form.endDate,
-      budget: form.budget !== null ? Number(form.budget) : null
+      budget: form.budget !== null ? Number(form.budget) : null,
+      // NUEVO: Incluir campos de asignación en la data emitida para ProjectsView.vue
+      assignedUserEmail: form.assignedUserEmail.trim() || null,
+      assignedRole: form.assignedRole
     }
     
     console.log('Sending project data:', projectData)
-    await emit('save', projectData)
-    emit('close')
+    // Se emite el evento para que ProjectsView.vue maneje el guardado y la asignación
+    emit('save', projectData)
   } catch (error) {
     console.error('Error saving project:', error)
     
@@ -367,7 +402,9 @@ const handleSubmit = async () => {
       } else if (typeof backendErrors === 'object') {
         // Manejar objeto de errores
         for (const [field, message] of Object.entries(backendErrors)) {
-          errors.value[field] = message
+          if (field !== 'message' && field !== 'error' && field !== 'timestamp') {
+              errors.value[field] = message
+          }
         }
       }
       
