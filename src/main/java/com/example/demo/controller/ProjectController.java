@@ -26,6 +26,7 @@ import com.example.demo.repository.ProjectRepository;
 import com.example.demo.repository.TaskRepository;
 import com.example.demo.exception.BusinessException;
 import java.io.IOException;
+import org.springframework.web.multipart.MultipartFile;
 
 
 import com.example.demo.service.UserService;
@@ -517,6 +518,68 @@ public class ProjectController {
     }
 
 
+    // ============== Carga Masiva ==============
 
+    @PostMapping("/upload")
+    public ResponseEntity<?> uploadCsv(@RequestParam("file") MultipartFile file) {
+        log.info("📧 Petición de carga masiva CSV recibida.");
+        if (file.isEmpty()) {
+            return ResponseEntity.badRequest().body(new ErrorResponse("El archivo no puede estar vacío."));
+        }
 
+        try {
+            // Llama al método que usa CsvHelper.parseProjectsDto(file)
+            projectService.processCsvUpload(file); 
+            return ResponseEntity.ok(new ErrorResponse("Carga masiva CSV completada exitosamente."));
+
+        } catch (BusinessException e) {
+            // 400 BAD REQUEST: Errores de datos (IDs no válidos, fechas/enums incorrectos)
+            log.error("❌ Error de negocio en carga CSV: {}", e.getMessage());
+            return ResponseEntity.badRequest().body(new ErrorResponse(e.getMessage()));
+
+        } catch (Exception e) {
+            // 500 INTERNAL SERVER ERROR: Errores de I/O, del servidor, o parseo inesperado
+            log.error("❌ Error interno del servidor al procesar CSV: ", e);
+            String errorMessage = "Error interno del servidor al procesar CSV. Revise los logs del servidor.";
+            
+            if (e.getMessage() != null && e.getMessage().contains("multipart")) {
+                 errorMessage = "Error al leer el archivo. Asegúrese de que el archivo es un CSV válido y no está corrupto.";
+            }
+
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(new ErrorResponse(errorMessage));
+        }
+    }
+
+    @PostMapping("/upload/excel")
+    public ResponseEntity<?> uploadExcel(@RequestParam("file") MultipartFile file) {
+        log.info("📧 Petición de carga masiva Excel recibida.");
+        if (file.isEmpty()) {
+            return ResponseEntity.badRequest().body(new ErrorResponse("El archivo no puede estar vacío."));
+        }
+
+        try {
+            // CORRECCIÓN: Se elimina el casting innecesario ((Object) projectService)
+            // Ya que el método processExcelUpload está ahora correctamente definido en ProjectService
+            projectService.processExcelUpload(file); 
+            return ResponseEntity.ok(new ErrorResponse("Carga masiva Excel completada exitosamente."));
+            
+        } catch (BusinessException e) {
+            // 400 BAD REQUEST: Errores de datos (IDs no válidos, fechas/enums incorrectos)
+            log.error("❌ Error de negocio en carga Excel: {}", e.getMessage());
+            return ResponseEntity.badRequest().body(new ErrorResponse(e.getMessage()));
+
+        } catch (Exception e) {
+            // 500 INTERNAL SERVER ERROR: Errores de I/O, del servidor, o parseo inesperado
+            log.error("❌ Error interno del servidor al procesar Excel: ", e);
+            String errorMessage = "Error interno del servidor al procesar Excel. Revise los logs del servidor.";
+            
+            if (e.getMessage() != null && e.getMessage().contains("multipart")) {
+                 errorMessage = "Error al leer el archivo. Asegúrese de que el archivo es un Excel válido y no está corrupto.";
+            }
+
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(new ErrorResponse(errorMessage));
+        }
+    }
 }

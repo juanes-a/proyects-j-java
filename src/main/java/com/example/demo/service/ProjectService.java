@@ -17,32 +17,32 @@ import com.example.demo.repository.UserRepository;
 import com.example.demo.repository.UsersAsignationRepository;
 import org.springframework.web.multipart.MultipartFile;
 import jakarta.persistence.EntityNotFoundException;
-import com.example.demo.util.CsvHelper;
+import com.example.demo.util.CsvHelper; 
+import com.example.demo.util.ExcelHelper; // <--- NUEVA IMPORTACIÓN
 import com.example.demo.repository.DepartmentRepository;
 import com.example.demo.exception.ProjectNotFoundException;
 import com.example.demo.exception.BusinessException;
 import com.example.demo.dto.request.project.ProjectCsvDTO;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
-import java.io.IOException;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
+import java.io.IOException; 
 
 import lombok.extern.slf4j.Slf4j;
-import com.example.demo.util.ExcelHelper;
-
 import org.modelmapper.ModelMapper;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 @Slf4j
 @Service
 @Transactional
@@ -62,6 +62,7 @@ public class ProjectService {
     @Autowired
     private UserRepository userRepository;
 
+
     private final ModelMapper modelMapper;
     
     @Autowired
@@ -69,14 +70,18 @@ public class ProjectService {
         this.modelMapper = modelMapper;
     }
 
+
     public ProjectService(ProjectRepository projectRepository) {
         this.projectRepository = projectRepository;
-        this.modelMapper = new ModelMapper();
-    }
-
+            this.modelMapper = new ModelMapper();
+        }
     public List<Project> getAllProjectEntities() {
         return projectRepository.findAll();
     }
+
+
+
+
 
     // ============== Operaciones CRUD ==============
 
@@ -95,7 +100,7 @@ public class ProjectService {
         Project project = new Project();
         project.setName(dto.getName());
         project.setDescription(dto.getDescription());
-        project.setDepartment(department);
+        project.setDepartment(department); // Asegurar que department no sea null
         project.setStartDate(dto.getStartDate());
         project.setEndDate(dto.getEndDate());
         project.setBudget(dto.getBudget() != null ? BigDecimal.valueOf(dto.getBudget()) : null);
@@ -120,6 +125,7 @@ public class ProjectService {
         existingProject.setBudget(updateDTO.getBudget());
         existingProject.setPriority(updateDTO.getPriority());
         existingProject.setStatus(updateDTO.getStatus());
+
         
         // Validación de fechas adicional
         if (updateDTO.getStartDate().isAfter(updateDTO.getEndDate())) {
@@ -128,6 +134,8 @@ public class ProjectService {
         
         return projectRepository.save(existingProject);
     }
+ 
+
 
     // ============== Gestión de estado ==============
 
@@ -223,7 +231,6 @@ public class ProjectService {
             throw new BusinessException("Project name already exists in this department");
         }
     }
-
     public List<Project> searchProjects(
             String name,
             Long departmentId,
@@ -246,6 +253,7 @@ public class ProjectService {
                 .toList();
     }
 
+
     private void validateProjectDates(LocalDate startDate, LocalDate endDate) {
         if (startDate == null || endDate == null) {
             throw new BusinessException("Start and end dates are required");
@@ -266,7 +274,7 @@ public class ProjectService {
         }
     }
 
-private ProjectResponse mapToResponse(Project project) {
+    private ProjectResponse mapToResponse(Project project) {
         return new ProjectResponse(
             project.getId(),
             project.getName(),
@@ -277,12 +285,11 @@ private ProjectResponse mapToResponse(Project project) {
             project.getStartDate(),
             project.getEndDate(),
             project.getBudget() != null ? project.getBudget().doubleValue() : null,
-            // [CORRECCIÓN] 10mo argumento: Verifica si existen asignaciones
-            usersAsignationRepository.existsByProjectId(project.getId()) 
+            usersAsignationRepository.existsByProjectId(project.getId())
         );
     }
 
-    @Transactional
+     @Transactional
     public void deleteProject(Long id) {
         Project project = projectRepository.findById(id)
             .orElseThrow(() -> new ProjectNotFoundException("Project not found with id: " + id));
@@ -306,19 +313,22 @@ private ProjectResponse mapToResponse(Project project) {
         return mapToResponse(project);
     }
 
+
     public Project getProjectEntityById(Long id) {
         return projectRepository.findById(id)
             .orElseThrow(() -> new ProjectNotFoundException("Project not found with id: " + id));
     }
 
-    // En Control de proyectos
+
     public long countProjectsByDepartment(Long departmentId) {
         try {
+            // Verifica que el departmentId no sea nulo
             if (departmentId == null) {
                 throw new IllegalArgumentException("Department ID cannot be null");
             }
             return projectRepository.countByDepartmentId(departmentId);
         } catch (Exception e) {
+            // Log del error para diagnóstico
             logger.error("Error counting projects for department {}: {}", departmentId, e.getMessage(), e);
             throw new ResponseStatusException(
                 HttpStatus.INTERNAL_SERVER_ERROR, 
@@ -327,6 +337,7 @@ private ProjectResponse mapToResponse(Project project) {
             );
         }
     }
+
 
     public long countByDepartmentIdAndStatus(Long departmentId, ProjectStatus status) {
         try {
@@ -369,6 +380,7 @@ private ProjectResponse mapToResponse(Project project) {
         return projects.stream()
             .map(project -> {
                 ProjectResponseDTO dto = ProjectResponseDTO.fromEntity(project);
+                // Asegurar que los campos del departamento están poblados
                 if (dto.getDepartmentId() == null) {
                     dto.setDepartmentId(departmentId);
                     dto.setDepartmentName(project.getDepartment().getName());
@@ -378,16 +390,22 @@ private ProjectResponse mapToResponse(Project project) {
             .collect(Collectors.toList());
     }
 
+
+
     public UsersAsignation assignUserToProject(String usernameOrEmail, Long projectId, Role role) {
+        // Validar usuario
         UserEntity user = userRepository.findByUsernameOrEmail(usernameOrEmail, usernameOrEmail)
             .orElseThrow(() -> new BusinessException("Usuario no encontrado: " + usernameOrEmail));
 
+        // Validar proyecto
         Project project = projectRepository.findById(projectId)
             .orElseThrow(() -> new BusinessException("Proyecto no encontrado con ID: " + projectId));
 
+        // Asignar rol
         user.setRole(role);
         userRepository.save(user);
 
+        // Verificar si ya está asignado al proyecto
         Optional<UsersAsignation> existingAssignment = usersAsignationRepository
             .findByUserAndProject(user, project);
 
@@ -395,6 +413,7 @@ private ProjectResponse mapToResponse(Project project) {
             throw new BusinessException("El usuario ya está asignado a este proyecto.");
         }
 
+        // Crear asignación
         UsersAsignation assignment = new UsersAsignation();
         assignment.setUser(user);
         assignment.setProject(project);
@@ -403,120 +422,219 @@ private ProjectResponse mapToResponse(Project project) {
 
         logger.info("Asignando usuario al proyecto {}...", project.getId());
         UsersAsignation saved = usersAsignationRepository.save(assignment);
-        usersAsignationRepository.flush();
+        usersAsignationRepository.flush(); // Fuerza el INSERT
         logger.info("Asignación guardada: {}", saved);
 
         return saved;
     }
 
     public Optional<UsersAsignation> getUserProjectAssignment(String usernameOrEmail) {
+        // 1. Validación básica del input
         if (usernameOrEmail == null || usernameOrEmail.isBlank()) {
             throw new IllegalArgumentException("Username/email no puede estar vacío");
         }
 
+        // 2. Normalización del input
         String normalizedInput = usernameOrEmail.trim().toLowerCase();
 
+        // 3. Buscar usuario (con mejor manejo de errores)
         UserEntity user = userRepository.findByUsernameOrEmail(normalizedInput, normalizedInput)
             .orElseThrow(() -> new EntityNotFoundException(
                 "Usuario '" + normalizedInput + "' no encontrado"));
 
+        // 4. Obtener asignación activa más reciente
         return usersAsignationRepository.findTopByUserAndProjectIsNotNullOrderByDateAsignDateTimeDesc(user);
     }
+    
+    // =========================================================================
+    // ============== MÉTODOS DE CARGA MASIVA (CSV y EXCEL) - CORREGIDOS ==============
+    // =========================================================================
 
-    public void saveProjectsFromCsv(MultipartFile file) {
+    /**
+     * Procesa la carga masiva de proyectos desde un archivo CSV.
+     * Convierte los RuntimeExceptions de datos/parseo en BusinessException con mensajes claros.
+     */
+    @Transactional
+    public void processCsvUpload(MultipartFile file) throws BusinessException, IOException {
+        List<ProjectCsvDTO> dtos;
+        
         try {
-            List<ProjectCsvDTO> dtos = CsvHelper.parseProjectsDto(file);
+            // CORRECCIÓN: Llamar al método correcto de CsvHelper
+            // El método parseProjectsDto en CsvHelper toma MultipartFile como argumento.
+            dtos = CsvHelper.parseProjectsDto(file); 
+        } catch (RuntimeException e) {
+            // CsvHelper lanza un RuntimeException genérico al fallar el parseo (por ejemplo, encabezados incorrectos)
+            throw new BusinessException("Fallo al leer o parsear el CSV. Verifique los encabezados y el delimitador. Detalle: " + e.getMessage());
+        } catch (Exception e) {
+            // Captura otros errores de I/O
+            throw e;
+        }
 
-            for (ProjectCsvDTO dto : dtos) {
+        if (dtos.isEmpty()) {
+            throw new BusinessException("El archivo CSV no contiene proyectos válidos para importar.");
+        }
+
+        for (int i = 0; i < dtos.size(); i++) {
+            ProjectCsvDTO dto = dtos.get(i);
+            int rowNumber = i + 2; // +1 por el índice base cero, +1 por la fila de encabezados
+
+            try {
+                // 1. Validar Departamento
                 Department dept = departmentRepository.findById(dto.getDepartmentId())
-                    .orElseThrow(() -> new RuntimeException("Departamento no encontrado ID: " + dto.getDepartmentId()));
+                    .orElseThrow(() -> new BusinessException("Fila " + rowNumber + ": Departamento ID " + dto.getDepartmentId() + " no encontrado."));
 
+                // 2. Crear Entidad Project
                 Project project = new Project();
+                
+                // 3. Asignar campos y validar formatos (aquí es donde ocurren los errores de datos)
                 project.setName(dto.getName());
                 project.setDescription(dto.getDescription());
                 project.setObjectives(dto.getObjectives());
                 project.setDepartment(dept); 
 
-                if (dto.getPriority() != null) {
+                // Conversión y validación de Enums (lanza IllegalArgumentException si falla)
+                if (dto.getPriority() == null || dto.getPriority().isEmpty()) {
+                    project.setPriority(ProjectPriority.MEDIUM); 
+                } else {
                     project.setPriority(ProjectPriority.valueOf(dto.getPriority().toUpperCase()));
                 }
                 
-                if (dto.getStatus() != null) {
+                if (dto.getStatus() == null || dto.getStatus().isEmpty()) {
+                    project.setStatus(ProjectStatus.PLANNED); 
+                } else {
                     project.setStatus(ProjectStatus.valueOf(dto.getStatus().toUpperCase()));
                 }
-
+                
+                // Conversión y validación de Fechas (lanza DateTimeParseException si falla)
                 if (dto.getStartDate() != null && !dto.getStartDate().isEmpty()) {
                     project.setStartDate(LocalDate.parse(dto.getStartDate()));
+                } else {
+                    throw new BusinessException("Fila " + rowNumber + ": La fecha de inicio es requerida (formato YYYY-MM-DD).");
                 }
                 
                 if (dto.getEndDate() != null && !dto.getEndDate().isEmpty()) {
                     project.setEndDate(LocalDate.parse(dto.getEndDate()));
+                } else {
+                    throw new BusinessException("Fila " + rowNumber + ": La fecha de fin es requerida (formato YYYY-MM-DD).");
                 }
 
+                if (project.getStartDate().isAfter(project.getEndDate())) {
+                     throw new BusinessException("Fila " + rowNumber + ": La fecha de fin debe ser posterior a la de inicio.");
+                }
+                
+                // Conversión de Budget
                 project.setBudget(dto.getBudget());
+                
+                // 4. Guardar
                 projectRepository.save(project);
+
+            } catch (IllegalArgumentException e) {
+                // Captura errores específicos de Enum.valueOf o LocalDate.parse (formato de fecha)
+                String message = e.getMessage().contains("No enum constant") ? 
+                                 "Valor de 'Status' o 'Priority' inválido (debe ser MAYÚSCULAS)." : 
+                                 "Formato de fecha (YYYY-MM-DD) o valor numérico incorrecto.";
+                throw new BusinessException("Fila " + rowNumber + ": Error de datos. " + message + " Detalle: " + e.getMessage());
+            } catch (BusinessException e) {
+                 // Propaga los errores de validación de negocio (Departamento no existe, etc.)
+                throw e; 
+            } catch (Exception e) {
+                // Captura cualquier otro error de mapeo/base de datos
+                throw new BusinessException("Fila " + rowNumber + ": Error desconocido al procesar la fila. Detalle: " + e.getMessage());
             }
-        } catch (IllegalArgumentException e) {
-            throw new RuntimeException("Error en el formato de datos del CSV (Verifique Enums o Fechas): " + e.getMessage());
-        } catch (Exception e) {
-            throw new RuntimeException("Fallo al guardar datos CSV: " + e.getMessage());
         }
     }
 
 
-    // ... imports necesarios arriba:
-    // import com.example.demo.util.ExcelHelper;
-    // import java.io.IOException;
+    /**
+     * Procesa la carga masiva de proyectos desde un archivo Excel.
+     * Implementa un manejo de excepciones similar al CSV.
+     */
+    @Transactional
+    public void processExcelUpload(MultipartFile file) throws BusinessException, IOException {
+        List<ProjectCsvDTO> dtos; 
 
-    // AGREGAR ESTE MÉTODO EN ProjectService.java
-    public void saveProjectsFromExcel(MultipartFile file) {
         try {
-            // 1. Usar el ExcelHelper para obtener la lista de DTOs
-            List<ProjectCsvDTO> dtos = ExcelHelper.excelToProjects(file.getInputStream());
+            // CORRECCIÓN: Llamar al método correcto de ExcelHelper
+            // El método excelToProjects en ExcelHelper toma InputStream como argumento.
+            dtos = ExcelHelper.excelToProjects(file.getInputStream());
+        } catch (RuntimeException e) {
+            // ExcelHelper lanza un RuntimeException genérico al fallar el parseo
+            throw new BusinessException("Fallo al leer o parsear el Excel. Verifique el formato de las celdas. Detalle: " + e.getMessage());
+        } catch (Exception e) {
+            // Captura otros errores de I/O
+            throw e; 
+        }
 
-            // 2. Reutilizar la misma lógica de guardado (iterar y guardar)
-            // Como la lógica es idéntica a la del CSV, lo ideal es refactorizar,
-            // pero por ahora puedes copiar el bucle 'for' del método saveProjectsFromCsv aquí.
-            
-            for (ProjectCsvDTO dto : dtos) {
-                // ... (Copia aquí EXACTAMENTE el mismo contenido del bucle 'for' que ya tienes en saveProjectsFromCsv)
-                // Desde buscar departamento hasta projectRepository.save(project)
-                 Department dept = departmentRepository.findById(dto.getDepartmentId())
-                    .orElseThrow(() -> new RuntimeException("Departamento no encontrado ID: " + dto.getDepartmentId()));
+        if (dtos.isEmpty()) {
+            throw new BusinessException("El archivo Excel no contiene proyectos válidos para importar.");
+        }
 
+        for (int i = 0; i < dtos.size(); i++) {
+            ProjectCsvDTO dto = dtos.get(i);
+            int rowNumber = i + 2; 
+
+            try {
+                // 1. Validar Departamento
+                Department dept = departmentRepository.findById(dto.getDepartmentId())
+                    .orElseThrow(() -> new BusinessException("Fila " + rowNumber + ": Departamento ID " + dto.getDepartmentId() + " no encontrado."));
+
+                // 2. Crear Entidad Project
                 Project project = new Project();
+                
+                // 3. Asignar campos y validar formatos
                 project.setName(dto.getName());
                 project.setDescription(dto.getDescription());
                 project.setObjectives(dto.getObjectives());
                 project.setDepartment(dept); 
 
-                if (dto.getPriority() != null) {
+                // Conversión y validación de Enums
+                if (dto.getPriority() == null || dto.getPriority().isEmpty()) {
+                    project.setPriority(ProjectPriority.MEDIUM); 
+                } else {
                     project.setPriority(ProjectPriority.valueOf(dto.getPriority().toUpperCase()));
                 }
                 
-                if (dto.getStatus() != null) {
+                if (dto.getStatus() == null || dto.getStatus().isEmpty()) {
+                    project.setStatus(ProjectStatus.PLANNED);
+                } else {
                     project.setStatus(ProjectStatus.valueOf(dto.getStatus().toUpperCase()));
                 }
-
+                
+                // Conversión y validación de Fechas
                 if (dto.getStartDate() != null && !dto.getStartDate().isEmpty()) {
                     project.setStartDate(LocalDate.parse(dto.getStartDate()));
+                } else {
+                    throw new BusinessException("Fila " + rowNumber + ": La fecha de inicio es requerida (formato YYYY-MM-DD).");
                 }
                 
                 if (dto.getEndDate() != null && !dto.getEndDate().isEmpty()) {
                     project.setEndDate(LocalDate.parse(dto.getEndDate()));
+                } else {
+                    throw new BusinessException("Fila " + rowNumber + ": La fecha de fin es requerida (formato YYYY-MM-DD).");
                 }
 
+                if (project.getStartDate().isAfter(project.getEndDate())) {
+                     throw new BusinessException("Fila " + rowNumber + ": La fecha de fin debe ser posterior a la de inicio.");
+                }
+
+                // Conversión de Budget
                 project.setBudget(dto.getBudget());
+                
+                // 4. Guardar
                 projectRepository.save(project);
+
+            } catch (IllegalArgumentException e) {
+                String message = e.getMessage().contains("No enum constant") ? 
+                                 "Valor de 'Status' o 'Priority' inválido." : 
+                                 "Formato de fecha (YYYY-MM-DD) o valor numérico incorrecto.";
+                throw new BusinessException("Fila " + rowNumber + ": Error de datos. " + message + " Detalle: " + e.getMessage());
+            } catch (BusinessException e) {
+                 // Propaga los errores de validación de negocio
+                throw e; 
+            } catch (Exception e) {
+                // Captura cualquier otro error de mapeo/base de datos
+                throw new BusinessException("Fila " + rowNumber + ": Error desconocido al procesar la fila. Detalle: " + e.getMessage());
             }
-        } catch (IOException e) {
-            throw new RuntimeException("Fallo al procesar el archivo Excel: " + e.getMessage());
-        } catch (IllegalArgumentException e) {
-            throw new RuntimeException("Error en datos del Excel (Verifique Enums o Fechas): " + e.getMessage());
-        } catch (Exception e) {
-            throw new RuntimeException("Error al guardar datos del Excel: " + e.getMessage());
         }
     }
-
-
 }
