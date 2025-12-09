@@ -162,7 +162,18 @@
             <p class="text-sm text-gray-600 dark:text-gray-400">Manage your organization projects</p>
           </div>
 
-          <div class="flex items-center gap-2">
+          <div class="flex items-center gap-2 flex-wrap">
+            <button
+              @click="downloadTemplate"
+              class="flex items-center space-x-2 px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg transition-colors duration-200"
+              title="Descargar plantilla CSV"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+              </svg>
+              <span>Plantilla</span>
+            </button>
+
             <button 
                 @click="showUploadModal = true"
                 class="flex items-center space-x-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors duration-200"
@@ -456,6 +467,40 @@ const generatePdf = async () => {
   }
 };
 
+// --- NUEVA FUNCIÓN: Descargar Plantilla ---
+const downloadTemplate = () => {
+  // Encabezados definidos según la estructura que has estado usando
+  const headers = [
+    'name',
+    'description',
+    'objectives',
+    'priority',
+    'status',
+    'startDate',
+    'endDate',
+    'budget',
+    'departmentId'
+  ]
+
+  // Crear contenido CSV
+  const csvContent = headers.join(',')
+  
+  // Crear Blob
+  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
+  
+  // Crear enlace de descarga temporal
+  const link = document.createElement('a')
+  if (link.download !== undefined) {
+    const url = URL.createObjectURL(blob)
+    link.setAttribute('href', url)
+    link.setAttribute('download', 'plantilla_proyectos.csv')
+    link.style.visibility = 'hidden'
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+  }
+}
+
 // Data
 const projects = ref([])
 const departments = ref([])
@@ -697,10 +742,9 @@ const closeViewModal = () => { showViewModal.value = false; selectedProject.valu
 const closeCancelModal = () => { showCancelModal.value = false; selectedProject.value = null }
 const closeListModal = () => { showListModal.value = false; modalProjects.value = []; modalTitle.value = '' }
 
-// CRUD operations (Actualizado con lógica de asignación y corrección de edición)
+// CRUD operations
 const handleSave = async (projectData) => {
   try {
-    // Tomar los datos, incluyendo los nuevos campos opcionales de asignación que vienen del modal
     const cleanedData = {
       ...projectData,
       description: projectData.description || '',
@@ -709,7 +753,6 @@ const handleSave = async (projectData) => {
       budget: projectData.budget ? parseFloat(projectData.budget) : 0,
       startDate: projectData.startDate || null,
       endDate: projectData.endDate || null,
-      // Se copian temporalmente los campos de asignación para la lógica posterior
       assignedUserEmail: projectData.assignedUserEmail || null, 
       assignedRole: projectData.assignedRole || null,
     }
@@ -720,59 +763,50 @@ const handleSave = async (projectData) => {
           delete cleanedData[key]
         }
       }
-      // [CORRECCIÓN/NUEVO] Asegurar que los campos de asignación no se envíen a la ruta /projects
       if (key === 'assignedUserEmail' || key === 'assignedRole') {
           delete cleanedData[key];
       }
     })
 
     let savedProjectId = null;
-    let assignmentEmail = projectData.assignedUserEmail; // Guardar el email/username para la asignación
+    let assignmentEmail = projectData.assignedUserEmail; 
     let assignmentRole = projectData.assignedRole;
 
     if (isEditing.value) {
-      // [CORRECCIÓN RUTA/PAYLOAD] Eliminar departmentId para la operación de PUT 
       if (cleanedData.departmentId) {
         delete cleanedData.departmentId;
       }
 
       await api.put(`/projects/${selectedProject.value.id}`, cleanedData)
-      savedProjectId = selectedProject.value.id; // ID existente
+      savedProjectId = selectedProject.value.id; 
       toastStore.showToast('Project updated successfully', 'success')
     } else {
       const res = await api.post('/projects', cleanedData)
-      savedProjectId = res.data.id; // ID del nuevo proyecto
+      savedProjectId = res.data.id; 
       toastStore.showToast('Project created successfully', 'success')
     }
 
-    // === LÓGICA DE ASIGNACIÓN (REVISADA) ===
-    // Verifica si el modal envió un assignedUserEmail
     if (assignmentEmail) {
-        // Permitir si es nuevo O si es edición pero estaba sin asignar (asumiendo que selectedProject.value incluye una propiedad como hasAssignees)
         const isCurrentlyAssigned = selectedProject.value?.hasAssignees === true; 
         const canAssign = !isEditing.value || (isEditing.value && !isCurrentlyAssigned);
         
         if (canAssign) {
             try {
-                // El backend espera 'usernameOrEmail'
                 await api.post('/projects/assign-user', {
                     usernameOrEmail: assignmentEmail, 
                     projectId: savedProjectId,
-                    role: assignmentRole || 'MANAGER_PROYECTO' // Usar el rol del formulario o el default
+                    role: assignmentRole || 'MANAGER_PROYECTO'
                 });
                 toastStore.showToast('Usuario asignado correctamente', 'success');
             } catch (assignError) {
                 console.error("Error asignando usuario:", assignError);
-                // Mensaje de error más detallado para el usuario
                 const assignErrorMessage = assignError.response?.data?.message || 'Verifique el username o email del usuario a asignar.';
                 toastStore.showToast('Proyecto guardado, pero error al asignar usuario: ' + assignErrorMessage, 'warning');
             }
         } else if (isEditing.value && isCurrentlyAssigned) {
-            // Notificar que la reasignación no se maneja desde aquí si ya está asignado.
             toastStore.showToast('El proyecto ya tiene asignaciones activas, la reasignación debe hacerse en la gestión de equipo.', 'warning');
         }
     }
-    // ====================================================
 
     await fetchProjects()
     await fetchSpecialProjects()
@@ -791,14 +825,6 @@ const handleSave = async (projectData) => {
 const deleteProject = async (project) => {
   if (!confirm(`Are you sure you want to delete "${project.name}"?`)) return
   try {
-    // Nota: El backend de Java requiere el nombre para la eliminación.
-    // Aunque el componente parece usar un modal de confirmación simple (confirm),
-    // el backend de Java en ProjectController.java sí requiere el nombre en el body de la petición DELETE.
-    // Para simplificar aquí, asumimos que la validación se hace en el backend o que el modal de confirmación es suficiente.
-    // Si tienes problemas de eliminación, asegúrate de que tu backend de Java no espere el nombre en el body, o actualiza la llamada:
-    /* await api.delete(`/projects/${project.id}`, { data: { name: project.name } })
-    */
-    
     await api.delete(`/projects/${project.id}`) 
     projects.value = projects.value.filter(p => p.id !== project.id)
     updateStats()
